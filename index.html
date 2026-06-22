@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TLD Product Status</title>
+<style>
+/* =========================================================
+   Reset & Variables
+   ========================================================= */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f6fa;--surface:#fff;--border:#e2e6ea;
+  --primary:#2563eb;--primary-dark:#1d4ed8;--danger:#dc2626;--warn:#d97706;
+  --text:#1e293b;--muted:#64748b;--success:#16a34a;
+  --radius:8px;--shadow:0 1px 4px rgba(0,0,0,.08);
+  --header-h:56px;
+}
+body{font-family:'Apple SD Gothic Neo',Pretendard,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+a{color:var(--primary);text-decoration:none}
+button{cursor:pointer;font:inherit;border:none;border-radius:var(--radius)}
+input,select,textarea{font:inherit;border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;width:100%;background:#fff;color:var(--text)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--primary);border-color:transparent}
+select[multiple]{height:auto}
+
+/* =========================================================
+   Layout
+   ========================================================= */
+header{position:sticky;top:0;z-index:100;height:var(--header-h);background:var(--primary);color:#fff;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+header h1{font-size:18px;font-weight:700;flex:1}
+#btn-login{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.4);padding:6px 14px;border-radius:20px;font-size:13px;transition:.2s}
+#btn-login:hover{background:rgba(255,255,255,.3)}
+main{max-width:1280px;margin:0 auto;padding:16px}
+
+/* =========================================================
+   Dashboard
+   ========================================================= */
+#dashboard{margin-bottom:16px}
+.stat-cards{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.stat-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 18px;min-width:110px;text-align:center}
+.stat-card .num{font-size:24px;font-weight:700;color:var(--primary)}
+.stat-card .lbl{font-size:12px;color:var(--muted);margin-top:2px}
+.stat-card.retired .num{color:var(--muted)}
+
+/* =========================================================
+   Filter bar
+   ========================================================= */
+#filter-bar{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:12px}
+#filter-bar label{font-size:12px;color:var(--muted);display:block;margin-bottom:3px}
+#filter-bar .f-group{display:flex;flex-direction:column;min-width:140px;flex:1}
+#filter-bar .f-group.wide{flex:2}
+#search-site{min-width:180px}
+#btn-reset{padding:6px 14px;background:#f1f5f9;border:1px solid var(--border);font-size:13px;color:var(--muted)}
+#btn-reset:hover{background:#e2e6ea}
+.admin-tools{display:flex;gap:8px;margin-left:auto;align-items:flex-end}
+.btn-primary{background:var(--primary);color:#fff;padding:7px 16px;font-size:13px;font-weight:600;transition:.2s}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-outline{background:#fff;color:var(--primary);border:1px solid var(--primary);padding:7px 14px;font-size:13px}
+.btn-outline:hover{background:#eff6ff}
+.btn-danger{background:var(--danger);color:#fff;padding:7px 14px;font-size:13px}
+.btn-sm{padding:4px 10px;font-size:12px;border-radius:6px}
+
+/* =========================================================
+   Table
+   ========================================================= */
+.table-wrap{overflow-x:auto;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fafc;font-weight:600;white-space:nowrap;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;position:relative}
+th .sort-icon{margin-left:4px;opacity:.4;font-size:11px}
+th.asc .sort-icon::after{content:'▲'}
+th.desc .sort-icon::after{content:'▼'}
+th:not(.asc):not(.desc) .sort-icon::after{content:'⇅'}
+td{padding:9px 12px;border-bottom:1px solid #f1f5f9;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+tr:last-child td{border-bottom:none}
+tr.clickable:hover td{background:#f0f7ff;cursor:pointer}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-현장설치{background:#dbeafe;color:#1d4ed8}
+.badge-렌트{background:#fef3c7;color:#92400e}
+.badge-창고{background:#f1f5f9;color:#475569}
+.badge-단독제품{background:#f3e8ff;color:#6b21a8}
+.badge-반출{background:#fee2e2;color:#991b1b}
+
+/* =========================================================
+   Column visibility toggle
+   ========================================================= */
+#col-toggle-wrap{position:relative;display:inline-block}
+#col-toggle-menu{display:none;position:absolute;top:110%;right:0;background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.12);padding:10px;min-width:180px;z-index:50;max-height:320px;overflow-y:auto}
+#col-toggle-menu.open{display:block}
+#col-toggle-menu label{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:13px}
+#col-toggle-menu input[type=checkbox]{width:auto}
+
+/* =========================================================
+   Modal
+   ========================================================= */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;padding:16px}
+.modal-backdrop.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:24px;position:relative}
+.modal.wide{max-width:720px}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:16px}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1}
+.form-row{margin-bottom:14px}
+.form-row label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600}
+.form-row .hint{font-size:11px;color:var(--muted);margin-top:3px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:70px}
+.pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:12px;color:var(--primary);cursor:pointer;padding:2px 6px}
+.masked{letter-spacing:2px}
+
+/* Detail */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px}
+.detail-item{padding:6px 0;border-bottom:1px solid #f1f5f9}
+.detail-item .lbl{font-size:11px;color:var(--muted);margin-bottom:2px}
+.detail-item .val{font-size:14px;word-break:break-all}
+.photo-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.photo-thumb{width:100px;height:80px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border)}
+.photo-full-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;align-items:center;justify-content:center}
+.photo-full-wrap.open{display:flex}
+.photo-full-wrap img{max-width:90vw;max-height:90vh;border-radius:8px}
+.photo-full-wrap .close-btn{position:absolute;top:16px;right:20px;color:#fff;font-size:30px;cursor:pointer;background:none;border:none}
+.upload-row{display:flex;align-items:center;gap:8px;margin-top:4px}
+.upload-preview{width:60px;height:50px;object-fit:cover;border-radius:4px;border:1px solid var(--border);display:none}
+
+/* =========================================================
+   Toast / Loading
+   ========================================================= */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:500;opacity:0;transition:opacity .3s;pointer-events:none}
+#toast.show{opacity:1}
+#loading{display:none;position:fixed;inset:0;background:rgba(255,255,255,.5);z-index:400;align-items:center;justify-content:center}
+#loading.show{display:flex}
+.spinner{width:36px;height:36px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* =========================================================
+   Footer
+   ========================================================= */
+footer{text-align:right;padding:12px 16px;font-size:11px;color:var(--muted)}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+@media(max-width:640px){
+  main{padding:10px}
+  .form-grid{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr}
+  .admin-tools{margin-left:0;width:100%;justify-content:flex-end}
+  .stat-card{min-width:80px;padding:10px 12px}
+  .stat-card .num{font-size:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- ======================================================
+     Header
+     ====================================================== -->
+<header>
+  <h1>TLD Product Status</h1>
+  <button id="btn-login" onclick="openLoginModal()">로그인</button>
+</header>
+
+<!-- ======================================================
+     Main
+     ====================================================== -->
+<main>
+  <!-- Dashboard -->
+  <section id="dashboard">
+    <div class="stat-cards" id="stat-cards">
+      <div class="stat-card"><div class="num" id="sc-현장설치">-</div><div class="lbl">현장설치</div></div>
+      <div class="stat-card"><div class="num" id="sc-렌트">-</div><div class="lbl">렌트</div></div>
+      <div class="stat-card"><div class="num" id="sc-창고">-</div><div class="lbl">창고</div></div>
+      <div class="stat-card"><div class="num" id="sc-단독제품">-</div><div class="lbl">단독제품</div></div>
+      <div class="stat-card retired"><div class="num" id="sc-반출">-</div><div class="lbl">반출</div></div>
+      <div class="stat-card"><div class="num" id="sc-total">-</div><div class="lbl">합계</div></div>
+    </div>
+  </section>
+
+  <!-- Filter bar -->
+  <div id="filter-bar">
+    <div class="f-group">
+      <label>관리 주체</label>
+      <select id="filter-manager"><option value="">전체</option></select>
+    </div>
+    <div class="f-group wide">
+      <label>Site / 제품명 검색</label>
+      <input id="search-site" type="text" placeholder="키워드 입력…">
+    </div>
+    <div class="f-group">
+      <label>Panel Model</label>
+      <select id="filter-model"><option value="">전체</option></select>
+    </div>
+    <div class="f-group">
+      <label>상태</label>
+      <select id="filter-status"><option value="">전체</option></select>
+    </div>
+    <button id="btn-reset" onclick="resetFilters()">초기화</button>
+    <!-- Admin tools -->
+    <div class="admin-tools" id="admin-tools" style="display:none">
+      <label style="font-size:12px;display:flex;align-items:center;gap:6px;color:var(--muted)">
+        <input type="checkbox" id="toggle-retired" onchange="applyFilters()"> 반출 포함
+      </label>
+      <div id="col-toggle-wrap">
+        <button class="btn-outline btn-sm" onclick="toggleColMenu()">컬럼 ▾</button>
+        <div id="col-toggle-menu" id="col-menu"></div>
+      </div>
+      <button class="btn-outline btn-sm" onclick="exportCSV()">CSV</button>
+      <button class="btn-primary btn-sm" onclick="openCreateModal()">+ 신규</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table id="main-table">
+      <thead id="thead"></thead>
+      <tbody id="tbody"><tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted)">로딩 중…</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<footer>v1.3 · 최종수정 2026-06-18</footer>
+
+<!-- ======================================================
+     Toast & Loading
+     ====================================================== -->
+<div id="toast"></div>
+<div id="loading"><div class="spinner"></div></div>
+
+<!-- ======================================================
+     Login Modal
+     ====================================================== -->
+<div class="modal-backdrop" id="modal-login">
+  <div class="modal" style="max-width:340px">
+    <button class="modal-close" onclick="closeModal('modal-login')">×</button>
+    <h2>관리자 로그인</h2>
+    <div class="form-row">
+      <label>비밀번호</label>
+      <div class="pw-wrap">
+        <input type="password" id="login-pw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="pw-toggle" onclick="togglePw('login-pw',this)">보기</button>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" onclick="doLogin()" style="width:100%">로그인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================
+     Create / Edit Modal
+     ====================================================== -->
+<div class="modal-backdrop" id="modal-form">
+  <div class="modal wide">
+    <button class="modal-close" onclick="closeModal('modal-form')">×</button>
+    <h2 id="form-title">신규 등록</h2>
+    <input type="hidden" id="f-id">
+    <input type="hidden" id="f-updatedAt">
+    <div class="form-grid">
+      <div class="form-row">
+        <label>관리 주체 *</label>
+        <select id="f-manager"></select>
+      </div>
+      <div class="form-row">
+        <label>상태 *</label>
+        <select id="f-status">
+          <option>현장설치</option><option>렌트</option><option>창고</option><option>단독제품</option>
+        </select>
+      </div>
+      <div class="form-row" style="grid-column:1/-1">
+        <label>Site 및 제품명 *</label>
+        <input id="f-site" type="text" placeholder="예: 판교 5F 로비">
+      </div>
+      <div class="form-row">
+        <label>Panel Model</label>
+        <input id="f-panelModel" list="dl-panelModels" placeholder="예: OK13 또는 OK13,14(대)">
+        <datalist id="dl-panelModels"></datalist>
+      </div>
+      <div class="form-row">
+        <label>Panel 수량 (배열식)</label>
+        <input id="f-panelArray" type="text" placeholder="예: 2*2, 16*2, 10*1">
+        <div class="hint">입력 시 총 모듈수 자동계산</div>
+      </div>
+      <div class="form-row">
+        <label>해상도 X (px)</label>
+        <input id="f-resX" type="number" placeholder="1920">
+      </div>
+      <div class="form-row">
+        <label>해상도 Y (px)</label>
+        <input id="f-resY" type="number" placeholder="1080">
+      </div>
+      <div class="form-row">
+        <label>휘도 (nit)</label>
+        <input id="f-brightness" type="number" placeholder="2100">
+      </div>
+      <div class="form-row">
+        <label>MCU / Player</label>
+        <input id="f-player" type="text" placeholder="예: C3Pro, A40+NUC14">
+      </div>
+      <div class="form-row">
+        <label>설치 날짜</label>
+        <input id="f-installDate" type="date">
+      </div>
+      <div class="form-row">
+        <label>입고일</label>
+        <input id="f-inboundDate" type="date">
+      </div>
+      <div class="form-row">
+        <label>CMS ID</label>
+        <input id="f-cmsId" type="text">
+      </div>
+      <div class="form-row">
+        <label>CMS PW</label>
+        <div class="pw-wrap"><input id="f-cmsPw" type="password"><button class="pw-toggle" onclick="togglePw('f-cmsPw',this)">보기</button></div>
+      </div>
+      <div class="form-row">
+        <label>Teamviewer ID</label>
+        <input id="f-tvId" type="text">
+      </div>
+      <div class="form-row">
+        <label>Teamviewer PW</label>
+        <div class="pw-wrap"><input id="f-tvPw" type="password"><button class="pw-toggle" onclick="togglePw('f-tvPw',this)">보기</button></div>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>비고1</label><textarea id="f-note1" rows="2"></textarea>
+    </div>
+    <div class="form-row">
+      <label>비고2</label><textarea id="f-note2" rows="2"></textarea>
+    </div>
+    <div class="form-row">
+      <label>비고3</label><textarea id="f-note3" rows="2"></textarea>
+    </div>
+    <div class="form-row">
+      <label>비고4</label><textarea id="f-note4" rows="2"></textarea>
+    </div>
+    <!-- 사진 업로드 (수정 모드에서만) -->
+    <div id="photo-upload-section" style="display:none">
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">사진 (최대 3매, 각 5MB)</div>
+      <div id="photo-slots"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-outline" onclick="closeModal('modal-form')">취소</button>
+      <button class="btn-primary" onclick="submitForm()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================
+     Detail Modal
+     ====================================================== -->
+<div class="modal-backdrop" id="modal-detail">
+  <div class="modal wide">
+    <button class="modal-close" onclick="closeModal('modal-detail')">×</button>
+    <h2 id="detail-title">상세 정보</h2>
+    <div id="detail-body"></div>
+    <div class="form-actions" id="detail-actions" style="margin-top:16px"></div>
+  </div>
+</div>
+
+<!-- Photo lightbox -->
+<div class="photo-full-wrap" id="photo-lightbox" onclick="closeLightbox()">
+  <button class="close-btn">×</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- ======================================================
+     JavaScript
+     ====================================================== -->
+<script>
+// ─── CONFIG ──────────────────────────────────────────────
+// Apps Script を デプロイ後 URL を ここに貼り付けてください
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
+
+// ─── State ───────────────────────────────────────────────
+let state = {
+  token: '',
+  isAdmin: false,
+  allItems: [],
+  lists: { managers: [], statuses: [], panelModels: [] },
+  sortCol: 'installDate',
+  sortDir: -1,
+  visibleCols: null, // null = default
+};
+
+// ─── Column definitions (for table display) ─────────────
+const TABLE_COLS = [
+  { key:'id',          label:'ID',            width:'90px'  },
+  { key:'manager',     label:'관리주체',       width:'80px'  },
+  { key:'site',        label:'Site / 제품명',  width:'180px', grow:true },
+  { key:'status',      label:'상태',           width:'80px'  },
+  { key:'panelModel',  label:'Panel Model',   width:'110px' },
+  { key:'panelArray',  label:'수량',           width:'70px'  },
+  { key:'panelTotal',  label:'총모듈',         width:'60px'  },
+  { key:'brightness',  label:'휘도',           width:'60px'  },
+  { key:'resX',        label:'해상도X',        width:'65px'  },
+  { key:'resY',        label:'해상도Y',        width:'65px'  },
+  { key:'installDate', label:'설치일',         width:'90px'  },
+  { key:'player',      label:'MCU/Player',    width:'100px' },
+  { key:'cmsId',       label:'CMS ID',        width:'90px', adminOnly:true },
+  { key:'inboundDate', label:'입고일',         width:'90px'  },
+  { key:'updatedAt',   label:'최종수정',       width:'90px'  },
+];
+
+// ─── Init ─────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  loadSession();
+  buildColMenu();
+  await Promise.all([loadLists(), loadItems()]);
+  renderTable();
+  await loadSummary();
+});
+
+// ─── API helpers ─────────────────────────────────────────
+async function api(params) {
+  const url = new URL(GAS_URL);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k,v));
+  const res = await fetch(url.toString());
+  const json = await res.json();
+  if (json.error) throw new Error(json.error);
+  return json;
+}
+
+async function apiPost(body) {
+  const res = await fetch(GAS_URL, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain'},
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (json.error) throw new Error(json.error);
+  return json;
+}
+
+// ─── Auth ─────────────────────────────────────────────────
+function openLoginModal(){ openModal('modal-login'); document.getElementById('login-pw').focus(); }
+
+async function doLogin() {
+  const pw = document.getElementById('login-pw').value;
+  if (!pw) return;
+  showLoading(true);
+  try {
+    const { token } = await apiPost({ action:'auth', password:pw, updatedBy:'admin' });
+    state.token = token;
+    state.isAdmin = true;
+    saveSession();
+    closeModal('modal-login');
+    document.getElementById('login-pw').value = '';
+    document.getElementById('btn-login').textContent = '로그아웃';
+    document.getElementById('admin-tools').style.display = 'flex';
+    await loadItems(true);
+    renderTable();
+    await loadSummary();
+    toast('관리자 모드로 로그인했습니다.');
+  } catch(e){ toast(e.message,'error'); }
+  showLoading(false);
+}
+
+async function doLogout() {
+  if(state.token) await apiPost({ action:'logout', token:state.token }).catch(()=>{});
+  state.token=''; state.isAdmin=false; state.allItems=[];
+  clearSession();
+  document.getElementById('btn-login').textContent = '로그인';
+  document.getElementById('admin-tools').style.display = 'none';
+  document.getElementById('toggle-retired').checked = false;
+  await loadItems();
+  renderTable();
+  await loadSummary();
+  toast('로그아웃했습니다.');
+}
+
+document.getElementById('btn-login').addEventListener('click', () => {
+  if (state.isAdmin) doLogout(); else openLoginModal();
+});
+
+// ─── Session persistence (sessionStorage) ────────────────
+function saveSession() {
+  try { sessionStorage.setItem('tld_token', state.token); } catch(_){}
+}
+function loadSession() {
+  try {
+    const t = sessionStorage.getItem('tld_token');
+    if (t) { state.token = t; state.isAdmin = true;
+      document.getElementById('btn-login').textContent = '로그아웃';
+      document.getElementById('admin-tools').style.display = 'flex';
+    }
+  } catch(_){}
+  // col visibility
+  try {
+    const cv = sessionStorage.getItem('tld_cols');
+    if (cv) state.visibleCols = JSON.parse(cv);
+  } catch(_){}
+}
+function clearSession() { try{ sessionStorage.removeItem('tld_token'); }catch(_){} }
+
+// ─── Load data ────────────────────────────────────────────
+async function loadLists() {
+  try {
+    const data = await api({ action:'lists' });
+    state.lists = data;
+    populateSelect('filter-manager', data.managers, '전체', '');
+    populateSelect('filter-status', data.statuses, '전체', '');
+    populateSelect('filter-model', data.panelModels, '전체', '');
+    populateSelect('f-manager', data.managers);
+    // datalist
+    const dl = document.getElementById('dl-panelModels');
+    dl.innerHTML = data.panelModels.map(m=>`<option value="${esc(m)}">`).join('');
+  } catch(e){ console.warn('lists 로드 실패', e); }
+}
+
+async function loadItems(force=false) {
+  const params = { action:'list' };
+  if (state.isAdmin && state.token) params.token = state.token;
+  try {
+    const data = await api(params);
+    state.allItems = data.items || [];
+  } catch(e) {
+    if (e.message.includes('관리자')) { state.token=''; state.isAdmin=false; clearSession(); }
+    toast('데이터 로드 실패: '+e.message,'error');
+  }
+}
+
+async function loadSummary() {
+  try {
+    const params = { action:'summary' };
+    if (state.isAdmin && state.token) params.token = state.token;
+    const data = await api(params);
+    const stats = ['현장설치','렌트','창고','단독제품','반출'];
+    let total = 0;
+    stats.forEach(s => {
+      const n = data.byStatus[s] || 0;
+      total += (s==='반출'?0:n);
+      const el = document.getElementById('sc-'+s);
+      if(el) el.textContent = n;
+    });
+    const all = Object.values(data.byStatus).reduce((a,b)=>a+b,0);
+    document.getElementById('sc-total').textContent = all;
+  } catch(e){ console.warn(e); }
+}
+
+// ─── Filters ──────────────────────────────────────────────
+function applyFilters() {
+  const manager = document.getElementById('filter-manager').value;
+  const site    = document.getElementById('search-site').value.toLowerCase();
+  const model   = document.getElementById('filter-model').value;
+  const status  = document.getElementById('filter-status').value;
+  const showRetired = state.isAdmin && document.getElementById('toggle-retired').checked;
+
+  let items = state.allItems;
+  if (!showRetired) items = items.filter(it => it.status !== '반출');
+  if (manager)      items = items.filter(it => it.manager === manager);
+  if (model)        items = items.filter(it => (it.panelModel||'').includes(model));
+  if (status)       items = items.filter(it => it.status === status);
+  if (site)         items = items.filter(it => (it.site||'').toLowerCase().includes(site));
+  return items;
+}
+
+function resetFilters() {
+  ['filter-manager','filter-model','filter-status'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  document.getElementById('search-site').value='';
+  renderTable();
+}
+
+['filter-manager','search-site','filter-model','filter-status'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.addEventListener('input', renderTable);
+  el.addEventListener('change', renderTable);
+});
+
+// ─── Table render ─────────────────────────────────────────
+function getVisibleCols() {
+  const adminCols = state.isAdmin ? TABLE_COLS : TABLE_COLS.filter(c=>!c.adminOnly);
+  if (!state.visibleCols) return adminCols;
+  return adminCols.filter(c => state.visibleCols[c.key] !== false);
+}
+
+function renderTable() {
+  const items = sortItems(applyFilters());
+  const cols = getVisibleCols();
+  const thead = document.getElementById('thead');
+  const tbody = document.getElementById('tbody');
+
+  thead.innerHTML = '<tr>' + cols.map(c => `
+    <th onclick="sortBy('${c.key}')" style="min-width:${c.width||'80px'};${c.grow?'width:100%':''}">
+      ${c.label}<span class="sort-icon" id="si-${c.key}"></span>
+    </th>`).join('') + '</tr>';
+
+  // Sort icons
+  cols.forEach(c => {
+    const si = document.getElementById('si-'+c.key);
+    if(!si) return;
+    si.closest('th').className = state.sortCol===c.key ? (state.sortDir>0?'asc':'desc') : '';
+  });
+
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" style="text-align:center;padding:32px;color:var(--muted)">표시할 항목이 없습니다.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = items.map(it => `
+    <tr class="clickable" onclick="openDetail('${esc(it.id)}')">
+      ${cols.map(c => {
+        let v = it[c.key];
+        if (c.key==='status') return `<td><span class="badge badge-${v||''}">${v||''}</span></td>`;
+        if (v===null||v===undefined) v='';
+        return `<td title="${esc(String(v))}">${esc(String(v))}</td>`;
+      }).join('')}
+    </tr>`).join('');
+}
+
+function sortBy(col) {
+  if (state.sortCol === col) state.sortDir *= -1;
+  else { state.sortCol = col; state.sortDir = 1; }
+  renderTable();
+}
+
+function sortItems(items) {
+  return [...items].sort((a,b) => {
+    const va = a[state.sortCol]||'', vb = b[state.sortCol]||'';
+    if (va < vb) return -state.sortDir;
+    if (va > vb) return state.sortDir;
+    return 0;
+  });
+}
+
+// ─── Column visibility ────────────────────────────────────
+function buildColMenu() {
+  const menu = document.getElementById('col-toggle-menu');
+  menu.innerHTML = TABLE_COLS.map(c => {
+    const chk = (state.visibleCols&&state.visibleCols[c.key]===false) ? '' : 'checked';
+    return `<label><input type="checkbox" ${chk} data-col="${c.key}" onchange="updateColVisibility(this)"> ${c.label}</label>`;
+  }).join('');
+}
+
+function toggleColMenu() {
+  document.getElementById('col-toggle-menu').classList.toggle('open');
+}
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('col-toggle-wrap').contains(e.target)) {
+    document.getElementById('col-toggle-menu').classList.remove('open');
+  }
+});
+
+function updateColVisibility(cb) {
+  if (!state.visibleCols) {
+    state.visibleCols = {};
+    TABLE_COLS.forEach(c => state.visibleCols[c.key] = true);
+  }
+  state.visibleCols[cb.dataset.col] = cb.checked;
+  try { sessionStorage.setItem('tld_cols', JSON.stringify(state.visibleCols)); } catch(_){}
+  renderTable();
+}
+
+// ─── Detail ───────────────────────────────────────────────
+async function openDetail(id) {
+  showLoading(true);
+  try {
+    const params = { action:'get', id };
+    if (state.isAdmin && state.token) params.token = state.token;
+    const { item } = await api(params);
+    renderDetail(item);
+    openModal('modal-detail');
+  } catch(e) { toast(e.message,'error'); }
+  showLoading(false);
+}
+
+function renderDetail(item) {
+  document.getElementById('detail-title').textContent = item.site || '상세 정보';
+
+  const LABELS = {
+    id:'ID', manager:'관리주체', site:'Site/제품명', status:'상태',
+    panelModel:'Panel Model', panelArray:'Panel수량', panelTotal:'총 모듈수',
+    resX:'해상도 X', resY:'해상도 Y', brightness:'휘도(nit)',
+    installDate:'설치일', player:'MCU/Player', cmsId:'CMS ID',
+    cmsPw:'CMS PW', tvId:'Teamviewer ID', tvPw:'Teamviewer PW',
+    inboundDate:'입고일', outboundDate:'반출일',
+    note1:'비고1', note2:'비고2', note3:'비고3', note4:'비고4',
+    updatedAt:'최종수정일시', updatedBy:'최종수정자',
+  };
+
+  const SENSITIVE = ['cmsPw','tvId','tvPw'];
+
+  let html = '<div class="detail-grid">';
+  Object.entries(LABELS).forEach(([k,lbl]) => {
+    if (item[k]===undefined) return;
+    let val = item[k]||'';
+    if (SENSITIVE.includes(k) && val) {
+      val = `<span class="masked" id="dv-${k}">••••••</span>
+             <button class="btn-outline btn-sm" style="margin-left:8px" onclick="toggleDetailPw('${k}','${esc(String(item[k]))}',this)">보기</button>`;
+    } else {
+      val = `<span>${esc(String(val))}</span>`;
+    }
+    html += `<div class="detail-item"><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`;
+  });
+  html += '</div>';
+
+  // Photos
+  const photos = [item.photo1, item.photo2, item.photo3].filter(Boolean);
+  if (photos.length) {
+    html += '<div style="margin-top:12px"><div class="lbl" style="font-size:12px;color:var(--muted);margin-bottom:6px">사진</div><div class="photo-row">';
+    photos.forEach(url => {
+      html += `<img class="photo-thumb" src="${esc(url)}" loading="lazy" onclick="openLightbox('${esc(url)}');event.stopPropagation()">`;
+    });
+    html += '</div></div>';
+  }
+
+  document.getElementById('detail-body').innerHTML = html;
+
+  // Actions
+  const actions = document.getElementById('detail-actions');
+  if (state.isAdmin) {
+    actions.innerHTML = `
+      <button class="btn-outline" onclick="openEditModal('${esc(item.id)}')">수정</button>
+      ${item.status!=='반출' ? `<button class="btn-danger btn-sm" onclick="confirmRetire('${esc(item.id)}')">반출 처리</button>` : ''}`;
+  } else {
+    actions.innerHTML = '';
+  }
+
+  actions._currentId = item.id;
+}
+
+function toggleDetailPw(field, plain, btn) {
+  const el = document.getElementById('dv-'+field);
+  if (el.classList.contains('masked')) {
+    el.textContent = plain;
+    el.classList.remove('masked');
+    btn.textContent = '숨기기';
+  } else {
+    el.textContent = '••••••';
+    el.classList.add('masked');
+    btn.textContent = '보기';
+  }
+}
+
+// ─── Create ───────────────────────────────────────────────
+function openCreateModal() {
+  document.getElementById('form-title').textContent = '신규 등록';
+  clearForm();
+  document.getElementById('photo-upload-section').style.display = 'none';
+  openModal('modal-form');
+}
+
+// ─── Edit ─────────────────────────────────────────────────
+async function openEditModal(id) {
+  showLoading(true);
+  try {
+    const params = { action:'get', id, token: state.token };
+    const { item } = await api(params);
+    document.getElementById('form-title').textContent = '수정';
+    clearForm();
+    const fields = ['id','site','manager','status','panelModel','panelArray','resX','resY','brightness',
+                    'installDate','inboundDate','player','cmsId','cmsPw','tvId','tvPw',
+                    'note1','note2','note3','note4'];
+    fields.forEach(k => {
+      const el = document.getElementById('f-'+k);
+      if (el) el.value = item[k]||'';
+    });
+    document.getElementById('f-updatedAt').value = item.updatedAt||'';
+    // Photo upload slots
+    renderPhotoSlots(item);
+    document.getElementById('photo-upload-section').style.display = 'block';
+    closeModal('modal-detail');
+    openModal('modal-form');
+  } catch(e) { toast(e.message,'error'); }
+  showLoading(false);
+}
+
+function renderPhotoSlots(item) {
+  const wrap = document.getElementById('photo-slots');
+  wrap.innerHTML = [1,2,3].map(n => {
+    const url = item[`photo${n}`]||'';
+    return `<div class="upload-row" style="margin-bottom:8px">
+      <span style="font-size:12px;width:36px;color:var(--muted)">사진${n}</span>
+      ${url ? `<img src="${esc(url)}" class="upload-preview" style="display:inline-block" onclick="openLightbox('${esc(url)}')">` : ''}
+      <input type="file" id="photo-file-${n}" accept="image/*" style="flex:1;font-size:12px" onchange="previewPhoto(${n})">
+    </div>`;
+  }).join('');
+}
+
+function previewPhoto(n) {
+  const file = document.getElementById(`photo-file-${n}`).files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { toast('사진 최대 5MB','error'); return; }
+}
+
+// ─── Submit form ─────────────────────────────────────────
+async function submitForm() {
+  const id = document.getElementById('f-id').value;
+  const isEdit = !!id;
+
+  const data = {};
+  ['site','manager','status','panelModel','panelArray','resX','resY','brightness',
+   'installDate','inboundDate','player','cmsId','cmsPw','tvId','tvPw',
+   'note1','note2','note3','note4'].forEach(k => {
+    data[k] = document.getElementById('f-'+k)?.value||'';
+  });
+
+  if (!data.manager || !data.site || !data.status) {
+    toast('관리주체, Site, 상태는 필수입니다.','error'); return;
+  }
+
+  showLoading(true);
+  try {
+    if (isEdit) {
+      await apiPost({ action:'update', token:state.token, id, data,
+                      updatedAt: document.getElementById('f-updatedAt').value,
+                      updatedBy:'admin' });
+      // Upload photos
+      for (let n=1; n<=3; n++) {
+        const fileEl = document.getElementById(`photo-file-${n}`);
+        if (fileEl && fileEl.files[0]) {
+          await uploadPhoto(id, n, fileEl.files[0]);
+        }
+      }
+    } else {
+      const { id: newId } = await apiPost({ action:'create', token:state.token, data, updatedBy:'admin' });
+      // photos after create
+      for (let n=1; n<=3; n++) {
+        const fileEl = document.getElementById(`photo-file-${n}`);
+        if (fileEl && fileEl.files[0]) await uploadPhoto(newId, n, fileEl.files[0]);
+      }
+    }
+    closeModal('modal-form');
+    await loadItems(true);
+    await loadSummary();
+    renderTable();
+    toast(isEdit ? '수정 완료' : '등록 완료');
+  } catch(e) { toast(e.message,'error'); }
+  showLoading(false);
+}
+
+async function uploadPhoto(id, slot, file) {
+  const b64 = await fileToBase64(file);
+  await apiPost({ action:'upload', token:state.token, id, slot, fileBase64:b64, mime:file.type, updatedBy:'admin' });
+}
+
+function fileToBase64(file) {
+  return new Promise((res,rej) => {
+    const reader = new FileReader();
+    reader.onload = e => res(e.target.result.split(',')[1]);
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+}
+
+function clearForm() {
+  ['id','site','manager','panelModel','panelArray','resX','resY','brightness',
+   'installDate','inboundDate','player','cmsId','cmsPw','tvId','tvPw',
+   'note1','note2','note3','note4','updatedAt'].forEach(k => {
+    const el = document.getElementById('f-'+k);
+    if (el) el.value = '';
+  });
+  document.getElementById('f-status').value = '현장설치';
+}
+
+// ─── Retire ───────────────────────────────────────────────
+async function confirmRetire(id) {
+  if (!confirm(`ID ${id} 를 반출 처리하시겠습니까?\n(시트에는 보존되며 목록에서 숨겨집니다)`)) return;
+  showLoading(true);
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    await apiPost({ action:'retire', token:state.token, id, outboundDate:today, updatedBy:'admin' });
+    closeModal('modal-detail');
+    await loadItems(true);
+    await loadSummary();
+    renderTable();
+    toast('반출 처리 완료');
+  } catch(e) { toast(e.message,'error'); }
+  showLoading(false);
+}
+
+// ─── CSV ─────────────────────────────────────────────────
+function exportCSV() {
+  const includeSecret = confirm('민감정보(CMS PW, Teamviewer ID/PW)를 포함할까요?');
+  const url = new URL(GAS_URL);
+  url.searchParams.set('action','export');
+  url.searchParams.set('token', state.token);
+  url.searchParams.set('includeSecret', includeSecret?'true':'false');
+  const a = document.createElement('a');
+  a.href = url.toString();
+  const d = new Date();
+  a.download = `TLD_Product_Status_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.csv`;
+  a.click();
+}
+
+// ─── Lightbox ─────────────────────────────────────────────
+function openLightbox(url) {
+  document.getElementById('lightbox-img').src = url;
+  document.getElementById('photo-lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('photo-lightbox').classList.remove('open');
+}
+
+// ─── Modal helpers ────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(el => {
+  el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
+});
+
+// ─── UI helpers ───────────────────────────────────────────
+function togglePw(inputId, btn) {
+  const el = document.getElementById(inputId);
+  const show = el.type==='password';
+  el.type = show ? 'text' : 'password';
+  btn.textContent = show ? '숨기기' : '보기';
+}
+
+function populateSelect(id, options, blankLabel='선택', blankVal='') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const blank = blankLabel!==undefined ? `<option value="${blankVal}">${blankLabel}</option>` : '';
+  el.innerHTML = blank + options.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+}
+
+function showLoading(show) {
+  document.getElementById('loading').className = show ? 'show' : '';
+}
+
+let toastTimer;
+function toast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = type==='error' ? '#dc2626' : '#1e293b';
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+</body>
+</html>
