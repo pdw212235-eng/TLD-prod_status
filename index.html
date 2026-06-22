@@ -76,9 +76,7 @@ tr.clickable:hover td{background:#f0f7ff;cursor:pointer}
 .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
 .badge-현장설치{background:#dbeafe;color:#1d4ed8}
 .badge-렌트{background:#fef3c7;color:#92400e}
-.badge-창고{background:#f1f5f9;color:#475569}
-.badge-단독제품{background:#f3e8ff;color:#6b21a8}
-.badge-반출{background:#fee2e2;color:#991b1b}
+.badge-창고{background:#f1f5f9;color:#475569}.badge-반출{background:#fee2e2;color:#991b1b}
 
 /* =========================================================
    Column visibility toggle
@@ -170,7 +168,6 @@ footer{text-align:right;padding:12px 16px;font-size:11px;color:var(--muted)}
       <div class="stat-card"><div class="num" id="sc-현장설치">-</div><div class="lbl">현장설치</div></div>
       <div class="stat-card"><div class="num" id="sc-렌트">-</div><div class="lbl">렌트</div></div>
       <div class="stat-card"><div class="num" id="sc-창고">-</div><div class="lbl">창고</div></div>
-      <div class="stat-card"><div class="num" id="sc-단독제품">-</div><div class="lbl">단독제품</div></div>
       <div class="stat-card retired"><div class="num" id="sc-반출">-</div><div class="lbl">반출</div></div>
       <div class="stat-card"><div class="num" id="sc-total">-</div><div class="lbl">합계</div></div>
     </div>
@@ -259,7 +256,7 @@ footer{text-align:right;padding:12px 16px;font-size:11px;color:var(--muted)}
       <div class="form-row">
         <label>상태 *</label>
         <select id="f-status">
-          <option>현장설치</option><option>렌트</option><option>창고</option><option>단독제품</option>
+          <option>현장설치</option><option>렌트</option><option>창고</option>
         </select>
       </div>
       <div class="form-row" style="grid-column:1/-1">
@@ -380,13 +377,13 @@ let state = {
 
 // ─── Column definitions (for table display) ─────────────
 const TABLE_COLS = [
-  { key:'id',          label:'ID',            width:'90px'  },
+  { key:'id',          label:'관리번호',       width:'90px'  },
   { key:'manager',     label:'관리주체',       width:'80px'  },
   { key:'site',        label:'Site / 제품명',  width:'180px', grow:true },
   { key:'status',      label:'상태',           width:'80px'  },
   { key:'panelModel',  label:'Panel Model',   width:'110px' },
   { key:'panelArray',  label:'수량',           width:'70px'  },
-  { key:'panelTotal',  label:'총모듈',         width:'60px'  },
+  { key:'panelTotal',  label:'총패널수량',      width:'75px'  },
   { key:'brightness',  label:'휘도',           width:'60px'  },
   { key:'resX',        label:'해상도X',        width:'65px'  },
   { key:'resY',        label:'해상도Y',        width:'65px'  },
@@ -519,7 +516,7 @@ async function loadSummary() {
     const params = { action:'summary' };
     if (state.isAdmin && state.token) params.token = state.token;
     const data = await api(params);
-    const stats = ['현장설치','렌트','창고','단독제품','반출'];
+    const stats = ['현장설치','렌트','창고','반출'];
     let total = 0;
     stats.forEach(s => {
       const n = data.byStatus[s] || 0;
@@ -666,8 +663,8 @@ function renderDetail(item) {
   document.getElementById('detail-title').textContent = item.site || '상세 정보';
 
   const LABELS = {
-    id:'ID', manager:'관리주체', site:'Site/제품명', status:'상태',
-    panelModel:'Panel Model', panelArray:'Panel수량', panelTotal:'총 모듈수',
+    id:'관리번호', manager:'관리주체', site:'Site/제품명', status:'상태',
+    panelModel:'Panel Model', panelArray:'Panel수량', panelTotal:'총 패널수량',
     resX:'해상도 X', resY:'해상도 Y', brightness:'휘도(nit)',
     installDate:'설치일', player:'MCU/Player', cmsId:'CMS ID',
     cmsPw:'CMS PW', tvId:'Teamviewer ID', tvPw:'Teamviewer PW',
