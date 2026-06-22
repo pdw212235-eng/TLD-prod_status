@@ -156,7 +156,7 @@ footer{text-align:right;padding:12px 16px;font-size:11px;color:var(--muted)}
      Header
      ====================================================== -->
 <header>
-  <h1>TLD Product Status</h1>
+  <h1 style="line-height:1.1">TLD Product Status <span style="font-size:14px;font-weight:400;opacity:.8">v1.3</span><br><span style="font-size:11px;font-weight:400;opacity:.6">rev. 2026-06-22</span></h1>
   <button id="btn-login" onclick="openLoginModal()">로그인</button>
 </header>
 
@@ -185,10 +185,6 @@ footer{text-align:right;padding:12px 16px;font-size:11px;color:var(--muted)}
     <div class="f-group wide">
       <label>Site / 제품명 검색</label>
       <input id="search-site" type="text" placeholder="키워드 입력…">
-    </div>
-    <div class="f-group">
-      <label>Panel Model</label>
-      <select id="filter-model"><option value="">전체</option></select>
     </div>
     <div class="f-group">
       <label>상태</label>
@@ -499,7 +495,6 @@ async function loadLists() {
     state.lists = data;
     populateSelect('filter-manager', data.managers, '전체', '');
     populateSelect('filter-status', data.statuses, '전체', '');
-    populateSelect('filter-model', data.panelModels, '전체', '');
     populateSelect('f-manager', data.managers);
     // datalist
     const dl = document.getElementById('dl-panelModels');
@@ -541,21 +536,19 @@ async function loadSummary() {
 function applyFilters() {
   const manager = document.getElementById('filter-manager').value;
   const site    = document.getElementById('search-site').value.toLowerCase();
-  const model   = document.getElementById('filter-model').value;
   const status  = document.getElementById('filter-status').value;
   const showRetired = state.isAdmin && document.getElementById('toggle-retired').checked;
 
   let items = state.allItems;
   if (!showRetired) items = items.filter(it => it.status !== '반출');
   if (manager)      items = items.filter(it => it.manager === manager);
-  if (model)        items = items.filter(it => (it.panelModel||'').includes(model));
   if (status)       items = items.filter(it => it.status === status);
   if (site)         items = items.filter(it => (it.site||'').toLowerCase().includes(site));
   return items;
 }
 
 function resetFilters() {
-  ['filter-manager','filter-model','filter-status'].forEach(id=>{
+  ['filter-manager','filter-status'].forEach(id=>{
     document.getElementById(id).value='';
   });
   document.getElementById('search-site').value='';
@@ -570,9 +563,11 @@ function resetFilters() {
 });
 
 // ─── Table render ─────────────────────────────────────────
+const DEFAULT_VISIBLE = new Set(['manager','site','status','installDate']);
+
 function getVisibleCols() {
   const adminCols = state.isAdmin ? TABLE_COLS : TABLE_COLS.filter(c=>!c.adminOnly);
-  if (!state.visibleCols) return adminCols;
+  if (!state.visibleCols) return adminCols.filter(c => DEFAULT_VISIBLE.has(c.key));
   return adminCols.filter(c => state.visibleCols[c.key] !== false);
 }
 
