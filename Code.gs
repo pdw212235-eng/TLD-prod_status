@@ -52,7 +52,7 @@ function doPost(e) {
 
   try {
     switch (action) {
-      case 'auth':    return jsonResponse(handleAuth(body));
+      case 'google-auth': return jsonResponse(handleGoogleAuth(body));
       case 'logout':  return jsonResponse(handleLogout(body));
       case 'create':  requireAdmin(token); return jsonResponse(handleCreate(body));
       case 'update':  requireAdmin(token); return jsonResponse(handleUpdate(body));
@@ -70,19 +70,44 @@ function doPost(e) {
 // 인증
 // ============================================================
 
-function handleAuth(body) {
-  const pw = body.password || '';
-  const stored = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD');
-  if (!stored) throw { message: '관리자 비밀번호가 설정되지 않았습니다. 스크립트 속성에서 ADMIN_PASSWORD를 설정하세요.', code: 500 };
-  if (pw !== stored) throw { message: '비밀번호가 맞지 않습니다.', code: 401 };
+const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
+
+function handleGoogleAuth(body) {
+  const idToken = body.idToken || '';
+  if (!idToken) throw { message: 'idToken이 필요합니다.', code: 400 };
+
+  // 구글 토큰 검증
+  const res = UrlFetchApp.fetch(
+    'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken),
+    { muteHttpExceptions: true }
+  );
+  if (res.getResponseCode() !== 200) throw { message: '구글 토큰 검증 실패', code: 401 };
+
+  const payload = JSON.parse(res.getContentText());
+  if (payload.aud !== GOOGLE_CLIENT_ID) throw { message: '잘못된 클라이언트 ID', code: 401 };
+
+  const email = (payload.email || '').toLowerCase();
+  if (!email) throw { message: '이메일을 가져올 수 없습니다.', code: 401 };
+  if (!isAdminEmail(email)) throw { message: '접근 권한이 없습니다: ' + email, code: 403 };
 
   const token = Utilities.getUuid();
   const expiry = new Date(Date.now() + CONFIG.TOKEN_EXPIRY_HOURS * 3600 * 1000).toISOString();
   const tokens = getTokenStore();
-  tokens[token] = { expiry };
+  tokens[token] = { expiry, email };
   saveTokenStore(tokens);
-  writeAuditLog('LOGIN', '', body.updatedBy || 'admin', '관리자 로그인');
-  return { token, expiry };
+  writeAuditLog('LOGIN', '', email, '구글 로그인');
+  return { token, expiry, email };
+}
+
+function isAdminEmail(email) {
+  const sh = getListsSheet();
+  if (!sh) return false;
+  const data = sh.getDataRange().getValues();
+  const headers = data[0].map(h => h.toString().trim());
+  const aIdx = headers.indexOf('Admins');
+  if (aIdx < 0) return false;
+  const admins = data.slice(1).map(r => String(r[aIdx]).trim().toLowerCase()).filter(Boolean);
+  return admins.includes(email);
 }
 
 function handleLogout(body) {

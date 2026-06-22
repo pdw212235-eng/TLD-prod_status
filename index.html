@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TLD Product Status</title>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 /* =========================================================
    Reset & Variables
@@ -226,16 +227,8 @@ footer{text-align:right;padding:12px 16px;font-size:11px;color:var(--muted)}
   <div class="modal" style="max-width:340px">
     <button class="modal-close" onclick="closeModal('modal-login')">×</button>
     <h2>관리자 로그인</h2>
-    <div class="form-row">
-      <label>비밀번호</label>
-      <div class="pw-wrap">
-        <input type="password" id="login-pw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')doLogin()">
-        <button class="pw-toggle" onclick="togglePw('login-pw',this)">보기</button>
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn-primary" onclick="doLogin()" style="width:100%">로그인</button>
-    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px">사전 등록된 구글 계정으로 로그인하세요.</p>
+    <div id="google-signin-btn" style="display:flex;justify-content:center"></div>
   </div>
 </div>
 
@@ -368,11 +361,12 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI
 let state = {
   token: '',
   isAdmin: false,
+  adminEmail: '',
   allItems: [],
   lists: { managers: [], statuses: [], panelModels: [] },
   sortCol: 'installDate',
   sortDir: -1,
-  visibleCols: null, // null = default
+  visibleCols: null,
 };
 
 // ─── Column definitions (for table display) ─────────────
@@ -425,26 +419,42 @@ async function apiPost(body) {
 }
 
 // ─── Auth ─────────────────────────────────────────────────
-function openLoginModal(){ openModal('modal-login'); document.getElementById('login-pw').focus(); }
+const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
 
-async function doLogin() {
-  const pw = document.getElementById('login-pw').value;
-  if (!pw) return;
+function openLoginModal() {
+  openModal('modal-login');
+  // GSI 버튼 렌더링 (로드 완료 후)
+  if (window.google?.accounts?.id) renderGoogleBtn();
+  else window.addEventListener('load', renderGoogleBtn, { once: true });
+}
+
+function renderGoogleBtn() {
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredential,
+  });
+  google.accounts.id.renderButton(
+    document.getElementById('google-signin-btn'),
+    { theme: 'outline', size: 'large', width: 280, text: 'signin_with' }
+  );
+}
+
+async function handleGoogleCredential(response) {
   showLoading(true);
   try {
-    const { token } = await apiPost({ action:'auth', password:pw, updatedBy:'admin' });
+    const { token, email } = await apiPost({ action: 'google-auth', idToken: response.credential });
     state.token = token;
     state.isAdmin = true;
+    state.adminEmail = email;
     saveSession();
     closeModal('modal-login');
-    document.getElementById('login-pw').value = '';
     document.getElementById('btn-login').textContent = '로그아웃';
     document.getElementById('admin-tools').style.display = 'flex';
     await loadItems(true);
     renderTable();
     await loadSummary();
-    toast('관리자 모드로 로그인했습니다.');
-  } catch(e){ toast(e.message,'error'); }
+    toast(email + ' 으로 로그인했습니다.');
+  } catch(e) { toast(e.message, 'error'); }
   showLoading(false);
 }
 
@@ -467,23 +477,33 @@ document.getElementById('btn-login').addEventListener('click', () => {
 
 // ─── Session persistence (sessionStorage) ────────────────
 function saveSession() {
-  try { sessionStorage.setItem('tld_token', state.token); } catch(_){}
+  try {
+    sessionStorage.setItem('tld_token', state.token);
+    sessionStorage.setItem('tld_email', state.adminEmail);
+  } catch(_){}
 }
 function loadSession() {
   try {
     const t = sessionStorage.getItem('tld_token');
-    if (t) { state.token = t; state.isAdmin = true;
+    if (t) {
+      state.token = t;
+      state.isAdmin = true;
+      state.adminEmail = sessionStorage.getItem('tld_email') || '';
       document.getElementById('btn-login').textContent = '로그아웃';
       document.getElementById('admin-tools').style.display = 'flex';
     }
   } catch(_){}
-  // col visibility
   try {
     const cv = sessionStorage.getItem('tld_cols');
     if (cv) state.visibleCols = JSON.parse(cv);
   } catch(_){}
 }
-function clearSession() { try{ sessionStorage.removeItem('tld_token'); }catch(_){} }
+function clearSession() {
+  try {
+    sessionStorage.removeItem('tld_token');
+    sessionStorage.removeItem('tld_email');
+  } catch(_){}
+}
 
 // ─── Load data ────────────────────────────────────────────
 async function loadLists() {
@@ -799,7 +819,7 @@ async function submitForm() {
     if (isEdit) {
       await apiPost({ action:'update', token:state.token, id, data,
                       updatedAt: document.getElementById('f-updatedAt').value,
-                      updatedBy:'admin' });
+                      updatedBy: state.adminEmail || 'admin' });
       // Upload photos
       for (let n=1; n<=3; n++) {
         const fileEl = document.getElementById(`photo-file-${n}`);
@@ -808,7 +828,7 @@ async function submitForm() {
         }
       }
     } else {
-      const { id: newId } = await apiPost({ action:'create', token:state.token, data, updatedBy:'admin' });
+      const { id: newId } = await apiPost({ action:'create', token:state.token, data, updatedBy: state.adminEmail || 'admin' });
       // photos after create
       for (let n=1; n<=3; n++) {
         const fileEl = document.getElementById(`photo-file-${n}`);
@@ -826,7 +846,7 @@ async function submitForm() {
 
 async function uploadPhoto(id, slot, file) {
   const b64 = await fileToBase64(file);
-  await apiPost({ action:'upload', token:state.token, id, slot, fileBase64:b64, mime:file.type, updatedBy:'admin' });
+  await apiPost({ action:'upload', token:state.token, id, slot, fileBase64:b64, mime:file.type, updatedBy: state.adminEmail || 'admin' });
 }
 
 function fileToBase64(file) {
@@ -854,7 +874,7 @@ async function confirmRetire(id) {
   showLoading(true);
   try {
     const today = new Date().toISOString().slice(0,10);
-    await apiPost({ action:'retire', token:state.token, id, outboundDate:today, updatedBy:'admin' });
+    await apiPost({ action:'retire', token:state.token, id, outboundDate:today, updatedBy: state.adminEmail || 'admin' });
     closeModal('modal-detail');
     await loadItems(true);
     await loadSummary();
