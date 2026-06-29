@@ -10,7 +10,8 @@ const CONFIG = {
   SHEET_NAME: 'Installations',
   LISTS_SHEET: 'Lists',
   AUDIT_SHEET: 'AuditLog',
-  DRIVE_FOLDER_NAME: 'TLD_Product_Photos', // Drive 폴더명 (없으면 자동 생성)
+  AS_SHEET: 'AS_History',
+  DRIVE_FOLDER_NAME: 'TLD_Product_Photos',
   TOKEN_EXPIRY_HOURS: 8,
 };
 
@@ -31,6 +32,7 @@ function doGet(e) {
       case 'lists':   return jsonResponse(handleLists());
       case 'summary': return jsonResponse(handleSummary(isAdmin));
       case 'export':  return handleExport(params, isAdmin);
+      case 'as-list': return jsonResponse(handleASList(params));
       default:        return jsonResponse({ error: '알 수 없는 action' }, 400);
     }
   } catch (err) {
@@ -58,6 +60,8 @@ function doPost(e) {
       case 'update':  requireAdmin(token); return jsonResponse(handleUpdate(body));
       case 'retire':  requireAdmin(token); return jsonResponse(handleRetire(body));
       case 'upload':  requireAdmin(token); return jsonResponse(handleUpload(body));
+      case 'as-add':  requireAdmin(token); return jsonResponse(handleASAdd(body));
+      case 'as-delete': requireAdmin(token); return jsonResponse(handleASDelete(body));
       default:        return jsonResponse({ error: '알 수 없는 action' }, 400);
     }
   } catch (err) {
@@ -522,6 +526,69 @@ function ensureHeaders(sheet) {
   if (sheet.getLastRow() === 0 || sheet.getLastColumn() === 0) {
     sheet.appendRow(COLUMNS.map(c => c.header));
   }
+}
+
+// ============================================================
+// A/S 이력
+// ============================================================
+
+function getASSheet() {
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  let sh = ss.getSheetByName(CONFIG.AS_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(CONFIG.AS_SHEET);
+    sh.appendRow(['rowId', 'ID', '날짜', '내용', '등록일시', '등록자']);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function handleASList(params) {
+  const id = params.id || '';
+  if (!id) throw { message: 'id가 필요합니다.', code: 400 };
+  const sh = getASSheet();
+  if (sh.getLastRow() < 2) return { items: [] };
+  const data = sh.getRange(2, 1, sh.getLastRow() - 1, 6).getValues();
+  const items = data
+    .filter(r => String(r[1]).trim() === id)
+    .map(r => ({
+      rowId: String(r[0]),
+      id: String(r[1]),
+      date: r[2] instanceof Date ? Utilities.formatDate(r[2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[2]),
+      text: String(r[3]),
+      createdAt: String(r[4]),
+      createdBy: String(r[5]),
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date));
+  return { items };
+}
+
+function handleASAdd(body) {
+  const id   = body.id   || '';
+  const date = body.date || '';
+  const text = body.text || '';
+  if (!id || !date || !text) throw { message: 'id, date, text 필수', code: 400 };
+  if (text.length > 200) throw { message: '내용은 200자 이내', code: 400 };
+
+  const sh = getASSheet();
+  const rowId = Utilities.getUuid();
+  sh.appendRow([rowId, id, date, text, new Date().toISOString(), body.updatedBy || 'admin']);
+  writeAuditLog('AS_ADD', id, body.updatedBy || 'admin', date + ': ' + text.slice(0, 30));
+  return { rowId };
+}
+
+function handleASDelete(body) {
+  const rowId = body.rowId || '';
+  if (!rowId) throw { message: 'rowId가 필요합니다.', code: 400 };
+
+  const sh = getASSheet();
+  if (sh.getLastRow() < 2) throw { message: '데이터 없음', code: 404 };
+  const data = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+  const idx = data.findIndex(r => String(r[0]) === rowId);
+  if (idx < 0) throw { message: '이력을 찾을 수 없습니다.', code: 404 };
+  sh.deleteRow(idx + 2);
+  writeAuditLog('AS_DELETE', '', body.updatedBy || 'admin', 'rowId: ' + rowId);
+  return { ok: true };
 }
 
 function writeAuditLog(action, id, user, memo) {

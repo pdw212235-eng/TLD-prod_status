@@ -672,14 +672,17 @@ async function openDetail(id) {
   try {
     const params = { action:'get', id };
     if (state.isAdmin && state.token) params.token = state.token;
-    const { item } = await api(params);
-    renderDetail(item);
+    const [{ item }, { items: asItems }] = await Promise.all([
+      api(params),
+      api({ action:'as-list', id }),
+    ]);
+    renderDetail(item, asItems);
     openModal('modal-detail');
   } catch(e) { toast(e.message,'error'); }
   showLoading(false);
 }
 
-function renderDetail(item) {
+function renderDetail(item, asItems) {
   document.getElementById('detail-title').textContent = item.site || '상세 정보';
 
   const LABELS = {
@@ -708,6 +711,41 @@ function renderDetail(item) {
     html += `<div class="detail-item"><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`;
   });
   html += '</div>';
+
+  // A/S 이력
+  html += `<div style="margin-top:20px;border-top:2px solid var(--border);padding-top:14px">
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">A/S 이력</div>
+    <div id="as-list-wrap">`;
+  if (!asItems || asItems.length === 0) {
+    html += `<div style="font-size:12px;color:var(--muted);padding:8px 0">등록된 A/S 이력이 없습니다.</div>`;
+  } else {
+    asItems.forEach(a => {
+      html += `<div class="as-item" data-rowid="${esc(a.rowId)}">
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9">
+          <span style="font-size:12px;color:var(--muted);white-space:nowrap;min-width:80px">${esc(a.date)}</span>
+          <span style="font-size:13px;flex:1;word-break:break-all">${esc(a.text)}</span>
+          ${state.isAdmin ? `<button class="btn-danger btn-sm" onclick="deleteAS('${esc(a.rowId)}','${esc(item.id)}')">삭제</button>` : ''}
+        </div>
+      </div>`;
+    });
+  }
+  html += `</div>`;
+
+  if (state.isAdmin) {
+    html += `<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="date" id="as-new-date" style="width:140px" value="${new Date().toISOString().slice(0,10)}">
+        <span style="font-size:11px;color:var(--muted)" id="as-char-count">0 / 200</span>
+      </div>
+      <textarea id="as-new-text" rows="2" maxlength="200" placeholder="A/S 내용 입력 (최대 200자)"
+        oninput="document.getElementById('as-char-count').textContent=this.value.length+' / 200'"
+        style="resize:vertical"></textarea>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn-primary btn-sm" onclick="addAS('${esc(item.id)}')">추가</button>
+      </div>
+    </div>`;
+  }
+  html += `</div>`;
 
   // Photos
   const photos = [item.photo1, item.photo2, item.photo3].filter(Boolean);
@@ -866,6 +904,33 @@ function clearForm() {
     if (el) el.value = '';
   });
   document.getElementById('f-status').value = '현장설치';
+}
+
+// ─── A/S 이력 ────────────────────────────────────────────
+async function addAS(id) {
+  const date = document.getElementById('as-new-date').value;
+  const text = document.getElementById('as-new-text').value.trim();
+  if (!date || !text) { toast('날짜와 내용을 입력하세요.', 'error'); return; }
+  showLoading(true);
+  try {
+    await apiPost({ action:'as-add', token:state.token, id, date, text, updatedBy: state.adminEmail||'admin' });
+    toast('A/S 이력이 추가됐습니다.');
+    closeModal('modal-detail');
+    await openDetail(id);
+  } catch(e) { toast(e.message,'error'); }
+  showLoading(false);
+}
+
+async function deleteAS(rowId, id) {
+  if (!confirm('이 A/S 이력을 삭제할까요?')) return;
+  showLoading(true);
+  try {
+    await apiPost({ action:'as-delete', token:state.token, rowId, updatedBy: state.adminEmail||'admin' });
+    toast('삭제됐습니다.');
+    closeModal('modal-detail');
+    await openDetail(id);
+  } catch(e) { toast(e.message,'error'); }
+  showLoading(false);
 }
 
 // ─── Retire ───────────────────────────────────────────────
