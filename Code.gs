@@ -481,15 +481,29 @@ function handleExport(params, isAdmin) {
 // 유틸리티
 // ============================================================
 
+// 관리번호 채번 규칙: Prod + 3자리 (Prod001, Prod002, …)
+// 시트에 있는 가장 큰 번호 + 1. 반출 건도 행이 남으므로 번호는 재사용되지 않습니다.
+const ID_PREFIX = 'Prod';
+const ID_PAD    = 3;
+const ID_RE     = /^Prod(\d+)$/i;
+
 function generateId(sheet, colIndex) {
-  if (sheet.getLastRow() < 2) return 'INST-0001';
+  const first = ID_PREFIX + '1'.padStart(ID_PAD, '0');
+  if (sheet.getLastRow() < 2) return first;
+
   const idColIdx = colIndex['ID'];
-  if (idColIdx === undefined) return 'INST-0001';
-  const ids = sheet.getRange(2, idColIdx + 1, sheet.getLastRow() - 1, 1).getValues()
-    .flat().map(String).filter(v => /^INST-\d+$/.test(v));
-  if (ids.length === 0) return 'INST-0001';
-  const maxNum = Math.max(...ids.map(v => parseInt(v.split('-')[1])));
-  return `INST-${String(maxNum + 1).padStart(4, '0')}`;
+  if (idColIdx === undefined) return first;
+
+  const nums = sheet.getRange(2, idColIdx + 1, sheet.getLastRow() - 1, 1).getValues()
+    .flat()
+    .map(v => {
+      const m = String(v).trim().match(ID_RE);
+      return m ? parseInt(m[1], 10) : NaN;
+    })
+    .filter(n => !isNaN(n));
+
+  if (nums.length === 0) return first;
+  return ID_PREFIX + String(Math.max(...nums) + 1).padStart(ID_PAD, '0');
 }
 
 function calcPanelTotal(panelArray) {
