@@ -701,7 +701,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v2.3 · 2026-08-18';
+const REV = 'v2.4 · 2026-08-21';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -839,8 +839,33 @@ async function apiPost(body){
     body: JSON.stringify(body),
   });
   const json = await res.json();
-  if (json.error) throw new Error(json.error);
+  if (json.error) {
+    const err = new Error(json.error);
+    // 로그인 시도 자체의 실패(미등록 계정 등)는 만료가 아니다.
+    if (body.action !== 'google-auth' && /관리자 권한이 필요합니다/.test(json.error)) {
+      err.authExpired = true;
+      onAuthExpired();
+    }
+    throw err;
+  }
   return json;
+}
+
+/* 토큰이 만료되면 백엔드는 '관리자 권한이 필요합니다.' 를 돌려준다.
+   그대로 두면 화면은 로그인된 것처럼 보이는데 저장만 계속 실패하므로,
+   세션을 정리하고 곧바로 다시 로그인하도록 안내한다. */
+function onAuthExpired(){
+  state.token = ''; state.isAdmin = false; state.email = '';
+  clearSession();
+  paintAuth();
+  refresh();
+  toast('로그인이 만료됐습니다. 다시 로그인한 뒤 저장해 주세요.', 'error');
+  openLogin();
+}
+
+// 만료 안내를 이미 띄운 오류는 토스트를 두 번 내지 않는다.
+function fail(e){
+  if (!e.authExpired) toast(e.message, 'error');
 }
 
 const authed = extra => Object.assign(
@@ -919,7 +944,7 @@ async function onCredential(resp){
     saveSession(); paintAuth(); closeOverlay('login');
     await refresh();
     toast(email + ' 으로 로그인했습니다');
-  } catch (e) { toast(e.message, 'error'); }
+  } catch (e) { fail(e); }
   busy(false);
 }
 
@@ -960,6 +985,15 @@ async function loadItems(){
   try {
     const d = await api(authed({ action: 'list' }));
     state.items = d.items || [];
+
+    // 관리자로 요청했는데 관리자 전용 필드가 안 왔다면 토큰이 이미 죽은 것이다.
+    // (백엔드는 목록 조회를 막지 않고 조용히 비관리자 응답을 준다)
+    if (state.isAdmin && state.items.length && !('cmsPw' in state.items[0])) {
+      state.token = ''; state.isAdmin = false; state.email = '';
+      clearSession();
+      paintAuth();
+      toast('이전 로그인이 만료되어 로그아웃했습니다', 'error');
+    }
   } catch (e) {
     if (/관리자|권한/.test(e.message)) {
       state.token = ''; state.isAdmin = false; clearSession(); paintAuth();
@@ -1141,7 +1175,7 @@ async function openDetail(id){
     state.current = item;
     renderDetail(item, as.items || []);
     openOverlay('detail');
-  } catch (e) { toast(e.message, 'error'); }
+  } catch (e) { fail(e); }
   busy(false);
 }
 
@@ -1272,7 +1306,7 @@ async function addAS(id){
     await apiPost({ action: 'as-add', token: state.token, id, date, text, updatedBy: state.email || 'admin' });
     toast('A/S 이력을 추가했습니다');
     await openDetail(id);
-  } catch (e) { toast(e.message, 'error'); }
+  } catch (e) { fail(e); }
   busy(false);
 }
 
@@ -1283,7 +1317,7 @@ async function deleteAS(rowId, id){
     await apiPost({ action: 'as-delete', token: state.token, rowId, updatedBy: state.email || 'admin' });
     toast('이력을 삭제했습니다');
     await openDetail(id);
-  } catch (e) { toast(e.message, 'error'); }
+  } catch (e) { fail(e); }
   busy(false);
 }
 
@@ -1302,7 +1336,7 @@ async function retire(id){
     closeOverlay('detail');
     await refresh();
     toast('반출 처리했습니다');
-  } catch (e) { toast(e.message, 'error'); }
+  } catch (e) { fail(e); }
   busy(false);
 }
 
@@ -1409,7 +1443,7 @@ async function save(){
     closeOverlay('form');
     await refresh();
     toast(id ? '수정했습니다' : `등록했습니다 — ${targetId}`);
-  } catch (e) { toast(e.message, 'error'); }
+  } catch (e) { fail(e); }
   busy(false);
 }
 
