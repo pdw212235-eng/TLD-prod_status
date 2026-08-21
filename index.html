@@ -594,6 +594,16 @@ tbody tr.is-out .mgr{opacity:.5}
             <label for="f-player">MCU / Player</label>
             <input id="f-player" type="text" placeholder="예: C3Pro, A40+NUC14">
           </div>
+          <div class="field">
+            <label for="f-hubBoard">Hub Board</label>
+            <input id="f-hubBoard" type="text" maxlength="40" placeholder="부품명 / 모델">
+            <span class="hint" id="hint-hubBoard">40자 이내</span>
+          </div>
+          <div class="field">
+            <label for="f-smpsVoltage">SMPS Output Voltage</label>
+            <input id="f-smpsVoltage" type="text" maxlength="10" placeholder="예: 5V">
+            <span class="hint" id="hint-smpsVoltage">10자 이내</span>
+          </div>
         </div>
       </div>
 
@@ -691,7 +701,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v2.1 · 2026-08-18';
+const REV = 'v2.2 · 2026-08-18';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -739,14 +749,19 @@ const LABELS = {
   panelModel:'Panel Model', panelArray:'Panel 배열', panelTotal:'총 모듈수',
   resX:'해상도 X', resY:'해상도 Y', brightness:'휘도(nit)',
   installDate:'설치일', inboundDate:'입고일', outboundDate:'반출일',
-  player:'MCU / Player', cmsId:'CMS ID', cmsPw:'CMS PW',
+  player:'MCU / Player', hubBoard:'Hub Board', smpsVoltage:'SMPS Output Voltage',
+  cmsId:'CMS ID', cmsPw:'CMS PW',
   tvId:'Teamviewer ID', tvPw:'Teamviewer PW',
   updatedAt:'최종수정', updatedBy:'수정자',
 };
 const SECRETS = ['cmsPw','tvId','tvPw'];
 const FORM_KEYS = ['site','manager','status','panelModel','panelArray','resX','resY','brightness',
-                   'installDate','inboundDate','player','cmsId','cmsPw','tvId','tvPw',
+                   'installDate','inboundDate','player','hubBoard','smpsVoltage',
+                   'cmsId','cmsPw','tvId','tvPw',
                    'note1','note2','note3','note4'];
+
+// 백엔드 FIELD_MAX 와 같은 값을 유지할 것
+const FIELD_MAX = { hubBoard: 40, smpsVoltage: 10 };
 
 /* ============================================================
    Tiny helpers
@@ -1135,7 +1150,7 @@ function renderDetail(item, asItems){
   $('#d-id').textContent = item.id || '';
   $('#d-title').textContent = item.site || '상세';
 
-  const monoKeys = new Set(['id','panelTotal','resX','resY','brightness','installDate','inboundDate','outboundDate','updatedAt','cmsId']);
+  const monoKeys = new Set(['id','panelTotal','resX','resY','brightness','installDate','inboundDate','outboundDate','updatedAt','cmsId','smpsVoltage']);
   const g = keys => `<dl class="dl">` + keys.map(k => {
     let v = item[k];
     if (k.endsWith('Date') || k === 'updatedAt') v = fmtDate(v);
@@ -1151,7 +1166,7 @@ function renderDetail(item, asItems){
     ${g(['id','manager','status','installDate','inboundDate'].concat(item.outboundDate ? ['outboundDate'] : []))}
 
     <div class="fieldset"><div class="legend">패널 사양</div>
-      ${g(['panelModel','panelArray','panelTotal','resX','resY','brightness','player'])}
+      ${g(['panelModel','panelArray','panelTotal','resX','resY','brightness','player','hubBoard','smpsVoltage'])}
     </div>`;
 
   const hasSecret = SECRETS.some(k => item[k] !== undefined);
@@ -1349,6 +1364,14 @@ async function save(){
   if (!data.manager || !data.site || !data.status) {
     toast('관리주체, Site, 상태는 필수 항목입니다', 'error');
     return;
+  }
+
+  for (const k of Object.keys(FIELD_MAX)) {
+    if ((data[k] || '').length > FIELD_MAX[k]) {
+      toast(`${LABELS[k]} 는 ${FIELD_MAX[k]}자 이내로 입력하세요`, 'error');
+      $('#f-' + k).focus();
+      return;
+    }
   }
 
   const id = $('#f-id').value;

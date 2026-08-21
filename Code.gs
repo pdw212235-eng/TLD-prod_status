@@ -169,6 +169,8 @@ const COLUMNS = [
   { key: 'brightness',   header: '휘도',             adminOnly: false },
   { key: 'installDate',  header: '설치 날짜',        adminOnly: false },
   { key: 'player',       header: 'MCU/Player',       adminOnly: false },
+  { key: 'hubBoard',     header: 'Hub Board',        adminOnly: false },
+  { key: 'smpsVoltage',  header: 'SMPS Output Voltage', adminOnly: false },
   { key: 'cmsId',        header: 'CMS ID',           adminOnly: false },
   { key: 'cmsPw',        header: 'CMS PW',           adminOnly: true  },
   { key: 'tvId',         header: 'Teamviewer ID',    adminOnly: true  },
@@ -187,6 +189,19 @@ const COLUMNS = [
 ];
 
 const ADMIN_KEYS = new Set(COLUMNS.filter(c => c.adminOnly).map(c => c.key));
+
+// 글자수 제한이 있는 필드. 프론트의 maxlength 를 우회한 요청도 여기서 막는다.
+const FIELD_MAX = { hubBoard: 40, smpsVoltage: 10 };
+
+function validateFieldLengths(data) {
+  Object.keys(FIELD_MAX).forEach(k => {
+    const v = data[k];
+    if (v === undefined || v === null || v === '') return;
+    if (String(v).length > FIELD_MAX[k]) {
+      throw { message: k + ' 는 ' + FIELD_MAX[k] + '자 이내여야 합니다.', code: 400 };
+    }
+  });
+}
 
 function getSheet() {
   return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEET_NAME);
@@ -345,6 +360,8 @@ function handleCreate(body) {
   data.updatedAt = new Date().toISOString();
   data.updatedBy = body.updatedBy || 'admin';
 
+  validateFieldLengths(data);
+
   // panelTotal 자동계산
   if (data.panelArray) data.panelTotal = calcPanelTotal(data.panelArray);
 
@@ -371,6 +388,7 @@ function handleUpdate(body) {
   data.id = id;
   data.updatedAt = new Date().toISOString();
   data.updatedBy = body.updatedBy || 'admin';
+  validateFieldLengths(data);
   if (data.panelArray) data.panelTotal = calcPanelTotal(data.panelArray);
 
   const row = buildRow(data, colIndex, sheet.getLastColumn());
@@ -632,6 +650,26 @@ function logError(err) {
  *   ADMIN_PASSWORD = 원하는비밀번호
  * 를 추가하세요.
  */
+/**
+ * Hub Board / SMPS Output Voltage 열 추가. 편집기에서 한 번만 실행하세요.
+ * 이미 있으면 아무것도 하지 않으므로 여러 번 실행해도 안전합니다.
+ */
+function addComponentColumns() {
+  const sheet = getSheet();
+  const targets = ['Hub Board', 'SMPS Output Voltage'];
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
+  const missing = targets.filter(h => headers.indexOf(h) < 0);
+
+  if (missing.length === 0) {
+    Logger.log('이미 두 열이 모두 있습니다. 변경 없음.');
+    return;
+  }
+  sheet.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]);
+  SpreadsheetApp.flush();
+  Logger.log('추가된 열: ' + missing.join(', '));
+}
+
 function setupSheetHeaders() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
 
