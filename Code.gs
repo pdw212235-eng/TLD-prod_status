@@ -440,7 +440,9 @@ function handleUpload(body) {
   const blob = Utilities.newBlob(Utilities.base64Decode(b64), mime, filename);
   const file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  const url = `https://drive.google.com/uc?id=${file.getId()}`;
+  // drive.google.com/uc?id= 형식은 리다이렉트 때문에 브라우저 <img> 에서 로드에 실패한다.
+  // (curl -L 로는 image 가 반환되어 정상처럼 보이므로 curl 로 검증하지 말 것)
+  const url = `https://lh3.googleusercontent.com/d/${file.getId()}`;
 
   // 시트에 기록
   const sheet = getSheet();

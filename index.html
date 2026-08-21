@@ -701,7 +701,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v2.2 · 2026-08-18';
+const REV = 'v2.3 · 2026-08-18';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -802,6 +802,15 @@ function toast(msg, kind){
   el.className = 'show' + (kind === 'error' ? ' err' : '');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el.className = ''; }, 3400);
+}
+
+/* Drive 링크를 브라우저 <img> 가 실제로 불러올 수 있는 형식으로 바꾼다.
+   uc?id= 형식은 리다이렉트 탓에 img 로드가 실패한다(curl -L 로는 성공해 보이니 주의).
+   시트에 이미 쌓인 옛 URL 을 위해 남겨 두는 안전망이기도 하다. */
+function driveImg(url){
+  if (!url) return '';
+  const m = String(url).match(/drive\.google\.com\/(?:uc\?(?:[^#]*&)?id=|file\/d\/)([A-Za-z0-9_-]+)/);
+  return m ? 'https://lh3.googleusercontent.com/d/' + m[1] : String(url);
 }
 
 function fmtDate(v){
@@ -1196,7 +1205,10 @@ function renderDetail(item, asItems){
   const photos = ['photo1','photo2','photo3'].map(k => item[k]).filter(v => v);
   if (photos.length) {
     html += `<div class="fieldset"><div class="legend">사진</div><div class="photo-row">
-      ${photos.map(p => `<img src="${esc(p)}" alt="설치 사진" loading="lazy" data-full="${esc(p)}">`).join('')}
+      ${photos.map(p => {
+        const u = esc(driveImg(p));
+        return `<img src="${u}" alt="설치 사진" loading="lazy" data-full="${u}">`;
+      }).join('')}
     </div></div>`;
   }
 
@@ -1301,7 +1313,7 @@ function buildSlots(item){
   $('#slots').innerHTML = [1, 2, 3].map(n => {
     const url = item && item['photo' + n];
     return `<div class="slot">
-      <div class="thumb" id="thumb-${n}">${url ? `<img src="${esc(url)}" alt="사진 ${n}">` : `슬롯 ${n}`}</div>
+      <div class="thumb" id="thumb-${n}">${url ? `<img src="${esc(driveImg(url))}" alt="사진 ${n}">` : `슬롯 ${n}`}</div>
       <input type="file" id="file-${n}" accept="image/*" aria-label="사진 ${n}">
     </div>`;
   }).join('');
