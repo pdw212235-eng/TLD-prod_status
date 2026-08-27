@@ -171,6 +171,7 @@ const COLUMNS = [
   { key: 'player',       header: 'MCU/Player',       adminOnly: false },
   { key: 'hubBoard',     header: 'Hub Board',        adminOnly: false },
   { key: 'smpsVoltage',  header: 'SMPS Output Voltage', adminOnly: false },
+  { key: 'smpsQty',      header: 'SMPS Quantity',     adminOnly: false },
   { key: 'cmsId',        header: 'CMS ID',           adminOnly: false },
   { key: 'cmsPw',        header: 'CMS PW',           adminOnly: true  },
   { key: 'tvId',         header: 'Teamviewer ID',    adminOnly: true  },
@@ -243,7 +244,7 @@ function rowToObj(row, colIndex, isAdmin) {
     }
   });
   // 숫자
-  ['resX','resY','brightness','panelTotal'].forEach(k => {
+  ['resX','resY','brightness','panelTotal','smpsQty'].forEach(k => {
     if (obj[k] !== undefined && obj[k] !== '') obj[k] = Number(obj[k]) || obj[k];
   });
   return obj;
@@ -653,18 +654,18 @@ function logError(err) {
  * 를 추가하세요.
  */
 /**
- * Hub Board / SMPS Output Voltage 열 추가. 편집기에서 한 번만 실행하세요.
- * 이미 있으면 아무것도 하지 않으므로 여러 번 실행해도 안전합니다.
+ * COLUMNS 에는 있는데 시트에 없는 헤더를 찾아 맨 뒤에 추가합니다.
+ * 편집기에서 실행하세요. 빠진 열이 없으면 아무것도 하지 않으므로 여러 번 실행해도 안전합니다.
+ * 앞으로 항목을 추가할 때도 COLUMNS 에만 넣고 이 함수를 실행하면 됩니다.
  */
-function addComponentColumns() {
+function addMissingColumns() {
   const sheet = getSheet();
-  const targets = ['Hub Board', 'SMPS Output Voltage'];
   const lastCol = sheet.getLastColumn();
   const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
-  const missing = targets.filter(h => headers.indexOf(h) < 0);
+  const missing = COLUMNS.map(c => c.header).filter(h => headers.indexOf(h) < 0);
 
   if (missing.length === 0) {
-    Logger.log('이미 두 열이 모두 있습니다. 변경 없음.');
+    Logger.log('빠진 열이 없습니다. 변경 없음.');
     return;
   }
   sheet.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]);

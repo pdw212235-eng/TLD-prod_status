@@ -604,6 +604,10 @@ tbody tr.is-out .mgr{opacity:.5}
             <input id="f-smpsVoltage" type="text" maxlength="10" placeholder="예: 5V">
             <span class="hint" id="hint-smpsVoltage">10자 이내</span>
           </div>
+          <div class="field">
+            <label for="f-smpsQty">SMPS 수량</label>
+            <input id="f-smpsQty" type="number" min="0" step="1" placeholder="예: 4">
+          </div>
         </div>
       </div>
 
@@ -701,7 +705,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v2.4 · 2026-08-21';
+const REV = 'v2.5 · 2026-08-21';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -749,14 +753,15 @@ const LABELS = {
   panelModel:'Panel Model', panelArray:'Panel 배열', panelTotal:'총 모듈수',
   resX:'해상도 X', resY:'해상도 Y', brightness:'휘도(nit)',
   installDate:'설치일', inboundDate:'입고일', outboundDate:'반출일',
-  player:'MCU / Player', hubBoard:'Hub Board', smpsVoltage:'SMPS Output Voltage',
+  player:'MCU / Player', hubBoard:'Hub Board',
+  smpsVoltage:'SMPS Output Voltage', smpsQty:'SMPS 수량',
   cmsId:'CMS ID', cmsPw:'CMS PW',
   tvId:'Teamviewer ID', tvPw:'Teamviewer PW',
   updatedAt:'최종수정', updatedBy:'수정자',
 };
 const SECRETS = ['cmsPw','tvId','tvPw'];
 const FORM_KEYS = ['site','manager','status','panelModel','panelArray','resX','resY','brightness',
-                   'installDate','inboundDate','player','hubBoard','smpsVoltage',
+                   'installDate','inboundDate','player','hubBoard','smpsVoltage','smpsQty',
                    'cmsId','cmsPw','tvId','tvPw',
                    'note1','note2','note3','note4'];
 
@@ -1193,7 +1198,7 @@ function renderDetail(item, asItems){
   $('#d-id').textContent = item.id || '';
   $('#d-title').textContent = item.site || '상세';
 
-  const monoKeys = new Set(['id','panelTotal','resX','resY','brightness','installDate','inboundDate','outboundDate','updatedAt','cmsId','smpsVoltage']);
+  const monoKeys = new Set(['id','panelTotal','resX','resY','brightness','installDate','inboundDate','outboundDate','updatedAt','cmsId','smpsVoltage','smpsQty']);
   const g = keys => `<dl class="dl">` + keys.map(k => {
     let v = item[k];
     if (k.endsWith('Date') || k === 'updatedAt') v = fmtDate(v);
@@ -1209,7 +1214,7 @@ function renderDetail(item, asItems){
     ${g(['id','manager','status','installDate','inboundDate'].concat(item.outboundDate ? ['outboundDate'] : []))}
 
     <div class="fieldset"><div class="legend">패널 사양</div>
-      ${g(['panelModel','panelArray','panelTotal','resX','resY','brightness','player','hubBoard','smpsVoltage'])}
+      ${g(['panelModel','panelArray','panelTotal','resX','resY','brightness','player','hubBoard','smpsVoltage','smpsQty'])}
     </div>`;
 
   const hasSecret = SECRETS.some(k => item[k] !== undefined);
