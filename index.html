@@ -600,6 +600,11 @@ tbody tr.is-out .mgr{opacity:.5}
             <span class="hint" id="hint-hubBoard">40자 이내</span>
           </div>
           <div class="field">
+            <label for="f-smpsModel">SMPS Model</label>
+            <input id="f-smpsModel" type="text" maxlength="40" placeholder="모델명">
+            <span class="hint" id="hint-smpsModel">40자 이내</span>
+          </div>
+          <div class="field">
             <label for="f-smpsVoltage">SMPS Output Voltage</label>
             <input id="f-smpsVoltage" type="text" maxlength="10" placeholder="예: 5V">
             <span class="hint" id="hint-smpsVoltage">10자 이내</span>
@@ -705,7 +710,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v2.5 · 2026-08-21';
+const REV = 'v2.6 · 2026-08-21';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -754,19 +759,19 @@ const LABELS = {
   resX:'해상도 X', resY:'해상도 Y', brightness:'휘도(nit)',
   installDate:'설치일', inboundDate:'입고일', outboundDate:'반출일',
   player:'MCU / Player', hubBoard:'Hub Board',
-  smpsVoltage:'SMPS Output Voltage', smpsQty:'SMPS 수량',
+  smpsModel:'SMPS Model', smpsVoltage:'SMPS Output Voltage', smpsQty:'SMPS 수량',
   cmsId:'CMS ID', cmsPw:'CMS PW',
   tvId:'Teamviewer ID', tvPw:'Teamviewer PW',
   updatedAt:'최종수정', updatedBy:'수정자',
 };
 const SECRETS = ['cmsPw','tvId','tvPw'];
 const FORM_KEYS = ['site','manager','status','panelModel','panelArray','resX','resY','brightness',
-                   'installDate','inboundDate','player','hubBoard','smpsVoltage','smpsQty',
+                   'installDate','inboundDate','player','hubBoard','smpsModel','smpsVoltage','smpsQty',
                    'cmsId','cmsPw','tvId','tvPw',
                    'note1','note2','note3','note4'];
 
 // 백엔드 FIELD_MAX 와 같은 값을 유지할 것
-const FIELD_MAX = { hubBoard: 40, smpsVoltage: 10 };
+const FIELD_MAX = { hubBoard: 40, smpsModel: 40, smpsVoltage: 10 };
 
 /* ============================================================
    Tiny helpers
@@ -1214,7 +1219,7 @@ function renderDetail(item, asItems){
     ${g(['id','manager','status','installDate','inboundDate'].concat(item.outboundDate ? ['outboundDate'] : []))}
 
     <div class="fieldset"><div class="legend">패널 사양</div>
-      ${g(['panelModel','panelArray','panelTotal','resX','resY','brightness','player','hubBoard','smpsVoltage','smpsQty'])}
+      ${g(['panelModel','panelArray','panelTotal','resX','resY','brightness','player','hubBoard','smpsModel','smpsVoltage','smpsQty'])}
     </div>`;
 
   const hasSecret = SECRETS.some(k => item[k] !== undefined);

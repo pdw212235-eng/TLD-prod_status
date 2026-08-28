@@ -170,6 +170,7 @@ const COLUMNS = [
   { key: 'installDate',  header: '설치 날짜',        adminOnly: false },
   { key: 'player',       header: 'MCU/Player',       adminOnly: false },
   { key: 'hubBoard',     header: 'Hub Board',        adminOnly: false },
+  { key: 'smpsModel',    header: 'SMPS Model',       adminOnly: false },
   { key: 'smpsVoltage',  header: 'SMPS Output Voltage', adminOnly: false },
   { key: 'smpsQty',      header: 'SMPS Quantity',     adminOnly: false },
   { key: 'cmsId',        header: 'CMS ID',           adminOnly: false },
@@ -192,7 +193,7 @@ const COLUMNS = [
 const ADMIN_KEYS = new Set(COLUMNS.filter(c => c.adminOnly).map(c => c.key));
 
 // 글자수 제한이 있는 필드. 프론트의 maxlength 를 우회한 요청도 여기서 막는다.
-const FIELD_MAX = { hubBoard: 40, smpsVoltage: 10 };
+const FIELD_MAX = { hubBoard: 40, smpsModel: 40, smpsVoltage: 10 };
 
 function validateFieldLengths(data) {
   Object.keys(FIELD_MAX).forEach(k => {
