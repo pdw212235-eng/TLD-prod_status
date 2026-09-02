@@ -11,6 +11,7 @@ const CONFIG = {
   LISTS_SHEET: 'Lists',
   AUDIT_SHEET: 'AuditLog',
   AS_SHEET: 'AS_History',
+  REPORT_SHEET: 'Reports',
   DRIVE_FOLDER_NAME: 'TLD_Product_Photos',
   TOKEN_EXPIRY_HOURS: 8,
 };
@@ -33,6 +34,8 @@ function doGet(e) {
       case 'summary': return jsonResponse(handleSummary(isAdmin));
       case 'export':  return handleExport(params, isAdmin);
       case 'as-list': return jsonResponse(handleASList(params));
+      // 접수 내용 조회는 관리자만 (접수 자체는 로그인 없이 가능)
+      case 'report-list': requireAdmin(token); return jsonResponse(handleReportList());
       default:        return jsonResponse({ error: '알 수 없는 action' }, 400);
     }
   } catch (err) {
@@ -62,6 +65,8 @@ function doPost(e) {
       case 'upload':  requireAdmin(token); return jsonResponse(handleUpload(body));
       case 'as-add':  requireAdmin(token); return jsonResponse(handleASAdd(body));
       case 'as-delete': requireAdmin(token); return jsonResponse(handleASDelete(body));
+      // 수정 요청 접수는 누구나 가능 (로그인 불필요)
+      case 'report-add': return jsonResponse(handleReportAdd(body));
       default:        return jsonResponse({ error: '알 수 없는 action' }, 400);
     }
   } catch (err) {
@@ -625,6 +630,60 @@ function handleASDelete(body) {
   sh.deleteRow(idx + 2);
   writeAuditLog('AS_DELETE', '', body.updatedBy || 'admin', 'rowId: ' + rowId);
   return { ok: true };
+}
+
+// ============================================================
+// 수정 요청 / 버그 리포트
+// ============================================================
+
+function getReportSheet() {
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  let sh = ss.getSheetByName(CONFIG.REPORT_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(CONFIG.REPORT_SHEET);
+    sh.appendRow(['rowId', '접수일시', '작성자', '내용']);
+    sh.setFrozenRows(1);
+    sh.setColumnWidth(4, 520);
+  }
+  return sh;
+}
+
+const REPORT_MAX = { author: 40, text: 1000 };
+
+function handleReportAdd(body) {
+  const author = String(body.author || '').trim();
+  const text   = String(body.text   || '').trim();
+
+  if (!text) throw { message: '내용을 입력해 주세요.', code: 400 };
+  if (author.length > REPORT_MAX.author) {
+    throw { message: '작성자는 ' + REPORT_MAX.author + '자 이내여야 합니다.', code: 400 };
+  }
+  if (text.length > REPORT_MAX.text) {
+    throw { message: '내용은 ' + REPORT_MAX.text + '자 이내여야 합니다.', code: 400 };
+  }
+
+  const sh = getReportSheet();
+  const rowId = Utilities.getUuid();
+  sh.appendRow([rowId, new Date().toISOString(), author || '(익명)', text]);
+  writeAuditLog('REPORT', '', author || '(익명)', text.slice(0, 50));
+  return { ok: true, rowId };
+}
+
+// 최신순 100건. 접수는 누구나 가능하지만 조회는 관리자만.
+function handleReportList() {
+  const sh = getReportSheet();
+  if (sh.getLastRow() < 2) return { items: [] };
+
+  const data = sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues();
+  const items = data.map(r => ({
+    rowId: String(r[0]),
+    createdAt: r[1] instanceof Date ? r[1].toISOString() : String(r[1]),
+    author: String(r[2]),
+    text: String(r[3]),
+  }));
+
+  items.reverse();
+  return { items: items.slice(0, 100), total: data.length };
 }
 
 function writeAuditLog(action, id, user, memo) {

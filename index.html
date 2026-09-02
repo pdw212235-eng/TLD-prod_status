@@ -153,6 +153,9 @@ select{appearance:none;background-image:none;padding-right:26px;cursor:pointer}
 .btn-ghost{background:var(--surface);border-color:var(--line);color:var(--ink-2)}
 .btn-ghost:hover{background:var(--surface-2);border-color:var(--muted);color:var(--ink)}
 .btn-quiet{color:var(--muted);padding:7px 10px}
+.btn-icon{display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--muted);border-radius:var(--r-sm);line-height:0}
+.btn-icon:hover{color:var(--accent);background:var(--surface-2)}
+.btn-icon svg{width:18px;height:18px;display:block}
 .btn-quiet:hover{color:var(--ink);background:var(--surface-2)}
 .btn-danger{background:transparent;color:var(--danger);border-color:var(--danger)}
 .btn-danger:hover{background:var(--danger-soft)}
@@ -420,6 +423,15 @@ tbody tr.is-out .mgr{opacity:.5}
 .as-add input[type=date]{flex:0 0 140px}
 .as-add input[type=text]{flex:1}
 
+/* ---- 접수된 수정 요청 (관리자 전용) ---- */
+#report-log{max-height:280px;overflow-y:auto;margin-top:2px}
+.rep{padding:10px 0;border-bottom:1px solid var(--line-soft)}
+.rep:last-child{border-bottom:none}
+.rep .meta{display:flex;gap:8px;align-items:baseline;font-size:11.5px;color:var(--muted);margin-bottom:4px}
+.rep .who{font-weight:550;color:var(--ink-2)}
+.rep .when{font-family:var(--mono)}
+.rep .body{white-space:pre-wrap;line-height:1.55;word-break:break-word}
+
 /* ---- Lightbox ---- */
 #lightbox{
   position:fixed;inset:0;z-index:130;background:rgba(22,20,17,.9);
@@ -475,6 +487,15 @@ tbody tr.is-out .mgr{opacity:.5}
   <span class="rev" id="rev">v2.0</span>
   <span class="who" id="who"></span>
   <button class="btn btn-quiet" id="btn-theme" title="라이트 / 다크 전환" aria-label="테마 전환">◐</button>
+  <button class="btn-icon" id="btn-report" title="수정 요청 / 버그 신고" aria-label="수정 요청 보내기">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M8.5 7a3.5 3.5 0 0 1 7 0"/>
+      <rect x="7" y="7" width="10" height="13" rx="5"/>
+      <path d="M7 12H3.5M7 16.5H4.5M17 12h3.5M17 16.5h2.5M12 7v13"/>
+      <path d="M9.2 4.3 7.8 2.9M14.8 4.3l1.4-1.4"/>
+    </svg>
+  </button>
   <button class="btn btn-ghost" id="btn-auth">로그인</button>
 </header>
 
@@ -699,6 +720,43 @@ tbody tr.is-out .mgr{opacity:.5}
   </div>
 </div>
 
+<!-- ============================================================
+     수정 요청 / 버그 신고 — 로그인 없이 접수
+     ============================================================ -->
+<div class="dialog-wrap" id="dlg-report" role="dialog" aria-modal="true" aria-labelledby="report-title">
+  <div class="dialog" style="max-width:520px">
+    <div class="dialog-head">
+      <h2 id="report-title">수정 요청 보내기</h2>
+      <button class="x" data-close="report" aria-label="닫기">&times;</button>
+    </div>
+    <div class="dialog-body">
+      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px">
+        잘못된 정보나 고쳤으면 하는 점을 남겨 주세요. 로그인 없이 보낼 수 있습니다.
+      </p>
+      <div class="field" style="margin-bottom:14px">
+        <label for="r-author">작성자</label>
+        <input id="r-author" type="text" maxlength="40" placeholder="이름 또는 연락처 (선택)">
+        <span class="hint">비워 두면 익명으로 접수됩니다</span>
+      </div>
+      <div class="field">
+        <label for="r-text">내용<span class="req">*</span></label>
+        <textarea id="r-text" rows="6" maxlength="1000" placeholder="어떤 점을 고치면 좋을까요?"></textarea>
+        <span class="hint"><span id="r-count">0</span> / 1000자</span>
+      </div>
+
+      <!-- 접수 내역 : 로그인한 관리자에게만 보인다 -->
+      <div class="fieldset" id="report-log-wrap" hidden>
+        <div class="legend" id="report-log-title">접수된 요청</div>
+        <div id="report-log"></div>
+      </div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-ghost" data-close="report">취소</button>
+      <button class="btn btn-primary" id="btn-report-send">보내기</button>
+    </div>
+  </div>
+</div>
+
 <div id="lightbox"><img id="lightbox-img" alt=""></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -710,7 +768,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v2.6 · 2026-08-21';
+const REV = 'v2.8 · 2026-08-21';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -735,23 +793,24 @@ const state = {
 
 // 관리번호(id)는 표에서 제외합니다. 상세 패널과 검색에서는 계속 쓰입니다.
 const TABLE_COLS = [
+  // 앞의 7개가 기본 표시 항목이며, 표에 나오는 순서도 이 배열 순서를 따른다
   { key:'manager',     label:'관리주체' },
   { key:'site',        label:'Site / 제품명', strong:true, grow:true },
-  { key:'status',      label:'상태' },
   { key:'panelModel',  label:'Panel Model' },
-  { key:'panelArray',  label:'배열' },
-  { key:'panelTotal',  label:'총 모듈수', mono:true },
-  { key:'brightness',  label:'휘도', mono:true },
+  { key:'panelArray',  label:'Panel 배열' },
   { key:'resX',        label:'해상도 X', mono:true },
   { key:'resY',        label:'해상도 Y', mono:true },
   { key:'installDate', label:'설치일', mono:true },
+  { key:'status',      label:'상태' },
+  { key:'panelTotal',  label:'총 모듈수', mono:true },
+  { key:'brightness',  label:'휘도', mono:true },
   { key:'player',      label:'MCU / Player' },
   { key:'cmsId',       label:'CMS ID', mono:true },
   { key:'inboundDate', label:'입고일', mono:true },
   { key:'outboundDate',label:'반출일', mono:true },
   { key:'updatedAt',   label:'최종수정', mono:true },
 ];
-const DEFAULT_COLS = ['manager','site','status','panelModel','installDate'];
+const DEFAULT_COLS = ['manager','site','panelModel','panelArray','resX','resY','installDate'];
 
 const LABELS = {
   id:'관리번호', manager:'관리주체', site:'Site / 제품명', status:'상태',
@@ -838,7 +897,14 @@ async function api(params){
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const res = await fetch(url.toString());
   const json = await res.json();
-  if (json.error) throw new Error(json.error);
+  if (json.error) {
+    const err = new Error(json.error);
+    if (/관리자 권한이 필요합니다/.test(json.error)) {
+      err.authExpired = true;
+      onAuthExpired();
+    }
+    throw err;
+  }
   return json;
 }
 
@@ -911,7 +977,7 @@ function loadSession(){
   try {
     const t = sessionStorage.getItem('tld_token');
     if (t) { state.token = t; state.isAdmin = true; state.email = sessionStorage.getItem('tld_email') || ''; }
-    const c = sessionStorage.getItem('tld_cols');
+    const c = sessionStorage.getItem('tld_cols_v2');
     if (c) state.cols = JSON.parse(c);
   } catch (_) {}
 }
@@ -1005,9 +1071,7 @@ async function loadItems(){
       toast('이전 로그인이 만료되어 로그아웃했습니다', 'error');
     }
   } catch (e) {
-    if (/관리자|권한/.test(e.message)) {
-      state.token = ''; state.isAdmin = false; clearSession(); paintAuth();
-    }
+    if (e.authExpired) return;   // 만료 안내는 onAuthExpired 가 이미 처리했다
     toast('데이터를 불러오지 못했습니다 — ' + e.message, 'error');
   }
 }
@@ -1152,7 +1216,7 @@ function buildColMenu(){
       TABLE_COLS.forEach(c => { state.cols[c.key] = DEFAULT_COLS.includes(c.key); });
     }
     state.cols[cb.dataset.col] = cb.checked;
-    try { sessionStorage.setItem('tld_cols', JSON.stringify(state.cols)); } catch (_) {}
+    try { sessionStorage.setItem('tld_cols_v2', JSON.stringify(state.cols)); } catch (_) {}
     renderTable();
   }));
 }
@@ -1170,7 +1234,7 @@ function closeOverlay(name){
   else $('#dlg-' + name).classList.remove('open');
   if (!$('.dialog-wrap.open') && !$('.sheet.open')) document.body.style.overflow = '';
 }
-function closeAll(){ ['detail','form','login'].forEach(closeOverlay); }
+function closeAll(){ ['detail','form','login','report'].forEach(closeOverlay); }
 
 /* ============================================================
    Detail slide-over
@@ -1475,6 +1539,70 @@ async function uploadPhoto(id, slot, file){
 }
 
 /* ============================================================
+   수정 요청 — 로그인 없이 접수된다
+   ============================================================ */
+function openReport(){
+  // 로그인 상태면 작성자를 채워 준다
+  const a = $('#r-author');
+  if (!a.value && state.isAdmin && state.email) a.value = state.email;
+  $('#r-count').textContent = $('#r-text').value.length;
+  openOverlay('report');
+  setTimeout(() => $('#r-text').focus(), 180);
+  loadReports();
+}
+
+function fmtWhen(v){
+  if (!v) return '';
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return String(v).slice(0, 16).replace('T', ' ');
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+async function loadReports(){
+  const wrap = $('#report-log-wrap');
+  if (!state.isAdmin) { wrap.hidden = true; return; }
+
+  wrap.hidden = false;
+  $('#report-log').innerHTML = '<div style="color:var(--muted);padding:6px 0">불러오는 중…</div>';
+  try {
+    const d = await api({ action: 'report-list', token: state.token });
+    const items = d.items || [];
+    $('#report-log-title').textContent = d.total > items.length
+      ? `접수된 요청 (최근 ${items.length}건 / 전체 ${d.total}건)`
+      : `접수된 요청 (${items.length}건)`;
+
+    $('#report-log').innerHTML = items.length
+      ? items.map(r => `<div class="rep">
+          <div class="meta"><span class="who">${esc(r.author || '(익명)')}</span>
+          <span class="when">${esc(fmtWhen(r.createdAt))}</span></div>
+          <div class="body">${esc(r.text)}</div>
+        </div>`).join('')
+      : '<div style="color:var(--muted);padding:6px 0">아직 접수된 요청이 없습니다.</div>';
+  } catch (e) {
+    if (e.authExpired) return;
+    $('#report-log').innerHTML = `<div style="color:var(--danger);padding:6px 0">${esc(e.message)}</div>`;
+  }
+}
+
+async function sendReport(){
+  const author = $('#r-author').value.trim();
+  const text   = $('#r-text').value.trim();
+  if (!text) { toast('내용을 입력해 주세요', 'error'); $('#r-text').focus(); return; }
+
+  busy(true);
+  try {
+    await apiPost({ action: 'report-add', author, text });
+    $('#r-text').value = '';
+    $('#r-count').textContent = '0';
+    toast('수정 요청을 보냈습니다. 감사합니다');
+    if (state.isAdmin) await loadReports();   // 방금 접수분을 바로 보여 준다
+    else closeOverlay('report');
+  } catch (e) { fail(e); }
+  busy(false);
+}
+
+/* ============================================================
    CSV
    ============================================================ */
 function exportCsv(){
@@ -1528,6 +1656,10 @@ function wire(){
       $('#btn-cols').setAttribute('aria-expanded', 'false');
     }
   });
+
+  $('#btn-report').addEventListener('click', openReport);
+  $('#btn-report-send').addEventListener('click', sendReport);
+  $('#r-text').addEventListener('input', e => { $('#r-count').textContent = e.target.value.length; });
 
   $('#btn-csv').addEventListener('click', exportCsv);
   $('#btn-new').addEventListener('click', () => openForm(null));
