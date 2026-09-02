@@ -67,6 +67,7 @@ function doPost(e) {
       case 'as-delete': requireAdmin(token); return jsonResponse(handleASDelete(body));
       // 수정 요청 접수는 누구나 가능 (로그인 불필요)
       case 'report-add': return jsonResponse(handleReportAdd(body));
+      case 'report-resolve': requireAdmin(token); return jsonResponse(handleReportResolve(body));
       default:        return jsonResponse({ error: '알 수 없는 action' }, 400);
     }
   } catch (err) {
@@ -636,16 +637,42 @@ function handleASDelete(body) {
 // 수정 요청 / 버그 리포트
 // ============================================================
 
+const REPORT_COLS = ['rowId', '접수일시', '작성자', '내용', '처리완료', '처리자', '처리일시'];
+
+// 시트가 없으면 만들고, 있는데 열이 빠져 있으면 뒤에 채운다.
+// 처리완료 열을 나중에 추가했기 때문에 구버전 시트도 자동으로 보정된다.
 function getReportSheet() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   let sh = ss.getSheetByName(CONFIG.REPORT_SHEET);
+
   if (!sh) {
     sh = ss.insertSheet(CONFIG.REPORT_SHEET);
-    sh.appendRow(['rowId', '접수일시', '작성자', '내용']);
+    sh.appendRow(REPORT_COLS);
     sh.setFrozenRows(1);
     sh.setColumnWidth(4, 520);
+    return sh;
+  }
+
+  const lastCol = sh.getLastColumn();
+  const headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
+  const missing = REPORT_COLS.filter(h => headers.indexOf(h) < 0);
+  if (missing.length) {
+    sh.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]);
+    SpreadsheetApp.flush();
   }
   return sh;
+}
+
+// Installations 와 마찬가지로 위치가 아니라 헤더 이름으로 찾는다
+function reportColIndex(sh) {
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const map = {};
+  headers.forEach((h, i) => { map[String(h).trim()] = i; });
+  return map;
+}
+
+function isTrue(v) {
+  return v === true || String(v).trim().toUpperCase() === 'TRUE';
 }
 
 const REPORT_MAX = { author: 40, text: 1000 };
@@ -663,8 +690,16 @@ function handleReportAdd(body) {
   }
 
   const sh = getReportSheet();
+  const ci = reportColIndex(sh);
   const rowId = Utilities.getUuid();
-  sh.appendRow([rowId, new Date().toISOString(), author || '(익명)', text]);
+
+  const row = new Array(sh.getLastColumn()).fill('');
+  row[ci['rowId']]   = rowId;
+  row[ci['접수일시']] = new Date().toISOString();
+  row[ci['작성자']]   = author || '(익명)';
+  row[ci['내용']]     = text;
+
+  sh.appendRow(row);
   writeAuditLog('REPORT', '', author || '(익명)', text.slice(0, 50));
   return { ok: true, rowId };
 }
@@ -672,18 +707,53 @@ function handleReportAdd(body) {
 // 최신순 100건. 접수는 누구나 가능하지만 조회는 관리자만.
 function handleReportList() {
   const sh = getReportSheet();
-  if (sh.getLastRow() < 2) return { items: [] };
+  if (sh.getLastRow() < 2) return { items: [], total: 0, open: 0 };
 
-  const data = sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues();
+  const ci = reportColIndex(sh);
+  const data = sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).getValues();
+  const at = (r, name) => {
+    const i = ci[name];
+    return i === undefined ? '' : r[i];
+  };
+
   const items = data.map(r => ({
-    rowId: String(r[0]),
-    createdAt: r[1] instanceof Date ? r[1].toISOString() : String(r[1]),
-    author: String(r[2]),
-    text: String(r[3]),
+    rowId:      String(at(r, 'rowId')),
+    createdAt:  at(r, '접수일시') instanceof Date ? at(r, '접수일시').toISOString() : String(at(r, '접수일시')),
+    author:     String(at(r, '작성자')),
+    text:       String(at(r, '내용')),
+    resolved:   isTrue(at(r, '처리완료')),
+    resolvedBy: String(at(r, '처리자') || ''),
+    resolvedAt: at(r, '처리일시') instanceof Date ? at(r, '처리일시').toISOString() : String(at(r, '처리일시') || ''),
   }));
 
+  const open = items.filter(i => !i.resolved).length;
   items.reverse();
-  return { items: items.slice(0, 100), total: data.length };
+  return { items: items.slice(0, 100), total: items.length, open };
+}
+
+// 처리완료 표시 토글 (관리자 전용)
+function handleReportResolve(body) {
+  const rowId = String(body.rowId || '');
+  if (!rowId) throw { message: 'rowId가 필요합니다.', code: 400 };
+  const resolved = body.resolved !== false;   // 기본값 true
+
+  const sh = getReportSheet();
+  if (sh.getLastRow() < 2) throw { message: '데이터 없음', code: 404 };
+
+  const ci = reportColIndex(sh);
+  const idCol = ci['rowId'];
+  const ids = sh.getRange(2, idCol + 1, sh.getLastRow() - 1, 1).getValues();
+  const idx = ids.findIndex(r => String(r[0]) === rowId);
+  if (idx < 0) throw { message: '접수 내역을 찾을 수 없습니다.', code: 404 };
+
+  const rowNum = idx + 2;
+  const who = body.updatedBy || 'admin';
+  sh.getRange(rowNum, ci['처리완료'] + 1).setValue(resolved ? true : '');
+  sh.getRange(rowNum, ci['처리자']   + 1).setValue(resolved ? who : '');
+  sh.getRange(rowNum, ci['처리일시'] + 1).setValue(resolved ? new Date().toISOString() : '');
+
+  writeAuditLog(resolved ? 'REPORT_RESOLVE' : 'REPORT_REOPEN', '', who, 'rowId: ' + rowId);
+  return { ok: true };
 }
 
 function writeAuditLog(action, id, user, memo) {

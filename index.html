@@ -431,6 +431,14 @@ tbody tr.is-out .mgr{opacity:.5}
 .rep .who{font-weight:550;color:var(--ink-2)}
 .rep .when{font-family:var(--mono)}
 .rep .body{white-space:pre-wrap;line-height:1.55;word-break:break-word}
+.rep{display:flex;gap:10px;align-items:flex-start}
+.rep .chk{flex:0 0 auto;margin-top:2px}
+.rep .chk input{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;padding:0}
+.rep .main{flex:1;min-width:0}
+.rep.done .body{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}
+.rep.done .who{color:var(--muted)}
+.rep .tag{font-size:10.5px;font-weight:600;letter-spacing:.03em;color:var(--st-store);
+  background:var(--st-store-bg);border-radius:var(--r-pill);padding:1px 7px;white-space:nowrap}
 
 /* ---- Lightbox ---- */
 #lightbox{
@@ -768,7 +776,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v2.8 · 2026-08-21';
+const REV = 'v2.9 · 2026-08-21';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -1559,6 +1567,9 @@ function fmtWhen(v){
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+let reportItems = [];
+let reportMeta = { total: 0, open: 0 };
+
 async function loadReports(){
   const wrap = $('#report-log-wrap');
   if (!state.isAdmin) { wrap.hidden = true; return; }
@@ -1567,21 +1578,57 @@ async function loadReports(){
   $('#report-log').innerHTML = '<div style="color:var(--muted);padding:6px 0">불러오는 중…</div>';
   try {
     const d = await api({ action: 'report-list', token: state.token });
-    const items = d.items || [];
-    $('#report-log-title').textContent = d.total > items.length
-      ? `접수된 요청 (최근 ${items.length}건 / 전체 ${d.total}건)`
-      : `접수된 요청 (${items.length}건)`;
-
-    $('#report-log').innerHTML = items.length
-      ? items.map(r => `<div class="rep">
-          <div class="meta"><span class="who">${esc(r.author || '(익명)')}</span>
-          <span class="when">${esc(fmtWhen(r.createdAt))}</span></div>
-          <div class="body">${esc(r.text)}</div>
-        </div>`).join('')
-      : '<div style="color:var(--muted);padding:6px 0">아직 접수된 요청이 없습니다.</div>';
+    reportItems = d.items || [];
+    reportMeta = { total: d.total || reportItems.length, open: d.open || 0 };
+    renderReports();
   } catch (e) {
     if (e.authExpired) return;
     $('#report-log').innerHTML = `<div style="color:var(--danger);padding:6px 0">${esc(e.message)}</div>`;
+  }
+}
+
+function renderReports(){
+  const shown = reportItems.length;
+  $('#report-log-title').textContent = reportMeta.total > shown
+    ? `접수된 요청 — 미처리 ${reportMeta.open}건 / 전체 ${reportMeta.total}건 (최근 ${shown}건 표시)`
+    : `접수된 요청 — 미처리 ${reportMeta.open}건 / 전체 ${reportMeta.total}건`;
+
+  $('#report-log').innerHTML = shown
+    ? reportItems.map(r => `<div class="rep ${r.resolved ? 'done' : ''}" data-row="${esc(r.rowId)}">
+        <label class="chk" title="${r.resolved ? '처리 취소' : '처리완료로 표시'}">
+          <input type="checkbox" data-resolve="${esc(r.rowId)}" ${r.resolved ? 'checked' : ''}>
+        </label>
+        <div class="main">
+          <div class="meta">
+            <span class="who">${esc(r.author || '(익명)')}</span>
+            <span class="when">${esc(fmtWhen(r.createdAt))}</span>
+            ${r.resolved ? `<span class="tag">처리완료${r.resolvedBy ? ' · ' + esc(r.resolvedBy.split('@')[0]) : ''}</span>` : ''}
+          </div>
+          <div class="body">${esc(r.text)}</div>
+        </div>
+      </div>`).join('')
+    : '<div style="color:var(--muted);padding:6px 0">아직 접수된 요청이 없습니다.</div>';
+
+  $$('#report-log input[data-resolve]').forEach(cb =>
+    cb.addEventListener('change', () => toggleResolve(cb.dataset.resolve, cb.checked, cb)));
+}
+
+async function toggleResolve(rowId, resolved, cb){
+  cb.disabled = true;
+  try {
+    await apiPost({ action: 'report-resolve', token: state.token, rowId, resolved,
+                    updatedBy: state.email || 'admin' });
+    const it = reportItems.find(r => r.rowId === rowId);
+    if (it) {
+      it.resolved = resolved;
+      it.resolvedBy = resolved ? (state.email || 'admin') : '';
+      reportMeta.open += resolved ? -1 : 1;
+    }
+    renderReports();
+  } catch (e) {
+    cb.checked = !resolved;      // 실패했으면 체크 상태를 되돌린다
+    cb.disabled = false;
+    fail(e);
   }
 }
 
