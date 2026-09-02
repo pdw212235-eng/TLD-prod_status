@@ -574,34 +574,71 @@ function ensureHeaders(sheet) {
 // A/S 이력
 // ============================================================
 
+// 설치 및 수리 이력. 시트 이름(AS_History)은 그대로 두고 화면 표기만 바꿨다.
+const HISTORY_COLS = ['rowId', 'ID', 'Site/제품명', '날짜', '구분', '내용', '등록일시', '등록자'];
+const HISTORY_KINDS = ['설치', '수리'];
+
 function getASSheet() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   let sh = ss.getSheetByName(CONFIG.AS_SHEET);
   if (!sh) {
     sh = ss.insertSheet(CONFIG.AS_SHEET);
-    sh.appendRow(['rowId', 'ID', '날짜', '내용', '등록일시', '등록자']);
+    sh.appendRow(HISTORY_COLS);
     sh.setFrozenRows(1);
   }
   return sh;
 }
 
+// 위치가 아니라 헤더 이름으로 찾는다. 열을 옮겨도 동작한다.
+function asColIndex(sh) {
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const map = {};
+  headers.forEach((h, i) => { map[String(h).trim()] = i; });
+  return map;
+}
+
+// 관리번호로 Site/제품명 찾기. 이력 등록 시 시트에 함께 적어 둔다.
+function siteOfId(id) {
+  try {
+    const sheet = getSheet();
+    const { existing } = findRowById(sheet, buildColIndex(sheet), id);
+    return existing.site || '';
+  } catch (_) {
+    return '';
+  }
+}
+
 function handleASList(params) {
   const id = params.id || '';
   if (!id) throw { message: 'id가 필요합니다.', code: 400 };
+
   const sh = getASSheet();
   if (sh.getLastRow() < 2) return { items: [] };
-  const data = sh.getRange(2, 1, sh.getLastRow() - 1, 6).getValues();
+
+  const ci = asColIndex(sh);
+  const data = sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).getValues();
+  const at = (r, name) => {
+    const i = ci[name];
+    return i === undefined ? '' : r[i];
+  };
+  const asDate = v => v instanceof Date
+    ? Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+    : String(v || '');
+
   const items = data
-    .filter(r => String(r[1]).trim() === id)
+    .filter(r => String(at(r, 'ID')).trim() === id)
     .map(r => ({
-      rowId: String(r[0]),
-      id: String(r[1]),
-      date: r[2] instanceof Date ? Utilities.formatDate(r[2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[2]),
-      text: String(r[3]),
-      createdAt: String(r[4]),
-      createdBy: String(r[5]),
+      rowId:     String(at(r, 'rowId')),
+      id:        String(at(r, 'ID')),
+      site:      String(at(r, 'Site/제품명') || ''),
+      date:      asDate(at(r, '날짜')),
+      kind:      String(at(r, '구분') || ''),
+      text:      String(at(r, '내용')),
+      createdAt: String(at(r, '등록일시') || ''),
+      createdBy: String(at(r, '등록자') || ''),
     }))
     .sort((a, b) => b.date.localeCompare(a.date));
+
   return { items };
 }
 
@@ -609,13 +646,31 @@ function handleASAdd(body) {
   const id   = body.id   || '';
   const date = body.date || '';
   const text = body.text || '';
+  const kind = body.kind || '';
+
   if (!id || !date || !text) throw { message: 'id, date, text 필수', code: 400 };
   if (text.length > 200) throw { message: '내용은 200자 이내', code: 400 };
+  if (kind && HISTORY_KINDS.indexOf(kind) < 0) {
+    throw { message: '구분은 ' + HISTORY_KINDS.join(' 또는 ') + ' 만 가능합니다.', code: 400 };
+  }
 
   const sh = getASSheet();
+  const ci = asColIndex(sh);
   const rowId = Utilities.getUuid();
-  sh.appendRow([rowId, id, date, text, new Date().toISOString(), body.updatedBy || 'admin']);
-  writeAuditLog('AS_ADD', id, body.updatedBy || 'admin', date + ': ' + text.slice(0, 30));
+
+  const row = new Array(sh.getLastColumn()).fill('');
+  const put = (name, v) => { if (ci[name] !== undefined) row[ci[name]] = v; };
+  put('rowId', rowId);
+  put('ID', id);
+  put('Site/제품명', siteOfId(id));
+  put('날짜', date);
+  put('구분', kind);
+  put('내용', text);
+  put('등록일시', new Date().toISOString());
+  put('등록자', body.updatedBy || 'admin');
+
+  sh.appendRow(row);
+  writeAuditLog('AS_ADD', id, body.updatedBy || 'admin', (kind ? '[' + kind + '] ' : '') + date + ': ' + text.slice(0, 30));
   return { rowId };
 }
 
@@ -625,7 +680,8 @@ function handleASDelete(body) {
 
   const sh = getASSheet();
   if (sh.getLastRow() < 2) throw { message: '데이터 없음', code: 404 };
-  const data = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+  const ci = asColIndex(sh);
+  const data = sh.getRange(2, ci['rowId'] + 1, sh.getLastRow() - 1, 1).getValues();
   const idx = data.findIndex(r => String(r[0]) === rowId);
   if (idx < 0) throw { message: '이력을 찾을 수 없습니다.', code: 404 };
   sh.deleteRow(idx + 2);
@@ -788,6 +844,60 @@ function logError(err) {
  * 편집기에서 실행하세요. 빠진 열이 없으면 아무것도 하지 않으므로 여러 번 실행해도 안전합니다.
  * 앞으로 항목을 추가할 때도 COLUMNS 에만 넣고 이 함수를 실행하면 됩니다.
  */
+/**
+ * 설치 및 수리 이력 시트에 'Site/제품명'(ID 뒤)과 '구분'(날짜 뒤) 열을 끼워 넣고,
+ * 기존 행의 Site/제품명 을 관리번호로 찾아 채웁니다. 편집기에서 실행하세요.
+ * 이미 있으면 건너뛰므로 여러 번 실행해도 안전합니다.
+ */
+function migrateHistorySheet() {
+  const sh = getASSheet();
+  const added = [];
+
+  // 지정한 열 바로 뒤에 삽입한다 (기존 값은 오른쪽으로 밀리며 보존된다)
+  const ensureAfter = (name, afterName) => {
+    const ci = asColIndex(sh);
+    if (ci[name] !== undefined) return;
+    const anchor = ci[afterName];
+    if (anchor === undefined) {
+      sh.getRange(1, sh.getLastColumn() + 1).setValue(name);
+    } else {
+      sh.insertColumnAfter(anchor + 1);
+      sh.getRange(1, anchor + 2).setValue(name);
+    }
+    SpreadsheetApp.flush();
+    added.push(name);
+  };
+
+  ensureAfter('Site/제품명', 'ID');
+  ensureAfter('구분', '날짜');
+
+  // 기존 행의 Site/제품명 백필
+  let filled = 0;
+  const ci = asColIndex(sh);
+  const last = sh.getLastRow();
+  if (last >= 2 && ci['Site/제품명'] !== undefined && ci['ID'] !== undefined) {
+    const ids   = sh.getRange(2, ci['ID'] + 1, last - 1, 1).getValues();
+    const sites = sh.getRange(2, ci['Site/제품명'] + 1, last - 1, 1).getValues();
+
+    const main = getSheet();
+    const mc = buildColIndex(main);
+    const rows = main.getLastRow() < 2 ? []
+      : main.getRange(2, 1, main.getLastRow() - 1, main.getLastColumn()).getValues();
+    const siteById = {};
+    rows.forEach(r => { siteById[String(r[mc['ID']]).trim()] = String(r[mc['Site 및 제품명']] || ''); });
+
+    for (let i = 0; i < ids.length; i++) {
+      if (String(sites[i][0]).trim()) continue;
+      const found = siteById[String(ids[i][0]).trim()];
+      if (found) { sites[i][0] = found; filled++; }
+    }
+    if (filled) sh.getRange(2, ci['Site/제품명'] + 1, last - 1, 1).setValues(sites);
+  }
+
+  Logger.log(added.length ? '추가된 열: ' + added.join(', ') : '추가할 열 없음 (이미 적용됨)');
+  Logger.log('Site/제품명 채운 행: ' + filled);
+}
+
 function addMissingColumns() {
   const sheet = getSheet();
   const lastCol = sheet.getLastColumn();

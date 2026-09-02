@@ -420,6 +420,11 @@ tbody tr.is-out .mgr{opacity:.5}
 .as-item .del{color:var(--muted);font-size:15px;line-height:1;padding:2px 6px;border-radius:var(--r-sm);flex:0 0 auto}
 .as-item .del:hover{color:var(--danger);background:var(--danger-soft)}
 .as-add{display:flex;gap:8px;align-items:flex-start;margin-top:12px}
+.as-item .kind{font-size:10.5px;font-weight:600;letter-spacing:.03em;border-radius:var(--r-pill);
+  padding:1px 7px;white-space:nowrap;flex:0 0 auto;margin-top:1px}
+.as-item .kind[data-k="설치"]{background:var(--st-install-bg);color:var(--st-install)}
+.as-item .kind[data-k="수리"]{background:var(--st-rent-bg);color:var(--st-rent)}
+.as-add select{flex:0 0 84px}
 .as-add input[type=date]{flex:0 0 140px}
 .as-add input[type=text]{flex:1}
 
@@ -776,7 +781,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v2.9 · 2026-08-21';
+const REV = 'v3.0 · 2026-08-21';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -1328,10 +1333,11 @@ function renderDetail(item, asItems){
     </div></div>`;
   }
 
-  html += `<div class="fieldset"><div class="legend">A/S 이력</div><div id="as-wrap">`;
+  html += `<div class="fieldset"><div class="legend">설치 및 수리 이력</div><div id="as-wrap">`;
   html += asItems.length
     ? asItems.map(a => `<div class="as-item">
         <span class="d">${esc(fmtDate(a.date))}</span>
+        ${a.kind ? `<span class="kind" data-k="${esc(a.kind)}">${esc(a.kind)}</span>` : ''}
         <span class="t">${esc(a.text)}</span>
         ${state.isAdmin ? `<button class="del" data-as-del="${esc(a.rowId)}" title="삭제" aria-label="이력 삭제">&times;</button>` : ''}
       </div>`).join('')
@@ -1339,8 +1345,11 @@ function renderDetail(item, asItems){
   html += `</div>`;
   if (state.isAdmin) {
     html += `<div class="as-add">
-      <input type="date" id="as-date" value="${new Date().toISOString().slice(0,10)}" aria-label="A/S 날짜">
-      <input type="text" id="as-text" maxlength="200" placeholder="조치 내용 (200자 이내)" aria-label="A/S 내용">
+      <div class="sel-wrap" style="flex:0 0 84px"><select id="as-kind" aria-label="구분">
+        <option value="설치">설치</option><option value="수리" selected>수리</option>
+      </select></div>
+      <input type="date" id="as-date" value="${new Date().toISOString().slice(0,10)}" aria-label="날짜">
+      <input type="text" id="as-text" maxlength="200" placeholder="내용 (200자 이내)" aria-label="내용">
       <button class="btn btn-ghost btn-sm" id="as-add-btn">추가</button>
     </div>`;
   }
@@ -1377,23 +1386,25 @@ function renderDetail(item, asItems){
 }
 
 /* ============================================================
-   A/S
+   설치 및 수리 이력
    ============================================================ */
 async function addAS(id){
   const date = $('#as-date').value;
   const text = $('#as-text').value.trim();
+  const kind = $('#as-kind') ? $('#as-kind').value : '';
   if (!date || !text) { toast('날짜와 내용을 모두 입력하세요', 'error'); return; }
   busy(true);
   try {
-    await apiPost({ action: 'as-add', token: state.token, id, date, text, updatedBy: state.email || 'admin' });
-    toast('A/S 이력을 추가했습니다');
+    await apiPost({ action: 'as-add', token: state.token, id, date, text, kind,
+                    updatedBy: state.email || 'admin' });
+    toast('이력을 추가했습니다');
     await openDetail(id);
   } catch (e) { fail(e); }
   busy(false);
 }
 
 async function deleteAS(rowId, id){
-  if (!confirm('이 A/S 이력을 삭제할까요?')) return;
+  if (!confirm('이 이력을 삭제할까요?')) return;
   busy(true);
   try {
     await apiPost({ action: 'as-delete', token: state.token, rowId, updatedBy: state.email || 'admin' });
