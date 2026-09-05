@@ -227,6 +227,12 @@ section.stage{scroll-margin-top:78px;margin-bottom:22px}
 .minibar i{display:block;height:100%;background:var(--accent)}
 .minibar.full i{background:var(--ok)}
 .dash td small{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.log th{white-space:nowrap}
+.log .pill{font-size:11px;white-space:nowrap}
+.log .act-체크,.log .act-링크등록,.log .act-프로젝트등록{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.log .act-체크해제,.log .act-링크삭제,.log .act-프로젝트삭제{background:var(--danger-soft);color:var(--danger);border-color:transparent}
+.log .act-상태변경{background:var(--run-bg);color:var(--run);border-color:transparent}
+.log tr:hover td{background:var(--surface-2)}
 .dash tr:hover td{background:var(--surface-2)}
 .linkbtn{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;font-weight:600;text-align:left}
 .linkbtn:hover{text-decoration:underline}
@@ -279,18 +285,19 @@ section.stage{scroll-margin-top:78px;margin-bottom:22px}
     <div class="seg no-print" id="viewseg">
       <button data-view="track" aria-pressed="true">진행 관리</button>
       <button data-view="dash" aria-pressed="false">전체 현황</button>
+      <button data-view="log" aria-pressed="false">활동 이력</button>
     </div>
 
     <select class="no-print" id="projsel" style="min-width:210px" title="프로젝트 선택"></select>
-    <button class="btn no-print" id="btn-newproj">＋ 프로젝트</button>
+    <button class="btn no-print" id="btn-newproj" title="프로젝트 등록">＋</button>
     <button class="btn ghost no-print" id="btn-editproj" title="프로젝트 수정 / 삭제">✎</button>
 
     <div class="grow"></div>
 
     <div class="seg no-print" id="datagrp">
-      <button id="btn-export" title="모든 데이터를 JSON 파일로 저장">내보내기</button>
-      <button id="btn-import" title="JSON 파일에서 불러오기">불러오기</button>
-      <button id="btn-link" title="지정한 JSON 파일에 자동 저장" hidden>파일 연결</button>
+      <button id="btn-link" title="process.html 이 있는 폴더를 지정하면 그 안의 파일에 저장합니다">폴더 연결</button>
+      <button id="btn-export" title="데이터를 JSON 으로 내려받기">내보내기</button>
+      <button id="btn-import" title="JSON 에서 합치기">불러오기</button>
     </div>
     <input type="file" id="file-import" accept=".json,application/json" hidden>
 
@@ -637,38 +644,79 @@ const state = {
   who: '',
   collapsed: false,
   editing: '',        // 모달에서 수정 중인 프로젝트 id
-  fh: null,           // 연결된 데이터 파일 핸들 (File System Access API)
-  fhName: '',
-  savedAt: null,      // 파일에 마지막으로 기록한 시각
-  dirty: false,       // 파일에 아직 반영되지 않은 변경이 있는가
+  deleted: {},        // 삭제한 프로젝트 표시 {pid: 삭제시각} — 합칠 때 되살아나지 않게
+  log: [],            // 활동 로그
+  pendingLog: [],     // 아직 CSV 에 기록하지 못한 로그
+  dir: null,          // 연결된 작업 폴더 핸들
+  dirName: '',
+  needRelink: false,  // 권한이 풀려 다시 연결이 필요한 상태
+  remoteMtime: 0,     // 마지막으로 읽은 폴더 데이터 파일의 수정 시각
+  savedAt: null,
+  dirty: false,
+  writeErr: '',
+  logQ: { q: '', by: '', pid: '' },
 };
 
 /* ============================================================
-   저장소 — 데이터는 이 PC 밖으로 나가지 않는다
+   저장소 — 작업 폴더(파일 서버 공유 폴더 포함) 안의 파일이 원본
    ------------------------------------------------------------
-   1) 브라우저 저장소(localStorage) 에 자동 저장. 어떤 브라우저에서도 동작하고
-      파일을 다시 열면 그대로 남아 있다. 단, 브라우저 데이터를 지우면 함께 지워진다.
-   2) '파일 연결' (Chrome / Edge) — 원하는 위치의 .json 파일을 지정하면
-      변경할 때마다 그 파일에도 자동으로 기록한다. 이게 진짜 원본이다.
-   3) '내보내기 / 불러오기' — 어느 브라우저에서나 되는 백업·이관 수단.
+   폴더를 한 번 연결해 두면 그 폴더 안에 아래 파일을 직접 읽고 쓴다.
+   브라우저 방문기록·쿠키를 지워도 이 파일들은 그대로 남는다.
+
+     TLD-process-data.json      데이터 원본
+     TLD-process-log.csv        감사 로그 (append 전용, 엑셀에서 바로 열림)
+     _backup/data-YYYY-MM-DD.json   하루 1회 스냅샷 (30일 보관)
+
+   여러 사람이 같은 공유 폴더를 동시에 쓰는 것을 전제로 만들었다.
+   저장할 때마다 폴더의 최신 내용을 다시 읽어 '항목 단위'로 합치므로
+   (파일 통째로 덮어쓰지 않는다) 서로의 입력을 지우지 않는다.
    ============================================================ */
-const LS_KEY   = 'tld_proc_v1';
-const DB_NAME  = 'tld_proc_db';
-const DB_STORE = 'handles';
-const HAS_FS   = typeof window.showSaveFilePicker === 'function';
-// file:// 에서 크로미움이 한글 다운로드 파일명을 버리므로 ASCII 로 둔다.
-const FILE_NAME = 'TLD-process-tracker.json';
+const LS_KEY    = 'tld_proc_v2';
+const DB_NAME   = 'tld_proc_db';
+const DB_STORE  = 'handles';
+const HAS_FS    = typeof window.showDirectoryPicker === 'function';
+const DATA_FILE = 'TLD-process-data.json';
+const LOG_FILE  = 'TLD-process-log.csv';
+const BACKUP_DIR = '_backup';
+const LOG_HEADER = ['일시', '작성자', '프로젝트', '단계', '항목', '동작', '상세'];
+const LOG_KEEP   = 500;          // 데이터 파일에 함께 남기는 최근 로그 건수
+const LOG_MAX_BYTES = 4 * 1024 * 1024;
+const BACKUP_KEEP_DAYS = 30;
+const POLL_MS = 15000;           // 남이 바꾼 내용을 가져오는 주기
+
+const nowISO = () => new Date().toISOString();
+const today  = () => new Date().toISOString().slice(0, 10);
 
 function snapshot(){
-  return { app: 'tld-process', v: 1, savedAt: new Date().toISOString(),
-           projects: state.projects, items: state.items };
+  return {
+    app: 'tld-process', v: 2, savedAt: nowISO(),
+    projects: state.projects, items: state.items,
+    deleted: state.deleted, log: state.log.slice(-LOG_KEEP),
+  };
 }
 function applySnapshot(d){
   state.projects = Array.isArray(d && d.projects) ? d.projects : [];
   state.items    = (d && d.items && typeof d.items === 'object') ? d.items : {};
+  state.deleted  = (d && d.deleted && typeof d.deleted === 'object') ? d.deleted : {};
+  state.log      = Array.isArray(d && d.log) ? d.log : [];
+  migrateChecks();
 }
 
-// 파일 핸들을 다음 실행에서도 기억하려고 IndexedDB 에 넣어 둔다.
+/* v1 은 체크 상태를 배열로만 갖고 있었다. 합치기를 하려면 체크마다
+   언제 켜고 껐는지가 필요하므로 {on, at} 형태로 올린다. */
+function migrateChecks(){
+  Object.values(state.items).forEach(b => {
+    const it = b['__checks'];
+    if (!it || it.checks) return;
+    it.checks = {};
+    (it.links || []).forEach(id => { it.checks[String(id)] = { on: true, at: it.updatedAt || '' }; });
+    delete it.links;
+  });
+}
+
+/* ============================================================
+   폴더 핸들 보관 (IndexedDB) — 데이터가 아니라 '어느 폴더인지'만 기억한다
+   ============================================================ */
 function idbOpen(){
   return new Promise((res, rej) => {
     const r = indexedDB.open(DB_NAME, 1);
@@ -696,65 +744,271 @@ async function idbSet(k, v){
   } catch (_) {}
 }
 
-let fileTimer, lsTimer, lsWarned = false;
-function writeLS(){
-  clearTimeout(lsTimer);
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify(snapshot()));
-  } catch (e) {
-    if (!lsWarned){
-      lsWarned = true;
-      toast('브라우저 저장에 실패했습니다. 내보내기로 백업해 주세요.', 'error');
-    }
-  }
+/* ============================================================
+   로그
+   ============================================================ */
+function logAdd(act, detail, opt){
+  const o = opt || {};
+  const p = state.projects.find(x => x.id === (o.pid || state.pid));
+  state.log.push({
+    id: uid(), at: nowISO(), by: state.who || '(이름없음)',
+    pid: o.pid || state.pid, pname: (p && p.name) || o.pname || '',
+    stage: o.stage == null ? '' : String(o.stage),
+    item: o.item || '', act: act, detail: detail || '',
+  });
+  state.pendingLog.push(state.log[state.log.length - 1]);
+  if (state.log.length > 4000) state.log = state.log.slice(-2000);
 }
-// 타자 한 글자마다 전체를 직렬화하지 않도록 잠깐 모았다 쓴다.
-function persist(){
-  clearTimeout(lsTimer);
-  lsTimer = setTimeout(writeLS, 300);
-  if (state.fh){
-    state.dirty = true;
-    clearTimeout(fileTimer);
-    fileTimer = setTimeout(writeFile, 900);
-  }
-  paintStatus();
-}
-// 창을 닫거나 탭을 감출 때는 남은 변경을 바로 기록한다.
-window.addEventListener('beforeunload', writeLS);
-document.addEventListener('visibilitychange', () => { if (document.hidden) writeLS(); });
 
-async function writeFile(){
-  if (!state.fh) return;
+// 로그가 '(이름없음)' 으로 채워지지 않도록 처음 한 번만 짚어 준다.
+let whoNagged = false;
+function requireWho(){
+  if (state.who || whoNagged) return;
+  whoNagged = true;
+  const el = $('#who');
+  el.style.borderColor = 'var(--danger)';
+  el.focus();
+  toast('상단에 작성자 이름을 넣어 주세요. 기록에 함께 남습니다.', 'error');
+  el.addEventListener('input', () => { el.style.borderColor = ''; }, { once: true });
+}
+
+const csvCell = v => {
+  const s = String(v == null ? '' : v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+};
+const logRow = e => [
+  e.at.slice(0, 19).replace('T', ' '), e.by, e.pname, e.stage, e.item, e.act, e.detail,
+].map(csvCell).join(',');
+
+/* ============================================================
+   폴더 입출력
+   ============================================================ */
+async function dirOK(){
+  if (!state.dir) return false;
   try {
-    if (state.fh.queryPermission &&
-        (await state.fh.queryPermission({ mode: 'readwrite' })) !== 'granted') return;
-    const w = await state.fh.createWritable();
-    await w.write(JSON.stringify(snapshot(), null, 2));
+    return !state.dir.queryPermission ||
+           (await state.dir.queryPermission({ mode: 'readwrite' })) === 'granted';
+  } catch (_) { return false; }
+}
+
+async function readRemote(){
+  const fh = await state.dir.getFileHandle(DATA_FILE, { create: true });
+  const f  = await fh.getFile();
+  if (!f.size) return { d: null, mtime: f.lastModified };
+  try { return { d: JSON.parse(await f.text()), mtime: f.lastModified }; }
+  catch (_) { return { d: null, mtime: f.lastModified, broken: true }; }
+}
+
+/* 같은 폴더를 여러 명이 쓰므로, 쓰기 직전에 원격을 다시 읽어 합친다. */
+async function writeRemote(){
+  if (!(await dirOK())) return;
+  try {
+    const r = await readRemote();
+    if (r.broken){
+      // 남의 파일이 깨졌으면 덮어쓰기 전에 원본을 보존한다
+      await archive(DATA_FILE, 'data-broken-' + today() + '.json');
+    } else if (r.d){
+      mergeIn(r.d);
+    }
+
+    const fh = await state.dir.getFileHandle(DATA_FILE, { create: true });
+    const snap = snapshot();
+    const w = await fh.createWritable();
+    await w.write(JSON.stringify(snap, null, 2));
     await w.close();
+
+    // 읽고-합치고-쓰는 사이에 남이 저장했을 수 있다. 확인해서 한 번 더 합친다.
+    let f = await fh.getFile();
+    try {
+      const back = JSON.parse(await f.text());
+      if (back.savedAt !== snap.savedAt){
+        mergeIn(back);
+        const w2 = await fh.createWritable();
+        await w2.write(JSON.stringify(snapshot(), null, 2));
+        await w2.close();
+        f = await fh.getFile();
+      }
+    } catch (_) {}
+    state.remoteMtime = f.lastModified;
+
+    await flushLog();
+    await dailyBackup();
     state.savedAt = new Date();
     state.dirty = false;
   } catch (e) {
-    toast('파일 저장 실패: ' + e.message, 'error');
+    state.writeErr = e.message;
+    toast('폴더 저장 실패: ' + e.message + ' (내용은 브라우저에 남아 있습니다)', 'error');
   }
   paintStatus();
 }
 
-/* 상단 배너 — 지금 어디에 저장되고 있는지 항상 보여 준다. */
-function paintStatus(){
-  const t = state.savedAt
-    ? state.savedAt.toTimeString().slice(0, 5) + ' 저장됨'
-    : '';
-  let html;
-  if (state.fh){
-    html = `<b>파일에 저장 중</b><span>${esc(state.fhName)}` +
-           (state.dirty ? ' · 저장 중…' : (t ? ' · ' + t : '')) + '</span>';
-  } else {
-    html = '<b>이 PC에만 저장됩니다</b><span>브라우저 저장소를 쓰고 있습니다. ' +
-      (HAS_FS ? '<b>파일 연결</b>로 원하는 위치의 JSON 파일에 자동 저장하거나, '
-              : '') +
-      '<b>내보내기</b>로 주기적으로 백업해 주세요.</span>';
+// 로그는 통째로 덮어쓰지 않고 파일 끝에 이어 붙인다.
+async function flushLog(){
+  if (!state.pendingLog.length) return;
+  const rows = state.pendingLog.splice(0, state.pendingLog.length);
+  try {
+    let fh = await state.dir.getFileHandle(LOG_FILE, { create: true });
+    let size = (await fh.getFile()).size;
+
+    if (size > LOG_MAX_BYTES){
+      await archive(LOG_FILE, 'log-' + today() + '.csv');
+      fh = await state.dir.getFileHandle(LOG_FILE, { create: true });
+      size = 0;
+    }
+
+    let text = '';
+    // 엑셀이 UTF-8 을 알아보도록 BOM 을 앞에 둔다
+    if (size === 0) text += '﻿' + LOG_HEADER.join(',') + '\r\n';
+    text += rows.map(logRow).join('\r\n') + '\r\n';
+
+    const w = await fh.createWritable({ keepExistingData: true });
+    await w.write({ type: 'write', position: size, data: text });
+    await w.close();
+  } catch (e) {
+    state.pendingLog.unshift(...rows);   // 실패하면 다음 기회에 다시 쓴다
+    throw e;
   }
-  $('#banner').innerHTML = `<div class="banner ${state.fh ? 'ok' : 'warn'} no-print">${html}</div>`;
+}
+
+async function archive(name, newName){
+  try {
+    const bd = await state.dir.getDirectoryHandle(BACKUP_DIR, { create: true });
+    const src = await (await state.dir.getFileHandle(name)).getFile();
+    const dst = await bd.getFileHandle(newName, { create: true });
+    const w = await dst.createWritable();
+    await w.write(await src.arrayBuffer());
+    await w.close();
+    await state.dir.removeEntry(name);
+  } catch (_) {}
+}
+
+// 하루에 한 번만 스냅샷을 남기고, 오래된 것은 지운다.
+async function dailyBackup(){
+  const key = 'tld_proc_backup_day';
+  let last = ''; try { last = localStorage.getItem(key) || ''; } catch (_) {}
+  if (last === today()) return;
+  try {
+    const bd = await state.dir.getDirectoryHandle(BACKUP_DIR, { create: true });
+    const fh = await bd.getFileHandle('data-' + today() + '.json', { create: true });
+    const w = await fh.createWritable();
+    await w.write(JSON.stringify(snapshot(), null, 2));
+    await w.close();
+    try { localStorage.setItem(key, today()); } catch (_) {}
+
+    const cut = new Date(Date.now() - BACKUP_KEEP_DAYS * 86400000).toISOString().slice(0, 10);
+    for await (const [name] of bd.entries()){
+      const m = name.match(/^data-(\d{4}-\d{2}-\d{2})\.json$/);
+      if (m && m[1] < cut) await bd.removeEntry(name).catch(() => {});
+    }
+  } catch (_) {}
+}
+
+/* ============================================================
+   합치기 — 항목 단위 최신 우선. 남의 입력을 지우지 않는다.
+   ============================================================ */
+const newer = (a, b) => String(a || '') >= String(b || '');
+
+function mergeIn(r){
+  if (!r || typeof r !== 'object') return;
+
+  // 삭제 표시
+  const rd = (r.deleted && typeof r.deleted === 'object') ? r.deleted : {};
+  Object.entries(rd).forEach(([pid, at]) => {
+    if (!state.deleted[pid] || newer(at, state.deleted[pid])) state.deleted[pid] = at;
+  });
+
+  // 프로젝트
+  const mine = new Map(state.projects.map(p => [p.id, p]));
+  (Array.isArray(r.projects) ? r.projects : []).forEach(rp => {
+    const mp = mine.get(rp.id);
+    if (!mp) mine.set(rp.id, rp);
+    else if (newer(rp.updatedAt, mp.updatedAt)) mine.set(rp.id, rp);
+  });
+  state.projects = Array.from(mine.values())
+    .filter(p => !(state.deleted[p.id] && newer(state.deleted[p.id], p.updatedAt)));
+
+  // 항목
+  const ri = (r.items && typeof r.items === 'object') ? r.items : {};
+  Object.entries(ri).forEach(([pid, rb]) => {
+    if (state.deleted[pid]) return;
+    const mb = state.items[pid] || (state.items[pid] = {});
+    Object.entries(rb || {}).forEach(([id, rit]) => {
+      if (id === '__checks'){ mergeChecks(mb, rit); return; }
+      const mit = mb[id];
+      if (!mit || newer(rit.updatedAt, mit.updatedAt)) mb[id] = rit;
+    });
+  });
+  Object.keys(state.items).forEach(pid => { if (state.deleted[pid]) delete state.items[pid]; });
+
+  // 로그 — 합집합, 시간순
+  const seen = new Set(state.log.map(e => e.id));
+  (Array.isArray(r.log) ? r.log : []).forEach(e => { if (e && !seen.has(e.id)) state.log.push(e); });
+  state.log.sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  if (state.log.length > 4000) state.log = state.log.slice(-2000);
+}
+
+// 체크는 항목 하나에 몰려 있으므로 체크 하나하나를 시각으로 비교한다.
+function mergeChecks(mb, rit){
+  if (!rit) return;
+  const mine = mb['__checks'] || (mb['__checks'] = { status: '진행중', checks: {} });
+  if (!mine.checks) mine.checks = {};
+  const rc = rit.checks || {};
+  Object.entries(rc).forEach(([id, rv]) => {
+    const mv = mine.checks[id];
+    if (!mv || newer(rv.at, mv.at)) mine.checks[id] = rv;
+  });
+}
+
+/* ============================================================
+   저장 (브라우저 저장소는 폴더가 끊겼을 때를 위한 예비 사본)
+   ============================================================ */
+let lsTimer, dirTimer, lsWarned = false;
+function writeLS(){
+  clearTimeout(lsTimer);
+  try { localStorage.setItem(LS_KEY, JSON.stringify(snapshot())); }
+  catch (e) {
+    if (!lsWarned){ lsWarned = true; toast('브라우저 예비 저장 실패 — 폴더 연결 상태를 확인해 주세요.', 'error'); }
+  }
+}
+function persist(){
+  clearTimeout(lsTimer);
+  lsTimer = setTimeout(writeLS, 300);
+  if (state.dir){
+    state.dirty = true;
+    clearTimeout(dirTimer);
+    dirTimer = setTimeout(writeRemote, 800);
+  }
+  paintStatus();
+}
+window.addEventListener('beforeunload', e => {
+  writeLS();
+  if (state.dirty){ e.preventDefault(); e.returnValue = ''; }
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) writeLS(); });
+
+/* ============================================================
+   상태 배너
+   ============================================================ */
+function paintStatus(){
+  let cls, html;
+  if (state.dir){
+    const t = state.savedAt ? state.savedAt.toTimeString().slice(0, 5) : '';
+    cls = state.writeErr ? 'warn' : 'ok';
+    html = `<b>폴더에 저장 중</b><span>${esc(state.dirName)} · ${esc(DATA_FILE)} / ${esc(LOG_FILE)}` +
+           (state.dirty ? ' · 저장 중…' : (t ? ' · ' + t + ' 저장됨' : '')) +
+           (state.writeErr ? ' · <b>마지막 저장 실패</b>' : '') + '</span>';
+  } else {
+    cls = 'warn';
+    html = '<b>폴더가 연결되지 않았습니다</b><span>지금은 브라우저에만 남습니다(방문기록을 지우면 사라집니다). ' +
+      (HAS_FS ? '<b>폴더 연결</b>을 눌러 process.html 이 있는 폴더를 지정해 주세요.'
+              : '이 브라우저는 폴더 저장을 지원하지 않습니다. Chrome 또는 Edge 로 열어 주세요.') + '</span>';
+  }
+  const bar = `<div class="banner ${cls} no-print">${html}` +
+    (state.needRelink ? '<button class="btn sm" id="btn-relink" style="margin-left:auto">폴더 다시 연결</button>' : '') +
+    '</div>';
+  $('#banner').innerHTML = bar;
+  const rb = $('#btn-relink');
+  if (rb) rb.addEventListener('click', () => linkFolder(true));
 }
 
 function bucket(pid){
@@ -767,48 +1021,50 @@ function itemOf(pid, id){
   if (!Array.isArray(b[id].links)) b[id].links = [];
   return b[id];
 }
+function checksOf(pid){
+  const b = bucket(pid);
+  if (!b['__checks']) b['__checks'] = { status: '진행중', checks: {} };
+  if (!b['__checks'].checks) b['__checks'].checks = {};
+  return b['__checks'].checks;
+}
 function checkSet(pid){
-  const it = itemOf(pid, '__checks');
-  return new Set(it.links.map(String));
+  const c = checksOf(pid);
+  return new Set(Object.keys(c).filter(k => c[k] && c[k].on));
 }
 
 /* ============================================================
-   데이터 파일 연결 · 내보내기 · 불러오기
+   폴더 연결 · 내보내기 · 불러오기
    ============================================================ */
-async function linkFile(){
-  if (!HAS_FS){ toast('이 브라우저는 파일 연결을 지원하지 않습니다. 내보내기를 쓰세요.', 'error'); return; }
+async function linkFolder(relink){
+  if (!HAS_FS){ toast('Chrome 또는 Edge 로 열어 주세요.', 'error'); return; }
   try {
-    const fh = await window.showSaveFilePicker({
-      suggestedName: FILE_NAME,
-      types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
-    });
-    state.fh = fh; state.fhName = fh.name;
-    await idbSet('file', fh);
-    await writeFile();
-    toast('데이터 파일을 연결했습니다. 이제 자동으로 함께 저장됩니다.');
+    let dh = relink ? await idbGet('dir') : null;
+    if (dh){
+      if (dh.requestPermission &&
+          (await dh.requestPermission({ mode: 'readwrite' })) !== 'granted') dh = null;
+    }
+    if (!dh) dh = await window.showDirectoryPicker({ mode: 'readwrite', id: 'tld-process' });
+    if (dh.requestPermission &&
+        (await dh.requestPermission({ mode: 'readwrite' })) !== 'granted'){
+      toast('폴더 쓰기 권한이 필요합니다.', 'error'); return;
+    }
+
+    state.dir = dh; state.dirName = dh.name; state.needRelink = false;
+    await idbSet('dir', dh);
+
+    const r = await readRemote();
+    if (r.d) mergeIn(r.d);
+    state.remoteMtime = r.mtime;
+
+    logAdd('폴더연결', dh.name, { pid: '' });
+    await writeRemote();
+    writeLS();
+    afterLoad();
+    startPoll();
+    toast('폴더를 연결했습니다. 이제 폴더 안의 파일에 저장됩니다.');
   } catch (e) {
     if (e && e.name === 'AbortError') return;
-    toast('파일 연결 실패: ' + e.message, 'error');
-  }
-}
-
-// 이전에 연결해 둔 파일을 다시 쓰려면 사용자가 한 번 눌러 권한을 줘야 한다.
-async function relinkFile(){
-  const fh = await idbGet('file');
-  if (!fh){ toast('연결해 둔 파일이 없습니다.', 'error'); return; }
-  try {
-    if (fh.requestPermission &&
-        (await fh.requestPermission({ mode: 'readwrite' })) !== 'granted'){
-      toast('파일 권한이 거부됐습니다.', 'error'); return;
-    }
-    const text = await (await fh.getFile()).text();
-    const d = JSON.parse(text || '{}');
-    state.fh = fh; state.fhName = fh.name;
-    if (d.projects) { applySnapshot(d); persist(); }
-    afterLoad();
-    toast('데이터 파일을 다시 연결했습니다.');
-  } catch (e) {
-    toast('다시 연결 실패: ' + e.message, 'error');
+    toast('폴더 연결 실패: ' + e.message, 'error');
   }
 }
 
@@ -816,10 +1072,22 @@ function exportFile(){
   const blob = new Blob([JSON.stringify(snapshot(), null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = FILE_NAME.replace('.json', '-' + new Date().toISOString().slice(0, 10) + '.json');
+  a.download = 'TLD-process-data-' + today() + '.json';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   toast('JSON 파일로 내보냈습니다.');
+}
+
+function exportLog(){
+  const text = '﻿' + LOG_HEADER.join(',') + '\r\n' +
+               state.log.map(logRow).join('\r\n') + '\r\n';
+  const blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'TLD-process-log-' + today() + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('로그를 CSV 로 내보냈습니다.');
 }
 
 function importFile(file){
@@ -829,14 +1097,53 @@ function importFile(file){
     try { d = JSON.parse(String(fr.result || '{}')); }
     catch (_) { toast('JSON 파일을 읽지 못했습니다.', 'error'); return; }
     if (!d || !Array.isArray(d.projects)){ toast('이 페이지의 데이터 파일이 아닙니다.', 'error'); return; }
-    const n = d.projects.length;
-    if (!confirm(`불러오면 지금 화면의 데이터가 파일 내용(프로젝트 ${n}건)으로 바뀝니다.\n계속할까요?\n\n※ 먼저 내보내기로 백업해 두는 것을 권합니다.`)) return;
-    applySnapshot(d);
+    if (!confirm(`파일의 프로젝트 ${d.projects.length}건을 지금 데이터에 합칩니다.\n같은 항목은 나중에 수정된 쪽이 남습니다. 계속할까요?`)) return;
+    mergeIn(d);
+    logAdd('불러오기', file.name + ' (프로젝트 ' + d.projects.length + '건)', { pid: '' });
     persist();
     afterLoad();
-    toast(`프로젝트 ${n}건을 불러왔습니다.`);
+    toast('데이터를 합쳤습니다.');
   };
   fr.readAsText(file);
+}
+
+/* ============================================================
+   다른 사람이 바꾼 내용 가져오기
+   ============================================================ */
+let pollTimer;
+function startPoll(){
+  clearInterval(pollTimer);
+  pollTimer = setInterval(pollRemote, POLL_MS);
+}
+async function pollRemote(){
+  if (!state.dir || state.dirty || document.hidden) return;
+  // 입력 중에는 화면을 갈아 끼우지 않는다
+  const a = document.activeElement;
+  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+  try {
+    if (!(await dirOK())) return;
+    const fh = await state.dir.getFileHandle(DATA_FILE, { create: true });
+    const f  = await fh.getFile();
+    if (!f.size || f.lastModified === state.remoteMtime) return;
+    const d = JSON.parse(await f.text());
+    const nBefore = state.log.length;
+    mergeIn(d);
+    state.remoteMtime = f.lastModified;
+    writeLS();
+
+    const y = window.scrollY;
+    paintProjSel();
+    render();
+    paintStatus();
+    window.scrollTo(0, y);
+
+    const added = state.log.length - nBefore;
+    if (added > 0){
+      const who = Array.from(new Set(state.log.slice(-added).map(e => e.by)))
+        .filter(w => w && w !== state.who);
+      if (who.length) toast(who.join(', ') + ' 님의 변경 ' + added + '건을 반영했습니다.');
+    }
+  } catch (_) {}
 }
 
 /* ============================================================
@@ -846,42 +1153,34 @@ async function boot(){
   try { state.who = localStorage.getItem('tld_proc_who') || ''; } catch (_) {}
   $('#who').value = state.who;
   $('#rev').textContent = REV;
-  if (HAS_FS) $('#btn-link').hidden = false;
+  if (!HAS_FS) $('#btn-link').disabled = true;
 
-  // 1) 브라우저 저장소
-  try { applySnapshot(JSON.parse(localStorage.getItem(LS_KEY) || '{}')); } catch (_) {}
+  // 1) 브라우저 예비 사본
+  try {
+    const raw = localStorage.getItem(LS_KEY) || localStorage.getItem('tld_proc_v1');
+    if (raw) applySnapshot(JSON.parse(raw));
+  } catch (_) {}
 
-  // 2) 지난번에 연결한 파일이 아직 권한을 갖고 있으면 그쪽을 원본으로 삼는다
+  // 2) 지난번 폴더가 아직 권한을 갖고 있으면 그쪽을 원본으로 삼는다
   if (HAS_FS){
-    const fh = await idbGet('file');
-    if (fh && fh.queryPermission){
+    const dh = await idbGet('dir');
+    if (dh){
       try {
-        if ((await fh.queryPermission({ mode: 'readwrite' })) === 'granted'){
-          const d = JSON.parse((await (await fh.getFile()).text()) || '{}');
-          state.fh = fh; state.fhName = fh.name;
-          if (Array.isArray(d.projects)) applySnapshot(d);
+        if (!dh.queryPermission || (await dh.queryPermission({ mode: 'readwrite' })) === 'granted'){
+          state.dir = dh; state.dirName = dh.name;
+          const r = await readRemote();
+          if (r.d) mergeIn(r.d);
+          state.remoteMtime = r.mtime;
+          startPoll();
         } else {
-          pendingRelink = true;
+          state.needRelink = true;
         }
-      } catch (_) {}
+      } catch (_) { state.needRelink = true; }
     }
   }
 
   afterLoad();
   paintStatus();
-  if (pendingRelink) offerRelink();
-}
-
-let pendingRelink = false;
-function offerRelink(){
-  const b = $('#banner').firstElementChild;
-  if (!b) return;
-  const btn = document.createElement('button');
-  btn.className = 'btn sm';
-  btn.style.marginLeft = 'auto';
-  btn.textContent = '데이터 파일 다시 연결';
-  btn.addEventListener('click', relinkFile);
-  b.appendChild(btn);
 }
 
 function afterLoad(){
@@ -940,7 +1239,8 @@ function paintProjSel(){
 }
 
 function render(){
-  if (state.view === 'dash') { renderDash(); return; }
+  if (state.view === 'dash'){ renderDash(); return; }
+  if (state.view === 'log'){ renderLog(); return; }
   renderTrack();
 }
 
@@ -1026,6 +1326,7 @@ function stageHTML(pid, st){
           const id = b.ids[i];
           return `<tr>
             <td class="c"><input type="checkbox" class="ckbox" data-ck="${id}" ${cs.has(id) ? 'checked' : ''}
+              data-stage="${st.n}" data-label="${esc(r[0])}"
               style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer"></td>
             <td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${r[2]}</td>
           </tr>`;
@@ -1034,7 +1335,9 @@ function stageHTML(pid, st){
     }
     return `<div class="block"><h3>${esc(b.h)}</h3>${b.items.map((txt, i) => {
       const id = b.ids[i];
-      return `<label class="chk"><input type="checkbox" class="ckbox" data-ck="${id}" ${cs.has(id) ? 'checked' : ''}><span>${txt}</span></label>`;
+      const plain = String(txt).replace(/<[^>]*>/g, '');
+      return `<label class="chk"><input type="checkbox" class="ckbox" data-ck="${id}" ${cs.has(id) ? 'checked' : ''}
+        data-stage="${st.n}" data-label="${esc(plain)}"><span>${txt}</span></label>`;
     }).join('')}</div>`;
   }).join('');
 
@@ -1204,6 +1507,92 @@ function renderDash(){
 }
 
 /* ============================================================
+   Render — 활동 이력
+   ------------------------------------------------------------
+   같은 내용이 폴더의 TLD-process-log.csv 에도 그대로 쌓인다.
+   여기 화면은 최근 것을 빠르게 훑어보기 위한 것이고,
+   보존과 감사는 CSV 파일이 담당한다.
+   ============================================================ */
+const LOG_PAGE = 300;
+
+function renderLog(){
+  const q  = state.logQ;
+  const bys = Array.from(new Set(state.log.map(e => e.by).filter(Boolean))).sort();
+  const pjs = state.projects.slice();
+
+  $('#toc').innerHTML =
+    '<h4>보기</h4><a href="#" data-view-switch="track">진행 관리로 돌아가기</a>' +
+    '<hr><h4>기록 위치</h4>' +
+    `<div style="padding:4px 9px;font-size:12px;color:var(--muted);line-height:1.55">` +
+    (state.dir
+      ? `${esc(state.dirName)} 폴더의<br><b style="font-family:var(--mono);font-size:11px">${esc(LOG_FILE)}</b><br>에 계속 쌓입니다.`
+      : '폴더가 연결되지 않아 <b>브라우저에만</b> 있습니다. 폴더를 연결해 주세요.') +
+    '</div>';
+
+  const rows = state.log.filter(e => {
+    if (q.by && e.by !== q.by) return false;
+    if (q.pid && e.pid !== q.pid) return false;
+    if (q.q){
+      const hay = (e.pname + ' ' + e.item + ' ' + e.act + ' ' + e.detail + ' ' + e.by).toLowerCase();
+      if (!hay.includes(q.q.toLowerCase())) return false;
+    }
+    return true;
+  }).slice().reverse();
+
+  const shown = rows.slice(0, LOG_PAGE);
+
+  $('#main').innerHTML = `<div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line-soft)">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="font-family:var(--serif);font-size:18px;font-weight:600">활동 이력</div>
+          <div style="font-size:12.5px;color:var(--muted);margin-top:3px">
+            언제 무엇이 체크됐고 어떤 문서가 등록됐는지 — 전체 ${state.log.length}건 중 ${rows.length}건 표시
+            ${rows.length > LOG_PAGE ? `(최근 ${LOG_PAGE}건만 화면에 표시, 전체는 CSV 참고)` : ''}
+          </div>
+        </div>
+        <button class="btn no-print" id="log-csv">CSV 내려받기</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px" class="no-print">
+        <input type="text" id="log-q" placeholder="내용 검색" value="${esc(q.q)}" style="flex:1;min-width:160px;font-size:13px;padding:5px 9px">
+        <select id="log-by" style="font-size:13px;padding:5px 9px">
+          <option value="">작성자 전체</option>
+          ${bys.map(b => `<option ${b === q.by ? 'selected' : ''}>${esc(b)}</option>`).join('')}
+        </select>
+        <select id="log-pid" style="font-size:13px;padding:5px 9px">
+          <option value="">프로젝트 전체</option>
+          ${pjs.map(p => `<option value="${esc(p.id)}" ${p.id === q.pid ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    ${shown.length ? `<div class="scrollx"><table class="tbl log" style="min-width:860px">
+      <thead><tr><th style="width:140px">일시</th><th style="width:90px">작성자</th>
+        <th style="width:150px">프로젝트</th><th class="c">단계</th>
+        <th style="width:190px">항목</th><th style="width:90px">동작</th><th>상세</th></tr></thead>
+      <tbody>${shown.map(e => `<tr>
+        <td style="font-family:var(--mono);font-size:11.5px;white-space:nowrap">${esc(e.at.slice(0,16).replace('T',' '))}</td>
+        <td>${esc(e.by)}</td>
+        <td style="font-size:12.5px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+            title="${esc(e.pname)}">${esc(e.pname)}</td>
+        <td class="c">${esc(e.stage)}</td>
+        <td style="font-size:12.5px">${esc(e.item)}</td>
+        <td><span class="pill n act-${esc(e.act)}">${esc(e.act)}</span></td>
+        <td style="font-size:12.5px;word-break:break-all">${esc(e.detail)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : '<div class="empty">기록이 없습니다.</div>'}
+  </div>`;
+
+  $('#log-csv').addEventListener('click', exportLog);
+  const debounce = (fn, ms) => { let t; return v => { clearTimeout(t); t = setTimeout(() => fn(v), ms); }; };
+  const requery = debounce(() => renderLog(), 250);
+  $('#log-q').addEventListener('input', e => { state.logQ.q = e.target.value; requery(); });
+  $('#log-by').addEventListener('change', e => { state.logQ.by = e.target.value; renderLog(); });
+  $('#log-pid').addEventListener('change', e => { state.logQ.pid = e.target.value; renderLog(); });
+  const qi = $('#log-q');
+  if (document.activeElement !== qi && q.q){ qi.focus(); qi.setSelectionRange(q.q.length, q.q.length); }
+}
+
+/* ============================================================
    부분 갱신 — 입력 중 포커스가 날아가지 않도록 전체 렌더를 피한다
    ============================================================ */
 function refreshProgress(){
@@ -1341,6 +1730,8 @@ function bindEvents(){
       if (!l) return;
       if (!confirm(`링크를 삭제할까요?\n\n${l.label || ''}\n${l.url || ''}`)) return;
       it.links.splice(Number(del.dataset.i), 1);
+      const dd = DELIV_BY_ID[del.dataset.id] || {};
+      logAdd('링크삭제', (l.label || '') + ' | ' + (l.url || ''), { stage: dd.stage, item: dd.name });
       queueSave(state.pid, del.dataset.id);
       refreshDeliv(del.dataset.id);
       toast('링크를 삭제했습니다.');
@@ -1364,18 +1755,22 @@ function bindEvents(){
   main.addEventListener('change', e => {
     const ck = e.target.closest('.ckbox');
     if (ck){
-      const it = itemOf(state.pid, '__checks');
-      const set = new Set(it.links.map(String));
-      if (ck.checked) set.add(ck.dataset.ck); else set.delete(ck.dataset.ck);
-      it.links = Array.from(set);
-      it.status = '진행중';
+      requireWho();
+      const id = ck.dataset.ck;
+      checksOf(state.pid)[id] = { on: ck.checked, at: nowISO() };
+      logAdd(ck.checked ? '체크' : '체크해제', ck.dataset.label || '',
+             { stage: ck.dataset.stage, item: '체크리스트' });
       queueSave(state.pid, '__checks');
       refreshProgress();
       return;
     }
     const sel = e.target.closest('.st-sel');
     if (sel){
+      requireWho();
       const it = itemOf(state.pid, sel.dataset.id);
+      const d = DELIV_BY_ID[sel.dataset.id] || {};
+      logAdd('상태변경', (it.status || '미착수') + ' → ' + sel.value,
+             { stage: d.stage, item: d.name });
       it.status = sel.value;
       sel.dataset.v = sel.value;
       const card = sel.closest('.deliv');
@@ -1392,12 +1787,24 @@ function bindEvents(){
   });
 
   // 텍스트/날짜 필드
+  const FIELD_LABEL = { owner: '담당자', due: '기한', done: '완료일', note: '비고' };
+  const fieldLogTimer = {};
   main.addEventListener('input', e => {
     const f = e.target.closest('.fld');
     if (!f) return;
     const it = itemOf(state.pid, f.dataset.id);
     it[f.dataset.f] = f.value;
     queueSave(state.pid, f.dataset.id);
+
+    // 타자 한 글자마다 남기지 않고, 입력이 멎으면 그때 한 줄 남긴다
+    const key = f.dataset.id + '|' + f.dataset.f;
+    clearTimeout(fieldLogTimer[key]);
+    const pid = state.pid, val = f.value, fname = f.dataset.f, did = f.dataset.id;
+    fieldLogTimer[key] = setTimeout(() => {
+      const d = DELIV_BY_ID[did] || {};
+      logAdd(FIELD_LABEL[fname] || fname, val || '(지움)', { pid: pid, stage: d.stage, item: d.name });
+      persist();
+    }, 1200);
   });
 
   // ── 프로젝트 모달
@@ -1416,7 +1823,7 @@ function bindEvents(){
     if (f) importFile(f);
     e.target.value = '';
   });
-  $('#btn-link').addEventListener('click', linkFile);
+  $('#btn-link').addEventListener('click', () => linkFolder(state.needRelink));
   $('#m-proj').addEventListener('click', e => {
     if (e.target.id === 'm-proj' || e.target.hasAttribute('data-close')) $('#m-proj').classList.remove('open');
   });
@@ -1435,12 +1842,15 @@ function addLink(btn){
   if (!url){ toast('링크 주소를 입력해 주세요.', 'error'); box.querySelector('.url').focus(); return; }
   if (/^\s*javascript:/i.test(url)){ toast('허용되지 않는 주소입니다.', 'error'); return; }
 
+  requireWho();
   const it = itemOf(state.pid, id);
   it.links.push({
     id: uid(), label: lab || '문서', url,
     by: state.who || '', at: new Date().toISOString().slice(0, 10),
   });
   if (it.status === '미착수') it.status = '진행중';
+  const d = DELIV_BY_ID[id] || {};
+  logAdd('링크등록', (lab || '문서') + ' | ' + url, { stage: d.stage, item: d.name });
   queueSave(state.pid, id);
   refreshDeliv(id);
   toast('링크를 등록했습니다.');
@@ -1491,12 +1901,15 @@ function saveProject(){
   if (state.editing){
     const p = state.projects.find(x => x.id === state.editing);
     if (!p){ toast('프로젝트를 찾을 수 없습니다.', 'error'); return; }
-    Object.assign(p, fields);
+    Object.assign(p, fields, { updatedAt: nowISO(), updatedBy: state.who || '' });
+    logAdd('프로젝트수정', p.name, { pid: p.id, pname: p.name });
   } else {
-    const p = Object.assign({ id: uid(), createdAt: new Date().toISOString(), createdBy: state.who || '' }, fields);
+    const p = Object.assign({ id: uid(), createdAt: nowISO(), createdBy: state.who || '',
+                              updatedAt: nowISO(), updatedBy: state.who || '' }, fields);
     state.projects.push(p);
     state.pid = p.id;
     try { localStorage.setItem('tld_proc_pid', state.pid); } catch (_) {}
+    logAdd('프로젝트등록', p.name, { pid: p.id, pname: p.name });
   }
 
   persist();
@@ -1516,8 +1929,10 @@ function deleteProject(){
   if (!p) return;
   if (!confirm(`「${p.name}」 프로젝트와 그 안의 체크·산출물·링크를 모두 지웁니다.\n되돌릴 수 없습니다. 계속할까요?`)) return;
 
+  logAdd('프로젝트삭제', p.name, { pid: pid, pname: p.name });
   state.projects = state.projects.filter(x => x.id !== pid);
   delete state.items[pid];
+  state.deleted[pid] = nowISO();     // 다른 PC 와 합칠 때 되살아나지 않게
   state.editing = '';
   state.pid = state.projects[0] ? state.projects[0].id : '';
   try { localStorage.setItem('tld_proc_pid', state.pid); } catch (_) {}
