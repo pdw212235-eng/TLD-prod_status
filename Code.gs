@@ -12,6 +12,8 @@ const CONFIG = {
   AUDIT_SHEET: 'AuditLog',
   AS_SHEET: 'AS_History',
   REPORT_SHEET: 'Reports',
+  PROC_PROJECT_SHEET: 'ProcessProjects',
+  PROC_ITEM_SHEET: 'ProcessItems',
   DRIVE_FOLDER_NAME: 'TLD_Product_Photos',
   TOKEN_EXPIRY_HOURS: 8,
 };
@@ -34,6 +36,9 @@ function doGet(e) {
       case 'summary': return jsonResponse(handleSummary(isAdmin));
       case 'export':  return handleExport(params, isAdmin);
       case 'as-list': return jsonResponse(handleASList(params));
+      // 표준 프로세스 진행 관리 (process.html) — 조회는 로그인 없이 가능
+      case 'proc-projects': return jsonResponse(handleProcProjects());
+      case 'proc-items':    return jsonResponse(handleProcItems(params));
       // 접수 내용 조회는 관리자만 (접수 자체는 로그인 없이 가능)
       case 'report-list': requireAdmin(token); return jsonResponse(handleReportList());
       default:        return jsonResponse({ error: '알 수 없는 action' }, 400);
@@ -68,6 +73,10 @@ function doPost(e) {
       // 수정 요청 접수는 누구나 가능 (로그인 불필요)
       case 'report-add': return jsonResponse(handleReportAdd(body));
       case 'report-resolve': requireAdmin(token); return jsonResponse(handleReportResolve(body));
+      // 표준 프로세스 진행 관리 — 등록/수정은 누구나, 프로젝트 삭제만 관리자
+      case 'proc-project-save':   return jsonResponse(handleProcProjectSave(body));
+      case 'proc-item-save':      return jsonResponse(handleProcItemSave(body));
+      case 'proc-project-delete': requireAdmin(token); return jsonResponse(handleProcProjectDelete(body));
       default:        return jsonResponse({ error: '알 수 없는 action' }, 400);
     }
   } catch (err) {
@@ -810,6 +819,269 @@ function handleReportResolve(body) {
 
   writeAuditLog(resolved ? 'REPORT_RESOLVE' : 'REPORT_REOPEN', '', who, 'rowId: ' + rowId);
   return { ok: true };
+}
+
+// ============================================================
+// 전기공사 표준 프로세스 진행 관리 (process.html)
+// ------------------------------------------------------------
+// ProcessProjects : 프로젝트 1행
+// ProcessItems    : (프로젝트 × 항목) 1행. 항목ID '__checks' 는
+//                   그 프로젝트의 체크리스트 상태를 링크JSON 에 배열로 담는다.
+// 조회·등록은 로그인 없이 가능하고, 프로젝트 삭제만 관리자 전용이다.
+// ============================================================
+
+const PROC_PROJECT_COLS = ['id', '프로젝트명', '발주처', '현장', '착수일', '준공목표일', 'PM', '등록일시', '등록자'];
+const PROC_ITEM_COLS = ['rowId', '프로젝트', '항목ID', '단계', '항목명', '상태',
+                        '담당자', '기한', '완료일', '링크JSON', '비고', '수정일시', '수정자'];
+
+const PROC_MAX = { name: 120, text: 200, json: 8000, note: 500 };
+
+// Reports 시트와 같은 방식: 없으면 만들고, 열이 빠졌으면 뒤에 채운다.
+function getProcSheet_(sheetName, cols){
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  let sh = ss.getSheetByName(sheetName);
+  if (!sh) {
+    sh = ss.insertSheet(sheetName);
+    sh.appendRow(cols);
+    sh.setFrozenRows(1);
+    return sh;
+  }
+  const lastCol = sh.getLastColumn();
+  const headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
+  const missing = cols.filter(h => headers.indexOf(h) < 0);
+  if (missing.length) {
+    sh.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]);
+    SpreadsheetApp.flush();
+  }
+  return sh;
+}
+
+function getProcProjectSheet(){ return getProcSheet_(CONFIG.PROC_PROJECT_SHEET, PROC_PROJECT_COLS); }
+function getProcItemSheet()   { return getProcSheet_(CONFIG.PROC_ITEM_SHEET,    PROC_ITEM_COLS); }
+
+function procColIndex_(sh){
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const map = {};
+  headers.forEach((h, i) => { map[String(h).trim()] = i; });
+  return map;
+}
+
+// 시트가 날짜로 바꿔 놓은 값도 화면에서 쓰는 문자열로 되돌린다.
+function procStr_(v){
+  if (v instanceof Date) return Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd');
+  return String(v == null ? '' : v);
+}
+
+function procTrim_(v, max){
+  const s = String(v == null ? '' : v).trim();
+  if (s.length > max) throw { message: '입력이 너무 깁니다 (' + max + '자 이내).', code: 400 };
+  return s;
+}
+
+// ------------------------------------------------------------
+// 조회
+// ------------------------------------------------------------
+function handleProcProjects(){
+  const sh = getProcProjectSheet();
+  if (sh.getLastRow() < 2) return { projects: [] };
+
+  const ci = procColIndex_(sh);
+  const data = sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).getValues();
+  const at = (r, n) => (ci[n] === undefined ? '' : procStr_(r[ci[n]]));
+
+  const projects = data
+    .filter(r => at(r, 'id'))
+    .map(r => ({
+      id:         at(r, 'id'),
+      name:       at(r, '프로젝트명'),
+      client:     at(r, '발주처'),
+      site:       at(r, '현장'),
+      startDate:  at(r, '착수일'),
+      targetDate: at(r, '준공목표일'),
+      pm:         at(r, 'PM'),
+      createdAt:  at(r, '등록일시'),
+      createdBy:  at(r, '등록자'),
+    }));
+
+  return { projects: projects, total: projects.length };
+}
+
+// project 파라미터가 없으면 전체(전체 현황 화면에서 쓴다).
+function handleProcItems(params){
+  const filter = String((params && params.project) || '').trim();
+  const sh = getProcItemSheet();
+  if (sh.getLastRow() < 2) return { items: [] };
+
+  const ci = procColIndex_(sh);
+  const data = sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).getValues();
+  const at = (r, n) => (ci[n] === undefined ? '' : procStr_(r[ci[n]]));
+
+  const items = data
+    .filter(r => at(r, '프로젝트') && at(r, '항목ID'))
+    .filter(r => !filter || at(r, '프로젝트') === filter)
+    .map(r => ({
+      project:   at(r, '프로젝트'),
+      itemId:    at(r, '항목ID'),
+      stage:     at(r, '단계'),
+      name:      at(r, '항목명'),
+      status:    at(r, '상태'),
+      owner:     at(r, '담당자'),
+      due:       at(r, '기한'),
+      done:      at(r, '완료일'),
+      links:     at(r, '링크JSON'),
+      note:      at(r, '비고'),
+      updatedAt: at(r, '수정일시'),
+      updatedBy: at(r, '수정자'),
+    }));
+
+  return { items: items, total: items.length };
+}
+
+// ------------------------------------------------------------
+// 등록 · 수정
+// ------------------------------------------------------------
+function handleProcProjectSave(body){
+  const p = body.project || {};
+  const name = procTrim_(p.name, PROC_MAX.name);
+  if (!name) throw { message: '프로젝트명을 입력해 주세요.', code: 400 };
+
+  const author = procTrim_(body.author, PROC_MAX.text) || '(익명)';
+  const id = procTrim_(p.id, 64) || Utilities.getUuid();
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = getProcProjectSheet();
+    const ci = procColIndex_(sh);
+    const row = new Array(sh.getLastColumn()).fill('');
+    row[ci['id']]         = id;
+    row[ci['프로젝트명']]   = name;
+    row[ci['발주처']]      = procTrim_(p.client, PROC_MAX.text);
+    row[ci['현장']]        = procTrim_(p.site, PROC_MAX.text);
+    row[ci['착수일']]      = procTrim_(p.startDate, 20);
+    row[ci['준공목표일']]   = procTrim_(p.targetDate, 20);
+    row[ci['PM']]         = procTrim_(p.pm, PROC_MAX.text);
+    row[ci['등록일시']]     = new Date().toISOString();
+    row[ci['등록자']]      = author;
+
+    const rowNum = procFindRow_(sh, ci['id'], id);
+    if (rowNum > 0) sh.getRange(rowNum, 1, 1, row.length).setValues([row]);
+    else            sh.appendRow(row);
+  } finally {
+    lock.releaseLock();
+  }
+
+  writeAuditLog('PROC_PROJECT', id, author, name);
+  return { ok: true, id: id };
+}
+
+// (프로젝트, 항목ID) 조합으로 upsert 한다.
+function handleProcItemSave(body){
+  const project = procTrim_(body.project, 64);
+  const itemId  = procTrim_(body.itemId, 64);
+  if (!project) throw { message: '프로젝트가 필요합니다.', code: 400 };
+  if (!itemId)  throw { message: '항목ID가 필요합니다.', code: 400 };
+
+  const links = String(body.links == null ? '[]' : body.links);
+  if (links.length > PROC_MAX.json) {
+    throw { message: '링크가 너무 많습니다. 일부를 정리해 주세요.', code: 400 };
+  }
+  try { JSON.parse(links); } catch (_) { throw { message: '링크 형식이 잘못되었습니다.', code: 400 }; }
+
+  const author = procTrim_(body.author, PROC_MAX.text) || '(익명)';
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = getProcItemSheet();
+    const ci = procColIndex_(sh);
+    const rowNum = procFindItemRow_(sh, ci, project, itemId);
+
+    const row = new Array(sh.getLastColumn()).fill('');
+    row[ci['rowId']]    = rowNum > 0
+      ? procStr_(sh.getRange(rowNum, ci['rowId'] + 1).getValue()) || Utilities.getUuid()
+      : Utilities.getUuid();
+    row[ci['프로젝트']]  = project;
+    row[ci['항목ID']]   = itemId;
+    row[ci['단계']]     = procTrim_(body.stage, 10);
+    row[ci['항목명']]    = procTrim_(body.name, PROC_MAX.name);
+    row[ci['상태']]     = procTrim_(body.status, 20);
+    row[ci['담당자']]    = procTrim_(body.owner, PROC_MAX.text);
+    row[ci['기한']]     = procTrim_(body.due, 20);
+    row[ci['완료일']]    = procTrim_(body.done, 20);
+    row[ci['링크JSON']] = links;
+    row[ci['비고']]     = procTrim_(body.note, PROC_MAX.note);
+    row[ci['수정일시']]  = new Date().toISOString();
+    row[ci['수정자']]    = author;
+
+    if (rowNum > 0) sh.getRange(rowNum, 1, 1, row.length).setValues([row]);
+    else            sh.appendRow(row);
+  } finally {
+    lock.releaseLock();
+  }
+
+  return { ok: true };
+}
+
+// 프로젝트와 그 항목을 함께 지운다. 되돌릴 수 없으므로 관리자 전용.
+function handleProcProjectDelete(body){
+  const id = procTrim_(body.id, 64);
+  if (!id) throw { message: 'id가 필요합니다.', code: 400 };
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  let removed = 0;
+  try {
+    const psh = getProcProjectSheet();
+    const pci = procColIndex_(psh);
+    const rowNum = procFindRow_(psh, pci['id'], id);
+    if (rowNum < 0) throw { message: '프로젝트를 찾을 수 없습니다.', code: 404 };
+    psh.deleteRow(rowNum);
+
+    const ish = getProcItemSheet();
+    if (ish.getLastRow() >= 2) {
+      const ici = procColIndex_(ish);
+      const col = ish.getRange(2, ici['프로젝트'] + 1, ish.getLastRow() - 1, 1).getValues();
+      for (let i = col.length - 1; i >= 0; i--) {
+        if (procStr_(col[i][0]) === id) { ish.deleteRow(i + 2); removed++; }
+      }
+    }
+  } finally {
+    lock.releaseLock();
+  }
+
+  writeAuditLog('PROC_PROJECT_DELETE', id, body.updatedBy || 'admin', '항목 ' + removed + '건 삭제');
+  return { ok: true, removed: removed };
+}
+
+// ------------------------------------------------------------
+// 행 찾기
+// ------------------------------------------------------------
+function procFindRow_(sh, colIdx, value){
+  if (sh.getLastRow() < 2) return -1;
+  const vals = sh.getRange(2, colIdx + 1, sh.getLastRow() - 1, 1).getValues();
+  for (let i = 0; i < vals.length; i++) {
+    if (procStr_(vals[i][0]) === value) return i + 2;
+  }
+  return -1;
+}
+
+function procFindItemRow_(sh, ci, project, itemId){
+  if (sh.getLastRow() < 2) return -1;
+  const n = sh.getLastRow() - 1;
+  const pCol = sh.getRange(2, ci['프로젝트'] + 1, n, 1).getValues();
+  const iCol = sh.getRange(2, ci['항목ID'] + 1, n, 1).getValues();
+  for (let i = 0; i < n; i++) {
+    if (procStr_(pCol[i][0]) === project && procStr_(iCol[i][0]) === itemId) return i + 2;
+  }
+  return -1;
+}
+
+// 시트를 미리 만들어 두고 싶을 때 스크립트 편집기에서 한 번 실행한다.
+function setupProcessSheets(){
+  getProcProjectSheet();
+  getProcItemSheet();
+  Logger.log('ProcessProjects / ProcessItems 시트 준비 완료');
 }
 
 function writeAuditLog(action, id, user, memo) {

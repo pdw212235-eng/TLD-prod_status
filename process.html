@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>전기공사 프로젝트 표준 프로세스</title>
+<style>
+/* ============================================================
+   Tokens — index.html 과 동일 계열
+   ============================================================ */
+:root{
+  --ground:#F2EFE8; --surface:#FBFAF7; --surface-2:#F6F3EC;
+  --line:#E2DCCF; --line-soft:#ECE7DC;
+  --ink:#2A2822; --ink-2:#565247; --muted:#8B8477;
+  --accent:#B4552F; --accent-hover:#9B4726; --accent-soft:#F5E6DD;
+  --danger:#A5322A; --danger-soft:#F6E1DE;
+  --ok:#3F6B4C; --ok-bg:#E1EBE1;
+  --run:#2A6DA8; --run-bg:#DEE9F2;
+  --rev:#8A6415; --rev-bg:#F1E7D1;
+  --idle:#79736A; --idle-bg:#E9E4DB;
+  --shadow-1:0 1px 2px rgba(42,40,34,.06);
+  --shadow-2:0 12px 40px rgba(42,40,34,.16);
+  --r:10px; --r-sm:7px; --r-pill:999px;
+  --serif:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,'Nanum Myeongjo',serif;
+  --sans:Pretendard,'Pretendard Variable',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI','Malgun Gothic',system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#1B1A17; --surface:#232220; --surface-2:#2B2A26;
+    --line:#3A382F; --line-soft:#2F2E28;
+    --ink:#EAE6DC; --ink-2:#BCB7AB; --muted:#8D877B;
+    --accent:#D97757; --accent-hover:#E68C6E; --accent-soft:#3A281F;
+    --danger:#E0705F; --danger-soft:#3A2320;
+    --ok:#96B08B; --ok-bg:#273024;
+    --run:#85B7EA; --run-bg:#22303A;
+    --rev:#D5AC5F; --rev-bg:#383021;
+    --idle:#A29C90; --idle-bg:#2E2C27;
+    --shadow-1:0 1px 2px rgba(0,0,0,.3); --shadow-2:0 12px 40px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#1B1A17; --surface:#232220; --surface-2:#2B2A26;
+  --line:#3A382F; --line-soft:#2F2E28;
+  --ink:#EAE6DC; --ink-2:#BCB7AB; --muted:#8D877B;
+  --accent:#D97757; --accent-hover:#E68C6E; --accent-soft:#3A281F;
+  --danger:#E0705F; --danger-soft:#3A2320;
+  --ok:#96B08B; --ok-bg:#273024;
+  --run:#85B7EA; --run-bg:#22303A;
+  --rev:#D5AC5F; --rev-bg:#383021;
+  --idle:#A29C90; --idle-bg:#2E2C27;
+  --shadow-1:0 1px 2px rgba(0,0,0,.3); --shadow-2:0 12px 40px rgba(0,0,0,.5);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:var(--sans); font-size:14px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent)}
+button,input,select,textarea{font:inherit;color:inherit}
+
+/* ---------- 상단 진행 바 ---------- */
+#bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--accent);z-index:200;transition:width .2s}
+#bar.on{width:70%}
+#bar.done{width:100%;opacity:0;transition:width .2s,opacity .3s .2s}
+
+/* ---------- 헤더 ---------- */
+header{
+  position:sticky; top:0; z-index:100;
+  background:color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter:saturate(140%) blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.head-in{max-width:1400px;margin:0 auto;padding:10px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;line-height:1.2;margin-right:4px}
+.brand b{font-family:var(--serif);font-size:16px;font-weight:600;letter-spacing:-.01em}
+.brand span{font-size:11px;color:var(--muted)}
+.grow{flex:1}
+
+.btn{
+  border:1px solid var(--line); background:var(--surface); color:var(--ink-2);
+  padding:6px 12px; border-radius:var(--r-sm); cursor:pointer; font-size:13px;
+  transition:background .15s,border-color .15s,color .15s; white-space:nowrap;
+}
+.btn:hover{background:var(--surface-2);border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.sm{padding:3px 9px;font-size:12px}
+.btn.danger{color:var(--danger)}
+.btn.danger:hover{background:var(--danger-soft);border-color:var(--danger)}
+
+select,input[type=text],input[type=date],input[type=url],textarea{
+  border:1px solid var(--line); background:var(--surface); border-radius:var(--r-sm);
+  padding:6px 10px; outline:none; max-width:100%;
+}
+select:focus,input:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;width:100%;font-size:13px;line-height:1.5}
+
+.seg{display:flex;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:6px 13px;cursor:pointer;font-size:13px;color:var(--ink-2)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+
+/* ---------- 레이아웃 ---------- */
+.wrap{max-width:1400px;margin:0 auto;padding:22px 20px 90px;display:grid;grid-template-columns:250px 1fr;gap:26px;align-items:start}
+@media (max-width:960px){ .wrap{grid-template-columns:1fr} nav.toc{position:static !important;max-height:none !important} }
+
+/* ---------- 사이드 목차 ---------- */
+nav.toc{position:sticky;top:74px;max-height:calc(100vh - 96px);overflow:auto;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px;box-shadow:var(--shadow-1)}
+nav.toc h4{margin:6px 6px 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+nav.toc a{display:block;text-decoration:none;color:var(--ink-2);padding:7px 9px;border-radius:var(--r-sm);font-size:13px}
+nav.toc a:hover{background:var(--surface-2)}
+nav.toc a.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.toc-row{display:flex;align-items:center;gap:8px}
+.toc-no{width:19px;height:19px;flex:none;border-radius:50%;border:1px solid var(--line);
+  display:grid;place-items:center;font-size:10px;font-family:var(--mono);color:var(--muted);background:var(--surface-2)}
+.toc-row.done .toc-no{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.toc-pc{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--muted)}
+nav.toc hr{border:0;border-top:1px solid var(--line-soft);margin:9px 4px}
+
+/* ---------- 카드 공통 ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-1)}
+.pad{padding:18px 20px}
+
+/* ---------- 프로젝트 헤더 ---------- */
+.projbar{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.projbar .meta{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2)}
+.projbar .meta b{color:var(--muted);font-weight:500;margin-right:5px}
+
+.bigbar{height:8px;border-radius:var(--r-pill);background:var(--surface-2);overflow:hidden;border:1px solid var(--line-soft)}
+.bigbar i{display:block;height:100%;background:var(--accent);transition:width .35s}
+.bigbar.full i{background:var(--ok)}
+
+/* ---------- 단계 섹션 ---------- */
+section.stage{scroll-margin-top:78px;margin-bottom:22px}
+.stage-head{display:flex;gap:14px;align-items:flex-start;padding:16px 20px;border-bottom:1px solid var(--line-soft);cursor:pointer}
+.stage-no{width:34px;height:34px;flex:none;border-radius:9px;background:var(--surface-2);border:1px solid var(--line);
+  display:grid;place-items:center;font-family:var(--serif);font-size:16px;color:var(--ink-2)}
+.stage.done .stage-no{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.stage-title{flex:1;min-width:0}
+.stage-title h2{margin:0;font-family:var(--serif);font-size:18px;font-weight:600;letter-spacing:-.01em}
+.stage-title p{margin:3px 0 0;font-size:12.5px;color:var(--muted)}
+.stage-pc{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;padding-top:5px}
+.chev{color:var(--muted);transition:transform .2s;padding-top:6px}
+.stage.collapsed .chev{transform:rotate(-90deg)}
+.stage.collapsed .stage-body{display:none}
+
+.gate{display:flex;gap:8px;align-items:center;padding:9px 20px;background:var(--surface-2);
+  border-bottom:1px solid var(--line-soft);font-size:12.5px;color:var(--ink-2)}
+.gate b{font-weight:600;color:var(--ink)}
+.gate .tag{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  border:1px solid var(--line);border-radius:var(--r-pill);padding:1px 8px;background:var(--surface)}
+.gate.pass{background:var(--ok-bg)} .gate.pass .tag{color:var(--ok);border-color:var(--ok)}
+
+.purpose{margin:0;padding:14px 20px 0;font-size:13.5px;color:var(--ink-2)}
+.purpose b{color:var(--ink)}
+
+/* ---------- 블록(체크리스트) ---------- */
+.block{padding:14px 20px 4px}
+.block h3{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.block.note{background:var(--danger-soft);margin:14px 20px 0;padding:12px 14px;border-radius:var(--r-sm)}
+.block.note h3{color:var(--danger)}
+.block.note ul{margin:0;padding-left:18px;font-size:13px;color:var(--ink-2)}
+.block.note li{margin:3px 0}
+
+.chk{display:flex;gap:9px;align-items:flex-start;padding:5px 8px;border-radius:var(--r-sm);cursor:pointer}
+.chk:hover{background:var(--surface-2)}
+.chk input{margin:3px 0 0;width:15px;height:15px;flex:none;accent-color:var(--accent);cursor:pointer}
+.chk span{font-size:13.5px;color:var(--ink-2)}
+.chk input:checked+span{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.star{color:var(--accent);font-size:11px;vertical-align:2px}
+
+/* ---------- 표 ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+.tbl th,.tbl td{border:1px solid var(--line-soft);padding:7px 10px;text-align:left;vertical-align:top}
+.tbl th{background:var(--surface-2);font-weight:600;font-size:12px;color:var(--ink-2)}
+.tbl td.c{text-align:center;width:40px}
+.scrollx{overflow-x:auto}
+
+/* ---------- 산출물 ---------- */
+.deliv-head{display:flex;align-items:center;gap:10px;padding:16px 20px 8px;border-top:1px solid var(--line-soft);margin-top:12px}
+.deliv-head h3{margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.deliv-list{padding:0 20px 18px;display:flex;flex-direction:column;gap:10px}
+
+.deliv{border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);overflow:hidden}
+.deliv.st-완료{border-color:var(--ok)}
+.deliv.st-해당없음{opacity:.6}
+.deliv-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px}
+.deliv-name{font-weight:600;font-size:14px;flex:1;min-width:180px}
+.deliv-name small{display:block;font-weight:400;font-size:11.5px;color:var(--muted);margin-top:1px}
+.pill{font-size:11px;border-radius:var(--r-pill);padding:2px 9px;border:1px solid transparent;white-space:nowrap}
+.pill.req{background:var(--accent-soft);color:var(--accent)}
+.pill.opt{background:var(--idle-bg);color:var(--idle)}
+.pill.n{background:var(--surface);border-color:var(--line);color:var(--muted)}
+.st-sel{font-size:12.5px;padding:4px 8px;border-radius:var(--r-pill);font-weight:600}
+.st-sel[data-v="미착수"]{background:var(--idle-bg);color:var(--idle);border-color:var(--idle-bg)}
+.st-sel[data-v="진행중"]{background:var(--run-bg);color:var(--run);border-color:var(--run-bg)}
+.st-sel[data-v="검토중"]{background:var(--rev-bg);color:var(--rev);border-color:var(--rev-bg)}
+.st-sel[data-v="완료"]{background:var(--ok-bg);color:var(--ok);border-color:var(--ok-bg)}
+.st-sel[data-v="해당없음"]{background:var(--surface);color:var(--muted)}
+
+.deliv-body{border-top:1px solid var(--line-soft);background:var(--surface);padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+.fields{display:flex;gap:10px;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:11px;color:var(--muted)}
+.field input{width:150px;font-size:13px;padding:5px 8px}
+.field.wide{flex:1;min-width:220px} .field.wide input{width:100%}
+
+/* 링크 */
+.links{display:flex;flex-direction:column;gap:5px}
+.link-row{display:flex;gap:8px;align-items:center;padding:6px 9px;border:1px solid var(--line-soft);
+  border-radius:var(--r-sm);background:var(--surface-2);font-size:13px}
+.link-row .lb{font-weight:600;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.link-row .lu{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-size:11.5px}
+.link-row .lu a{text-decoration:none} .link-row .lu a:hover{text-decoration:underline}
+.link-row .by{font-size:11px;color:var(--muted);white-space:nowrap}
+.link-add{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.link-add input.lab{width:130px;font-size:13px;padding:5px 8px}
+.link-add input.url{flex:1;min-width:200px;font-size:13px;padding:5px 8px;font-family:var(--mono)}
+.nolink{font-size:12.5px;color:var(--muted);padding:2px 2px 0}
+
+/* ---------- 대시보드 ---------- */
+.dash td.pcell{padding:4px 8px;min-width:52px}
+.minibar{height:6px;border-radius:var(--r-pill);background:var(--surface-2);overflow:hidden;border:1px solid var(--line-soft)}
+.minibar i{display:block;height:100%;background:var(--accent)}
+.minibar.full i{background:var(--ok)}
+.dash td small{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.dash tr:hover td{background:var(--surface-2)}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;font-weight:600;text-align:left}
+.linkbtn:hover{text-decoration:underline}
+
+/* ---------- 모달 ---------- */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;place-items:center;z-index:150;padding:20px}
+.modal.open{display:grid}
+.modal .box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow-2);width:min(520px,100%);max-height:88vh;overflow:auto}
+.modal h3{margin:0;padding:16px 20px;border-bottom:1px solid var(--line-soft);font-family:var(--serif);font-size:16px}
+.modal .body{padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.modal .foot{padding:12px 20px;border-top:1px solid var(--line-soft);display:flex;gap:8px;justify-content:flex-end}
+.modal label{font-size:12px;color:var(--muted);display:block;margin-bottom:3px}
+.modal input,.modal select{width:100%}
+
+/* ---------- 토스트 / 배너 ---------- */
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);
+  background:var(--ink);color:var(--ground);padding:9px 16px;border-radius:var(--r-pill);
+  font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:180;max-width:90vw}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#toast.err{background:var(--danger);color:#fff}
+.banner{max-width:1400px;margin:12px auto 0;padding:9px 16px;border-radius:var(--r-sm);
+  font-size:12.5px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.banner.warn{background:var(--rev-bg);color:var(--rev);border:1px solid var(--rev)}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+
+/* ---------- 인쇄 ---------- */
+@media print{
+  header,nav.toc,.no-print,#toast,#bar{display:none !important}
+  body{background:#fff}
+  .wrap{display:block;max-width:none;padding:0}
+  .card,.deliv{box-shadow:none;break-inside:avoid}
+  .stage.collapsed .stage-body{display:block !important}
+  section.stage{break-inside:avoid-page}
+  .link-row .lu{white-space:normal;word-break:break-all}
+}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+
+<header>
+  <div class="head-in">
+    <div class="brand">
+      <b>전기공사 프로젝트 표준 프로세스</b>
+      <span id="rev">v0.1 · 진행 관리</span>
+    </div>
+
+    <div class="seg no-print" id="viewseg">
+      <button data-view="track" aria-pressed="true">진행 관리</button>
+      <button data-view="dash" aria-pressed="false">전체 현황</button>
+    </div>
+
+    <label class="no-print" style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)">
+      프로젝트
+      <select id="projsel" style="min-width:200px"></select>
+    </label>
+    <button class="btn no-print" id="btn-newproj">＋ 프로젝트</button>
+
+    <div class="grow"></div>
+
+    <label class="no-print" style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)">
+      작성자
+      <input type="text" id="who" placeholder="이름" style="width:96px;font-size:13px;padding:5px 8px">
+    </label>
+    <button class="btn ghost no-print" id="btn-collapse" title="모두 접기/펼치기">⌄ 접기</button>
+    <button class="btn ghost no-print" id="btn-print" title="인쇄 / PDF 저장">🖨</button>
+    <button class="btn ghost no-print" id="btn-theme" title="라이트/다크">◐</button>
+  </div>
+</header>
+
+<div id="banner"></div>
+
+<div class="wrap">
+  <nav class="toc no-print" id="toc"></nav>
+  <main id="main"></main>
+</div>
+
+<!-- 새 프로젝트 -->
+<div class="modal" id="m-proj">
+  <div class="box">
+    <h3>프로젝트 등록</h3>
+    <div class="body">
+      <div><label>프로젝트명 *</label><input type="text" id="p-name" placeholder="예) OO빌딩 로비 LED 전기공사"></div>
+      <div><label>발주처</label><input type="text" id="p-client"></div>
+      <div><label>현장</label><input type="text" id="p-site"></div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1"><label>착수일</label><input type="date" id="p-start"></div>
+        <div style="flex:1"><label>준공 목표일</label><input type="date" id="p-target"></div>
+      </div>
+      <div><label>담당 PM</label><input type="text" id="p-pm"></div>
+    </div>
+    <div class="foot">
+      <button class="btn" data-close>취소</button>
+      <button class="btn primary" id="p-save">등록</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ============================================================
+   CONFIG
+   ------------------------------------------------------------
+   GAS_URL : index.html 과 같은 Apps Script 웹앱 주소.
+             Code.gs 를 재배포하면 두 파일 모두 이 값을 교체한다.
+   백엔드가 proc-* 액션을 아직 모르면 자동으로 '로컬 저장 모드'로
+   내려앉아 브라우저에만 저장한다(공유는 되지 않음).
+   ============================================================ */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
+const REV = '표준문서 v0.1 · 2026-09-05';
+const STATUSES = ['미착수', '진행중', '검토중', '완료', '해당없음'];
+
+/* ============================================================
+   표준 문서 정의 — 원문(전기공사 프로젝트 표준 프로세스 v0.1)을
+   단계 / 체크리스트 / 산출물로 구조화한 것.
+   문서가 개정되면 이 배열만 고치면 화면 전체가 따라온다.
+   산출물 id 는 저장 키라서 한번 정하면 바꾸지 않는다.
+   ============================================================ */
+const STAGES = [
+{
+  n:1, title:'사전조사 · 요구정의', q:'무엇을, 어디에, 어떤 조건으로?',
+  gate:'전원 확보 가능 여부 확인',
+  purpose:'견적과 설계의 전제를 확정한다. 이 단계 오류는 뒤에서 100배로 커진다.',
+  blocks:[
+    {t:'check', h:'현장조사 필수 확인 항목', items:[
+      '인입 전원: 수전 방식(단상 220V / 3상 380V), 기존 분전반 여유 차단기, 잔여 계약전력',
+      '전원 인출점 ↔ 설치 위치의 <b>실측 거리</b> 및 케이블 경로(트레이, 배관, 코어링 필요 여부)',
+      '접지 방식 및 기존 접지단자 유무, 접지저항 측정값',
+      '설치면 구조(철골/콘크리트/판넬), 하중 지지 가능 여부',
+      '작업 조건: 야간작업 여부, 정전 가능 시간대, 고소작업 장비 진입 동선, 출입 절차',
+      '환경: 실내/실외, 방수등급 요구, 온도·환기 조건',
+    ]},
+    {t:'check', h:'요구사항 정의서에 반드시 명시', items:[
+      '총 소요 전력(정격 vs 실사용), 예비율',
+      '계약 범위 경계 — "어디까지가 우리 공사인가"를 전원 인출점 기준으로 명문화',
+      '발주처 지급자재 / 시공사 사급자재 구분',
+    ]},
+    {t:'note', h:'흔한 실패', items:[
+      '기존 분전반 여유 용량을 눈으로만 확인 → 계약전력 증설 필요 발견이 착공 후로 밀림',
+      '케이블 경로를 도면상 직선거리로 산정 → 실제 물량 30~50% 초과',
+    ]},
+  ],
+  delivs:[
+    {id:'d1a', name:'현장조사 결과서', by:'시공사', req:true},
+    {id:'d1b', name:'요구사항 정의서 / 공사 범위서', by:'시공사 ↔ 발주처', req:true},
+  ],
+},
+{
+  n:2, title:'설계', q:'전기적으로 성립하는가?',
+  gate:'용량·전압강하 검토 완료',
+  purpose:'부하·계통·도면을 확정한다. 계산 근거가 문서로 남지 않은 설계는 설계가 아니다.',
+  blocks:[
+    {t:'check', h:'2-1. 부하 계산', items:[
+      '기기별 정격입력 → 동시사용률 적용 → 총 부하 산정',
+      'SMPS 부하는 <b>역률과 돌입전류</b>를 별도 검토 (LED 패널의 경우 필수)',
+      '예비율 20~30% 확보',
+    ]},
+    {t:'check', h:'2-2. 전원 계통 설계', items:[
+      '주간선 → 분전반 → 분기회로 구성, 회로 분할 기준 명시',
+      '차단기 선정: 정격전류, 차단용량(kA), <b>트립 특성 곡선</b> — 돌입전류가 큰 부하는 D형(또는 시퀀서 병용) 검토',
+      '전선 굵기: 허용전류 + <b>전압강하 2% 이내</b>(간선 기준) 동시 만족',
+      '접지: 계통접지 방식, 접지선 굵기, 등전위본딩',
+      '보호: 누전차단기 감도전류, SPD(서지보호) 적용 여부',
+    ]},
+    {t:'check', h:'체크포인트', items:[
+      '전압강하 계산 근거가 문서에 남아 있는가',
+      '차단기 상하위 협조(선택차단)가 되어 있는가',
+      '냉각·환기 부하가 전력 계산에 포함되어 있는가',
+    ]},
+  ],
+  delivs:[
+    {id:'d2a', name:'부하계산서', by:'시공사', req:true},
+    {id:'d2b', name:'단선결선도 (SLD)', by:'시공사', req:true},
+    {id:'d2c', name:'분전반 결선도 및 회로 일람표', by:'시공사', req:false},
+    {id:'d2d', name:'배관·배선 경로도 (평면)', by:'시공사', req:true},
+    {id:'d2e', name:'기기 배치도 / 설치 상세도', by:'시공사', req:true},
+  ],
+},
+{
+  n:3, title:'물량산출 · 견적 · 계약', q:'얼마에, 누가, 언제?',
+  gate:'계약 체결 + 범위(Scope) 확정',
+  purpose:'금액과 범위를 동시에 확정한다. 제외 조건을 적지 않은 견적서는 분쟁의 씨앗이다.',
+  blocks:[
+    {t:'table', h:'물량산출(BOQ) 구성', head:['구분','항목 예시'], rows:[
+      ['자재비','케이블, 전선관, 트레이, 분전반, 차단기, 접지자재, 부속류'],
+      ['노무비','전공/조공 품셈, 야간할증, 고소작업 할증'],
+      ['경비','장비 임차(고소차, 발전기), 운반비, 폐기물 처리'],
+      ['기타','검사 수수료, 안전관리비, 이윤·일반관리비'],
+    ]},
+    {t:'check', h:'견적서 작성 원칙', items:[
+      '단가 근거를 남긴다 (품셈 기준 / 실적단가 / 견적단가 중 무엇인지)',
+      '<b>제외 조건(Exclusion)을 반드시 명기</b> — 별도 공사, 미포함 항목, 가정한 조건',
+      'Rev. 이력 관리 — 변경 시 무엇이 왜 바뀌었는지 한 줄 기록',
+    ]},
+    {t:'check', h:'계약 시 확인', items:[
+      '공사 범위, 공기, 대금 지급 조건(선급/기성/준공)',
+      '지체상금, 하자보수 기간 및 보증',
+      '설계변경 처리 절차 (구두 지시 금지 조항)',
+      '<span class="star">★</span> 전기공사업 등록업체 여부 (전기공사업법상 시공 자격)',
+    ]},
+  ],
+  delivs:[
+    {id:'d3a', name:'물량산출서 (BOQ)', by:'시공사', req:true},
+    {id:'d3b', name:'견적서 (Rev. 관리)', by:'시공사', req:true, hint:'Rev. 마다 링크를 추가해 이력을 남긴다'},
+    {id:'d3c', name:'계약서 / 발주서', by:'양측', req:true},
+    {id:'d3d', name:'공정표', by:'시공사', req:true},
+  ],
+},
+{
+  n:4, title:'착공 준비', q:'시작할 준비가 되었는가?',
+  gate:'자재 입고 일정 확정',
+  purpose:'서류와 자재 리드타임을 동시에 건다. 첫날 작업 불가는 대부분 여기서 만들어진다.',
+  blocks:[
+    {t:'check', h:'병행 진행', items:[
+      '자재 발주 — 리드타임 긴 품목(분전반 제작, 특수 케이블)은 착공 전 발주',
+      '정전 일정 협의, 작업 시간대 승인',
+      '장비 예약 (고소작업차 등)',
+    ]},
+    {t:'note', h:'흔한 실패', items:[
+      '분전반 제작 리드타임(보통 2~3주) 미반영 → 공정 전체가 밀림',
+      '원청 출입·안전교육 절차 미확인 → 첫날 작업 불가',
+    ]},
+  ],
+  delivs:[
+    {id:'d4a', name:'착공계', by:'시공사', req:true},
+    {id:'d4b', name:'시공계획서', by:'시공사', req:false},
+    {id:'d4c', name:'안전관리계획 / 위험성평가', by:'시공사', req:true},
+    {id:'d4d', name:'작업허가서 (원청 양식)', by:'시공사 → 원청', req:false},
+    {id:'d4e', name:'근로자 명부 · 보험 가입증명', by:'시공사', req:false},
+    {id:'d4f', name:'자재 승인원 (카탈로그·시험성적서·KC 인증)', by:'시공사 → 발주처', req:true},
+    {id:'d4g', name:'시공상세도 (Shop drawing)', by:'시공사', req:true, hint:'설계도면을 현장 실측 치수로 재작성'},
+  ],
+},
+{
+  n:5, title:'시공', q:'도면대로 시공되고 있는가?',
+  gate:'공종별 검측 합격',
+  purpose:'은폐되기 전에 남긴다. 덮고 나면 증빙을 만들 방법이 없다.',
+  blocks:[
+    {t:'check', h:'표준 시공 순서', items:[
+      '먹매김 / 위치 확인',
+      '배관·트레이 설치 (지지금구 간격 준수)',
+      '배선 (케이블 포설, 여장 확보, 곡률반경 준수)',
+      '분전반 설치 및 결선',
+      '기기 설치 및 전원 결선',
+      '접지 결선',
+      '정리·표시 (회로 네임태그, 케이블 마킹)',
+    ]},
+    {t:'check', h:'시공 중 관리', items:[
+      '작업일보 — 인원, 작업 내용, 진척률, 특이사항',
+      '<b>검측(Inspection): 은폐되기 전에</b> — 매입 배관, 접지, 천장 내부 배선은 덮기 전 사진 필수',
+      '자재 반입 검수 기록',
+      '설계변경 발생 시 즉시 서면화 (변경 지시 → 추가 견적 → 승인 → 시공)',
+    ]},
+    {t:'check', h:'안전', items:[
+      '활선 작업 원칙 금지, 정전 후 검전·단락접지',
+      'LOTO(잠금·표찰), 고소작업 안전대, 밀폐공간 절차',
+    ]},
+  ],
+  delivs:[
+    {id:'d5a', name:'작업일보', by:'현장', req:true, hint:'주간·월간 묶음 링크를 여러 개 등록해도 된다'},
+    {id:'d5b', name:'검측요청서 / 검측결과', by:'시공사 ↔ 감독', req:true},
+    {id:'d5c', name:'자재 반입 검수 기록', by:'현장', req:false},
+    {id:'d5d', name:'설계변경 요청 · 승인서', by:'양측', req:true},
+    {id:'d5e', name:'은폐 전 시공사진', by:'현장', req:true},
+  ],
+},
+{
+  n:6, title:'시험 · 검사', q:'안전하고 정상 동작하는가?',
+  gate:'절연·접지·통전 전항목 합격',
+  purpose:'전 항목 성적서를 만든다. 기준값과 법정검사 대상 여부는 프로젝트마다 재확인한다.',
+  blocks:[
+    {t:'testcheck', h:'자체 시험 (전 항목 성적서 작성)', head:['','시험 항목','방법','판정 기준(참고)'], rows:[
+      ['절연저항','절연저항계, 회로별 측정','사용전압 구분에 따른 기준값 이상 <span class="star">★</span>'],
+      ['접지저항','접지저항계','접지 종별 기준값 이하 <span class="star">★</span>'],
+      ['도통·상 확인','테스터','결선도와 일치'],
+      ['차단기 동작','누전차단기 테스트 버튼, 트립 시험','정상 트립'],
+      ['통전·부하 시험','클램프미터, 상별 전류 측정','상 불평형 확인, 정격 이내'],
+      ['전압강하 실측','무부하/전부하 전압 비교','설계 계산값 이내'],
+      ['발열 확인','열화상 카메라','접속부 이상 발열 없음'],
+    ]},
+    {t:'note', h:'법정검사 주의', items:[
+      '기준값과 법정검사(사용전점검·사용전검사, 감리 대상 여부)는 설비 용량·구분에 따라 달라진다. 프로젝트별로 관할 기준을 확인하고, 필요 시 한국전기안전공사 검사 일정을 공정표에 미리 반영할 것.',
+    ]},
+    {t:'check', h:'LED 디스플레이 특화 확인 항목', items:[
+      '전원 투입 시 돌입전류 실측 (시퀀서/순차투입 동작 확인)',
+      '전부하 연속 운전 시 SMPS 및 분전반 온도',
+      '화면 최대 백색 출력 상태에서의 실사용 전류 (정격 대비)',
+    ]},
+  ],
+  delivs:[
+    {id:'d6a', name:'시험성적서 (절연 / 접지 / 통전)', by:'시공사', req:true, hint:'항목별로 링크를 나눠 등록해도 된다'},
+    {id:'d6b', name:'법정검사 필증 ★', by:'검사기관', req:true},
+  ],
+},
+{
+  n:7, title:'준공 · 인계', q:'발주처가 받을 수 있는가?',
+  gate:'준공검사 합격 + 대금 청구',
+  purpose:'준공도서는 시공 중에 병행 작성한다. 마지막에 몰아서 만들면 준공이 밀린다.',
+  blocks:[
+    {t:'check', h:'인계 항목', items:[
+      '시운전 입회 및 결과 확인',
+      '운영자 교육 (전원 투입·차단 순서, 이상 시 조치)',
+      '비상 연락체계, 하자보수 절차 안내',
+      '키 · 예비 자재 · 특수 공구 인계',
+    ]},
+    {t:'check', h:'정산', items:[
+      '설계변경 반영 최종 정산 내역 작성',
+      '준공검사 합격 후 대금 청구',
+    ]},
+  ],
+  delivs:[
+    {id:'d7a', name:'준공도면 (As-built)', by:'시공사', req:true, hint:'시공도면이 아니라 실제 시공된 상태'},
+    {id:'d7b', name:'시험성적서 일체', by:'시공사', req:true},
+    {id:'d7c', name:'자재 사양서 · 시험성적서 · 인증서', by:'시공사', req:false},
+    {id:'d7d', name:'시공사진 대지 (착공 전/시공 중/은폐 전/준공)', by:'시공사', req:true},
+    {id:'d7e', name:'법정검사 관련 서류 ★', by:'시공사', req:false},
+    {id:'d7f', name:'취급설명서 · 회로 일람표 · 예비품 목록', by:'시공사', req:false},
+    {id:'d7g', name:'시운전 결과서', by:'양측', req:true},
+    {id:'d7h', name:'인수인계서', by:'양측', req:true},
+    {id:'d7i', name:'준공 정산 내역서', by:'시공사', req:true},
+  ],
+},
+{
+  n:8, title:'하자 · 유지보수', q:'계속 잘 돌아가는가?',
+  gate:'하자보수기간 만료',
+  purpose:'장애 이력을 다음 프로젝트 설계로 되돌린다.',
+  blocks:[
+    {t:'check', h:'관리 항목', items:[
+      '하자보수 기간 및 범위 명확화 (시공 하자 vs 제품 하자 vs 사용자 과실 구분 기준)',
+      '정기 점검 항목·주기 정의 — 절연저항, 접속부 열화상, 필터·팬 청소, 차단기 동작 확인',
+      '장애 이력 기록 → 다음 프로젝트 설계에 피드백',
+      '<span class="star">★</span> 전기안전관리자 선임 대상 설비인 경우 정기검사 주기 관리',
+    ]},
+  ],
+  delivs:[
+    {id:'d8a', name:'하자보수 계획서 / 보증서', by:'시공사', req:true},
+    {id:'d8b', name:'점검 이력대장', by:'시공사', req:false, hint:'점검 회차별로 링크 추가'},
+  ],
+},
+];
+
+const ROLES = [
+  ['발주처','요구사항 제시, 전원 제공 조건 확정, 검사·승인, 대금 지급'],
+  ['원청 / 종합업체','공정 총괄, 타 공종 간섭 조정, 출입·안전 관리'],
+  ['전기공사 시공사','설계·시공·시험·준공도서'],
+  ['감리 (해당 시) ★','설계 적정성 확인, 시공 검측, 준공 확인'],
+  ['전기안전관리자 (해당 시) ★','법정 점검, 안전 관리'],
+  ['제조사 / 협력업체','자재 공급, 기술 지원, 제품 하자 대응'],
+];
+
+const RISKS = [
+  ['전원 용량 부족','계약전력 여유 미확인','1단계에서 한전 계약전력·기존 부하 실측'],
+  ['케이블 물량 초과','도면 직선거리로 견적','실측 경로 + 여장 15% 반영'],
+  ['리드타임 지연','분전반·특수자재','계약 직후 즉시 발주'],
+  ['정전 불가','24시간 운영 시설','야간·주말 작업 전제로 견적'],
+  ['돌입전류 트립','전원 투입 시 차단기 떨어짐','시퀀서/D형 차단기 사전 반영, 실측 검증'],
+  ['범위 분쟁','구두 추가 지시','모든 변경 서면화, 견적 승인 후 시공'],
+  ['준공 지연','서류 미비','준공도서를 시공 중 병행 작성'],
+];
+
+/* ============================================================
+   Helpers
+   ============================================================ */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const uid = () => 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const isWeb = u => /^https?:\/\//i.test(String(u || ''));
+const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+
+function busy(on){
+  const b = $('#bar');
+  if (on) b.className = 'on';
+  else { b.className = 'done'; setTimeout(() => { b.className = ''; }, 320); }
+}
+let toastTimer;
+function toast(msg, kind){
+  const el = $('#toast');
+  el.textContent = msg;
+  el.className = 'show' + (kind === 'error' ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 3200);
+}
+
+/* 체크 항목 id 는 위치에서 만든다. 문서 구조가 바뀌면 그 단계의 체크만 초기화된다. */
+STAGES.forEach(st => {
+  st.checkIds = [];
+  st.blocks.forEach((b, bi) => {
+    if (b.t === 'check')     b.ids = b.items.map((_, i) => `s${st.n}b${bi}i${i}`);
+    if (b.t === 'testcheck') b.ids = b.rows.map((_, i) => `s${st.n}b${bi}i${i}`);
+    if (b.ids) st.checkIds.push(...b.ids);
+  });
+});
+const DELIV_BY_ID = {};
+STAGES.forEach(st => st.delivs.forEach(d => { DELIV_BY_ID[d.id] = Object.assign({ stage: st.n }, d); }));
+
+/* ============================================================
+   State
+   ============================================================ */
+const state = {
+  view: 'track',
+  local: false,       // 백엔드에 proc-* 액션이 없으면 true
+  projects: [],       // [{id,name,client,site,startDate,targetDate,pm}]
+  pid: '',
+  items: {},          // items[pid][itemId] = {status,owner,due,done,note,links:[]}
+  who: '',
+  collapsed: false,
+};
+
+const LS_KEY = 'tld_proc_v1';
+function lsRead(){
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch (_) { return {}; }
+}
+function lsWrite(){
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ projects: state.projects, items: state.items }));
+  } catch (_) {}
+}
+
+function bucket(pid){
+  if (!state.items[pid]) state.items[pid] = {};
+  return state.items[pid];
+}
+function itemOf(pid, id){
+  const b = bucket(pid);
+  if (!b[id]) b[id] = { status: '미착수', owner: '', due: '', done: '', note: '', links: [] };
+  if (!Array.isArray(b[id].links)) b[id].links = [];
+  return b[id];
+}
+function checkSet(pid){
+  const it = itemOf(pid, '__checks');
+  return new Set(it.links.map(String));
+}
+
+/* ============================================================
+   API — index.html 과 같은 계약 (GET: query / POST: text/plain JSON)
+   ============================================================ */
+async function apiGet(params){
+  const url = new URL(GAS_URL);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString());
+  const json = await res.json();
+  if (json.error) throw new Error(json.error);
+  return json;
+}
+async function apiPost(body){
+  const res = await fetch(GAS_URL, {
+    method: 'POST', headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (json.error) throw new Error(json.error);
+  return json;
+}
+
+/* 백엔드가 아직 이 페이지용 액션을 모르면 로컬 모드로 내려앉는다. */
+function toLocal(reason){
+  if (state.local) return;
+  state.local = true;
+  const d = lsRead();
+  state.projects = d.projects || [];
+  state.items    = d.items    || {};
+  $('#banner').innerHTML =
+    '<div class="banner warn no-print"><b>로컬 저장 모드</b>' +
+    '<span>서버에 연결하지 못해 이 브라우저에만 저장됩니다. 공유하려면 Code.gs 를 재배포해 주세요.' +
+    (reason ? ' (' + esc(reason) + ')' : '') + '</span></div>';
+}
+
+/* ============================================================
+   Load
+   ============================================================ */
+async function boot(){
+  state.who = (() => { try { return localStorage.getItem('tld_proc_who') || ''; } catch (_) { return ''; } })();
+  $('#who').value = state.who;
+  $('#rev').textContent = REV;
+
+  busy(true);
+  try {
+    const p = await apiGet({ action: 'proc-projects' });
+    state.projects = p.projects || [];
+    const r = await apiGet({ action: 'proc-items' });
+    ingest(r.items || []);
+  } catch (e) {
+    toLocal(e.message);
+  }
+  busy(false);
+
+  // 마지막으로 보던 프로젝트 복원
+  let last = ''; try { last = localStorage.getItem('tld_proc_pid') || ''; } catch (_) {}
+  state.pid = state.projects.some(p => p.id === last) ? last : (state.projects[0] ? state.projects[0].id : '');
+  paintProjSel();
+  render();
+}
+
+function ingest(rows){
+  state.items = {};
+  rows.forEach(r => {
+    const b = bucket(r.project);
+    let links = [];
+    try { links = JSON.parse(r.links || '[]'); } catch (_) { links = []; }
+    b[r.itemId] = {
+      status: r.status || '미착수', owner: r.owner || '', due: r.due || '',
+      done: r.done || '', note: r.note || '', links: Array.isArray(links) ? links : [],
+      updatedAt: r.updatedAt || '', updatedBy: r.updatedBy || '',
+    };
+  });
+}
+
+/* ============================================================
+   Save (항목 단위 디바운스)
+   ============================================================ */
+const pending = {};
+function queueSave(pid, id){
+  const key = pid + '|' + id;
+  clearTimeout(pending[key]);
+  pending[key] = setTimeout(() => flushSave(pid, id), 500);
+}
+async function flushSave(pid, id){
+  const it = itemOf(pid, id);
+  if (state.local) { lsWrite(); return; }
+  const d = DELIV_BY_ID[id];
+  try {
+    await apiPost({
+      action: 'proc-item-save',
+      project: pid, itemId: id,
+      stage: d ? d.stage : 0,
+      name: d ? d.name : (id === '__checks' ? '체크리스트' : id),
+      status: it.status, owner: it.owner, due: it.due, done: it.done,
+      note: it.note, links: JSON.stringify(it.links),
+      author: state.who || '(익명)',
+    });
+  } catch (e) {
+    toast('저장 실패: ' + e.message, 'error');
+  }
+}
+
+/* ============================================================
+   진행률 계산
+   ============================================================ */
+function stageStat(pid, st){
+  const cs = checkSet(pid);
+  const checkTotal = st.checkIds.length;
+  const checkDone  = st.checkIds.filter(id => cs.has(id)).length;
+
+  let dTotal = 0, dDone = 0, gate = true;
+  st.delivs.forEach(d => {
+    const s = itemOf(pid, d.id).status;
+    if (s === '해당없음') return;
+    dTotal++;
+    if (s === '완료') dDone++;
+    else if (d.req) gate = false;
+  });
+  const total = checkTotal + dTotal, done = checkDone + dDone;
+  if (checkDone < checkTotal) gate = false;
+  return { total, done, p: pct(done, total), gate, dTotal, dDone, checkTotal, checkDone };
+}
+function overallStat(pid){
+  let t = 0, d = 0;
+  STAGES.forEach(st => { const s = stageStat(pid, st); t += s.total; d += s.done; });
+  return { total: t, done: d, p: pct(d, t) };
+}
+
+/* ============================================================
+   Render — 공통
+   ============================================================ */
+function paintProjSel(){
+  const sel = $('#projsel');
+  sel.innerHTML = state.projects.length
+    ? state.projects.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')
+    : '<option value="">— 등록된 프로젝트 없음 —</option>';
+  sel.value = state.pid;
+}
+
+function render(){
+  if (state.view === 'dash') { renderDash(); return; }
+  renderTrack();
+}
+
+/* ============================================================
+   Render — 진행 관리
+   ============================================================ */
+function renderTrack(){
+  const pid = state.pid;
+  const main = $('#main');
+  const toc  = $('#toc');
+
+  if (!pid){
+    toc.innerHTML = '';
+    main.innerHTML = '<div class="card empty">프로젝트가 없습니다.<br>상단 <b>＋ 프로젝트</b> 로 먼저 등록해 주세요.</div>';
+    return;
+  }
+
+  const proj = state.projects.find(p => p.id === pid) || { name: '' };
+  const ov = overallStat(pid);
+
+  // ── 목차
+  toc.innerHTML =
+    '<h4>단계</h4>' +
+    STAGES.map(st => {
+      const s = stageStat(pid, st);
+      return `<a href="#s${st.n}" data-jump="s${st.n}">
+        <span class="toc-row ${s.gate ? 'done' : ''}">
+          <i class="toc-no">${st.n}</i><span style="flex:1">${esc(st.title)}</span>
+          <span class="toc-pc">${s.p}%</span>
+        </span></a>`;
+    }).join('') +
+    '<hr><h4>참고</h4>' +
+    '<a href="#ref-roles" data-jump="ref-roles">역할 분담</a>' +
+    '<a href="#ref-risk" data-jump="ref-risk">리스크 Top 7</a>' +
+    '<a href="#ref-master" data-jump="ref-master">문서 마스터 체크리스트</a>';
+
+  // ── 본문
+  main.innerHTML =
+    projHeader(proj, ov) +
+    STAGES.map(st => stageHTML(pid, st)).join('') +
+    refHTML(pid);
+}
+
+function projHeader(proj, ov){
+  const meta = [
+    ['발주처', proj.client], ['현장', proj.site],
+    ['착수', proj.startDate], ['준공 목표', proj.targetDate], ['PM', proj.pm],
+  ].filter(x => x[1]).map(x => `<span><b>${esc(x[0])}</b>${esc(x[1])}</span>`).join('');
+
+  return `<div class="card pad" style="margin-bottom:20px">
+    <div class="projbar">
+      <div style="flex:1;min-width:220px">
+        <div style="font-family:var(--serif);font-size:19px;font-weight:600">${esc(proj.name)}</div>
+        <div class="meta" style="margin-top:5px">${meta || '<span style="color:var(--muted)">부가 정보 없음</span>'}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--mono);font-size:26px;line-height:1">${ov.p}<span style="font-size:14px">%</span></div>
+        <div style="font-size:11.5px;color:var(--muted)">${ov.done} / ${ov.total} 항목</div>
+      </div>
+    </div>
+    <div class="bigbar ${ov.p === 100 ? 'full' : ''}"><i style="width:${ov.p}%"></i></div>
+  </div>`;
+}
+
+function stageHTML(pid, st){
+  const s = stageStat(pid, st);
+  const cs = checkSet(pid);
+
+  const blocks = st.blocks.map(b => {
+    if (b.t === 'note'){
+      return `<div class="block note"><h3>${esc(b.h)}</h3><ul>${b.items.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
+    }
+    if (b.t === 'table'){
+      return `<div class="block"><h3>${esc(b.h)}</h3><div class="scrollx"><table class="tbl">
+        <thead><tr>${b.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+        <tbody>${b.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table></div></div>`;
+    }
+    if (b.t === 'testcheck'){
+      return `<div class="block"><h3>${esc(b.h)}</h3><div class="scrollx"><table class="tbl">
+        <thead><tr>${b.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+        <tbody>${b.rows.map((r, i) => {
+          const id = b.ids[i];
+          return `<tr>
+            <td class="c"><input type="checkbox" class="ckbox" data-ck="${id}" ${cs.has(id) ? 'checked' : ''}
+              style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer"></td>
+            <td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${r[2]}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div></div>`;
+    }
+    return `<div class="block"><h3>${esc(b.h)}</h3>${b.items.map((txt, i) => {
+      const id = b.ids[i];
+      return `<label class="chk"><input type="checkbox" class="ckbox" data-ck="${id}" ${cs.has(id) ? 'checked' : ''}><span>${txt}</span></label>`;
+    }).join('')}</div>`;
+  }).join('');
+
+  return `<section class="stage card ${s.gate ? 'done' : ''}" id="s${st.n}">
+    <div class="stage-head" data-toggle>
+      <div class="stage-no">${st.n}</div>
+      <div class="stage-title">
+        <h2>${esc(st.title)}</h2>
+        <p>${esc(st.q)}</p>
+      </div>
+      <div class="stage-pc">${s.done}/${s.total} · ${s.p}%</div>
+      <div class="chev">⌄</div>
+    </div>
+    <div class="stage-body">
+      <div class="gate ${s.gate ? 'pass' : ''}">
+        <span class="tag">Gate</span><b>${esc(st.gate)}</b>
+        <span style="color:var(--muted)">${s.gate ? '— 통과' : '— 미통과 (필수 산출물·체크 완료 필요)'}</span>
+      </div>
+      <p class="purpose"><b>목적</b> · ${esc(st.purpose)}</p>
+      ${blocks}
+      <div class="deliv-head"><h3>산출물 · 링크 등록</h3>
+        <span style="font-size:11.5px;color:var(--muted)">${s.dDone}/${s.dTotal} 완료</span></div>
+      <div class="deliv-list">${st.delivs.map(d => delivHTML(pid, d)).join('')}</div>
+    </div>
+  </section>`;
+}
+
+function delivHTML(pid, d){
+  const it = itemOf(pid, d.id);
+  const links = it.links.map((l, i) => {
+    const u = String(l.url || '');
+    const target = isWeb(u)
+      ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`
+      : `${esc(u)}`;
+    return `<div class="link-row">
+      <span class="lb">${esc(l.label || '문서')}</span>
+      <span class="lu">${target}</span>
+      ${l.by ? `<span class="by">${esc(l.by)}</span>` : ''}
+      <button class="btn sm ghost no-print copy" data-url="${esc(u)}" title="주소 복사">복사</button>
+      <button class="btn sm ghost danger no-print del-link" data-id="${d.id}" data-i="${i}" title="삭제">✕</button>
+    </div>`;
+  }).join('');
+
+  return `<div class="deliv st-${esc(it.status)}" data-deliv="${d.id}">
+    <div class="deliv-top">
+      <div class="deliv-name">${esc(d.name)}${d.hint ? `<small>${esc(d.hint)}</small>` : ''}</div>
+      <span class="pill ${d.req ? 'req' : 'opt'}">${d.req ? '필수' : '권장'}</span>
+      <span class="pill n">${esc(d.by)}</span>
+      <span class="pill n">링크 ${it.links.length}</span>
+      <select class="st-sel" data-f="status" data-id="${d.id}" data-v="${esc(it.status)}">
+        ${STATUSES.map(s => `<option ${s === it.status ? 'selected' : ''}>${s}</option>`).join('')}
+      </select>
+    </div>
+    <div class="deliv-body">
+      <div class="links">${links || '<div class="nolink">등록된 링크가 없습니다. 아래에 사내 서버/드라이브 주소를 붙여 넣으세요.</div>'}</div>
+      <div class="link-add no-print">
+        <input type="text" class="lab" placeholder="문서명 (예: Rev.2)">
+        <input type="text" class="url" placeholder="https://…  또는  \\\\nas\\projects\\…">
+        <button class="btn sm primary add-link" data-id="${d.id}">＋ 링크 추가</button>
+      </div>
+      <div class="fields">
+        <div class="field"><label>담당자</label>
+          <input type="text" class="fld" data-f="owner" data-id="${d.id}" value="${esc(it.owner)}"></div>
+        <div class="field"><label>기한</label>
+          <input type="date" class="fld" data-f="due" data-id="${d.id}" value="${esc(it.due)}"></div>
+        <div class="field"><label>완료일</label>
+          <input type="date" class="fld" data-f="done" data-id="${d.id}" value="${esc(it.done)}"></div>
+        <div class="field wide"><label>비고</label>
+          <input type="text" class="fld" data-f="note" data-id="${d.id}" value="${esc(it.note)}"></div>
+      </div>
+      ${it.updatedAt ? `<div style="font-size:11px;color:var(--muted)">최종 수정 ${esc(String(it.updatedAt).slice(0,16).replace('T',' '))} · ${esc(it.updatedBy || '')}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function refHTML(pid){
+  const rows = [];
+  STAGES.forEach(st => st.delivs.forEach(d => {
+    const it = itemOf(pid, d.id);
+    rows.push(`<tr>
+      <td class="c">${st.n}</td><td>${esc(d.name)}</td><td>${esc(d.by)}</td>
+      <td>${d.req ? '필수' : '권장'}</td>
+      <td><span class="pill n" style="background:var(--surface-2)">${esc(it.status)}</span></td>
+      <td class="c">${it.links.length}</td>
+    </tr>`);
+  }));
+
+  return `
+  <section class="card" id="ref-roles" style="scroll-margin-top:78px;margin-bottom:22px">
+    <div class="stage-head" data-toggle style="cursor:default">
+      <div class="stage-no">◆</div>
+      <div class="stage-title"><h2>역할 분담</h2><p>일반적 구도</p></div>
+    </div>
+    <div class="stage-body pad"><div class="scrollx"><table class="tbl">
+      <thead><tr><th style="width:200px">역할</th><th>담당</th></tr></thead>
+      <tbody>${ROLES.map(r => `<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td></tr>`).join('')}</tbody>
+    </table></div></div>
+  </section>
+
+  <section class="card" id="ref-risk" style="scroll-margin-top:78px;margin-bottom:22px">
+    <div class="stage-head" data-toggle style="cursor:default">
+      <div class="stage-no">!</div>
+      <div class="stage-title"><h2>리스크 관리 Top 7</h2><p>징후를 먼저 본다</p></div>
+    </div>
+    <div class="stage-body pad"><div class="scrollx"><table class="tbl">
+      <thead><tr><th>리스크</th><th>징후</th><th>사전 대응</th></tr></thead>
+      <tbody>${RISKS.map(r => `<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</tbody>
+    </table></div></div>
+  </section>
+
+  <section class="card" id="ref-master" style="scroll-margin-top:78px">
+    <div class="stage-head" data-toggle style="cursor:default">
+      <div class="stage-no">☑</div>
+      <div class="stage-title"><h2>문서 마스터 체크리스트</h2><p>이 프로젝트의 산출물 현황 한 장 요약 · 인쇄용</p></div>
+    </div>
+    <div class="stage-body pad"><div class="scrollx"><table class="tbl">
+      <thead><tr><th class="c">단계</th><th>문서</th><th>작성 주체</th><th>구분</th><th>상태</th><th class="c">링크</th></tr></thead>
+      <tbody>${rows.join('')}</tbody>
+    </table></div></div>
+  </section>`;
+}
+
+/* ============================================================
+   Render — 전체 현황
+   ============================================================ */
+function renderDash(){
+  $('#toc').innerHTML = '<h4>보기</h4><a href="#" data-view-switch="track">진행 관리로 돌아가기</a>';
+
+  if (!state.projects.length){
+    $('#main').innerHTML = '<div class="card empty">등록된 프로젝트가 없습니다.</div>';
+    return;
+  }
+
+  const rows = state.projects.map(p => {
+    const ov = overallStat(p.id);
+    const cells = STAGES.map(st => {
+      const s = stageStat(p.id, st);
+      return `<td class="pcell" title="${esc(st.title)} — ${s.done}/${s.total}">
+        <div class="minibar ${s.gate ? 'full' : ''}"><i style="width:${s.p}%"></i></div>
+        <small>${s.p}%</small></td>`;
+    }).join('');
+    return `<tr>
+      <td><button class="linkbtn" data-open="${esc(p.id)}">${esc(p.name)}</button>
+        <div style="font-size:11px;color:var(--muted)">${esc([p.client, p.site].filter(Boolean).join(' · '))}</div></td>
+      ${cells}
+      <td class="pcell" style="min-width:80px">
+        <div class="minibar ${ov.p === 100 ? 'full' : ''}"><i style="width:${ov.p}%"></i></div>
+        <small>${ov.p}% · ${ov.done}/${ov.total}</small></td>
+      <td style="white-space:nowrap;font-size:12px;color:var(--muted)">${esc(p.targetDate || '')}</td>
+    </tr>`;
+  }).join('');
+
+  $('#main').innerHTML = `<div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line-soft)">
+      <div style="font-family:var(--serif);font-size:18px;font-weight:600">전체 현황</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-top:3px">
+        단계별 진행률 — 초록 막대는 Gate 통과(필수 산출물·체크 완료)를 뜻합니다.</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:6px">${STAGES.map(st => `<span style="margin-right:12px"><b style="font-family:var(--mono)">${st.n}</b> ${esc(st.title)}</span>`).join('')}</div>
+    </div>
+    <div class="scrollx"><table class="tbl dash" style="min-width:900px">
+      <thead><tr><th style="min-width:200px">프로젝트</th>
+        ${STAGES.map(st => `<th class="c" title="${esc(st.title)}">${st.n}</th>`).join('')}
+        <th>전체</th><th>준공 목표</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
+/* ============================================================
+   부분 갱신 — 입력 중 포커스가 날아가지 않도록 전체 렌더를 피한다
+   ============================================================ */
+function refreshProgress(){
+  const pid = state.pid;
+  if (!pid || state.view !== 'track') return;
+
+  STAGES.forEach(st => {
+    const s = stageStat(pid, st);
+    const sec = document.getElementById('s' + st.n);
+    if (sec){
+      sec.classList.toggle('done', s.gate);
+      const pcEl = sec.querySelector('.stage-pc');
+      if (pcEl) pcEl.textContent = `${s.done}/${s.total} · ${s.p}%`;
+      const gate = sec.querySelector('.gate');
+      if (gate){
+        gate.classList.toggle('pass', s.gate);
+        gate.lastElementChild.textContent = s.gate ? '— 통과' : '— 미통과 (필수 산출물·체크 완료 필요)';
+      }
+      const dh = sec.querySelector('.deliv-head span');
+      if (dh) dh.textContent = `${s.dDone}/${s.dTotal} 완료`;
+    }
+    const link = document.querySelector(`#toc a[data-jump="s${st.n}"]`);
+    if (link){
+      link.querySelector('.toc-row').classList.toggle('done', s.gate);
+      link.querySelector('.toc-pc').textContent = s.p + '%';
+    }
+  });
+
+  const ov = overallStat(pid);
+  const head = $('#main .card .projbar');
+  if (head){
+    const box = head.lastElementChild;
+    box.children[0].innerHTML = `${ov.p}<span style="font-size:14px">%</span>`;
+    box.children[1].textContent = `${ov.done} / ${ov.total} 항목`;
+    const bar = $('#main .bigbar');
+    bar.classList.toggle('full', ov.p === 100);
+    bar.firstElementChild.style.width = ov.p + '%';
+  }
+}
+
+function refreshDeliv(id){
+  const el = document.querySelector(`.deliv[data-deliv="${id}"]`);
+  if (!el) return;
+  const d = DELIV_BY_ID[id];
+  el.outerHTML = delivHTML(state.pid, d);
+  refreshProgress();
+}
+
+/* ============================================================
+   Events
+   ============================================================ */
+function bindEvents(){
+  // ── 뷰 전환
+  $('#viewseg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-view]');
+    if (!b) return;
+    state.view = b.dataset.view;
+    $$('#viewseg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    render();
+  });
+
+  // ── 프로젝트 선택
+  $('#projsel').addEventListener('change', e => {
+    state.pid = e.target.value;
+    try { localStorage.setItem('tld_proc_pid', state.pid); } catch (_) {}
+    render();
+  });
+
+  // ── 작성자
+  $('#who').addEventListener('input', e => {
+    state.who = e.target.value.trim();
+    try { localStorage.setItem('tld_proc_who', state.who); } catch (_) {}
+  });
+
+  // ── 도구
+  $('#btn-print').addEventListener('click', () => window.print());
+  $('#btn-collapse').addEventListener('click', () => {
+    state.collapsed = !state.collapsed;
+    $$('#main section.stage').forEach(s => s.classList.toggle('collapsed', state.collapsed));
+    $('#btn-collapse').textContent = state.collapsed ? '⌃ 펼치기' : '⌄ 접기';
+  });
+  $('#btn-theme').addEventListener('click', () => {
+    const cur = document.documentElement.dataset.theme
+      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('tld_theme', next); } catch (_) {}
+  });
+
+  // ── 목차
+  $('#toc').addEventListener('click', e => {
+    const sw = e.target.closest('[data-view-switch]');
+    if (sw){
+      e.preventDefault();
+      state.view = sw.dataset.viewSwitch;
+      $$('#viewseg button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === state.view)));
+      render();
+      return;
+    }
+    const a = e.target.closest('a[data-jump]');
+    if (!a) return;
+    const sec = document.getElementById(a.dataset.jump);
+    if (sec) sec.classList.remove('collapsed');
+  });
+
+  // ── 본문 (위임)
+  const main = $('#main');
+
+  main.addEventListener('click', e => {
+    // 대시보드에서 프로젝트 열기
+    const open = e.target.closest('[data-open]');
+    if (open){
+      state.pid = open.dataset.open;
+      state.view = 'track';
+      $$('#viewseg button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'track')));
+      $('#projsel').value = state.pid;
+      try { localStorage.setItem('tld_proc_pid', state.pid); } catch (_) {}
+      render();
+      return;
+    }
+    // 단계 접기/펼치기
+    const th = e.target.closest('.stage-head[data-toggle]');
+    if (th && !e.target.closest('input,select,button')){
+      th.parentElement.classList.toggle('collapsed');
+      return;
+    }
+    // 링크 추가
+    const add = e.target.closest('.add-link');
+    if (add){ addLink(add); return; }
+    // 링크 삭제
+    const del = e.target.closest('.del-link');
+    if (del){
+      const it = itemOf(state.pid, del.dataset.id);
+      const l = it.links[Number(del.dataset.i)];
+      if (!l) return;
+      if (!confirm(`링크를 삭제할까요?\n\n${l.label || ''}\n${l.url || ''}`)) return;
+      it.links.splice(Number(del.dataset.i), 1);
+      queueSave(state.pid, del.dataset.id);
+      refreshDeliv(del.dataset.id);
+      toast('링크를 삭제했습니다.');
+      return;
+    }
+    // 주소 복사
+    const cp = e.target.closest('.copy');
+    if (cp){ copyText(cp.dataset.url); return; }
+  });
+
+  // Enter 로도 링크 추가
+  main.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const box = e.target.closest('.link-add');
+    if (!box) return;
+    e.preventDefault();
+    addLink(box.querySelector('.add-link'));
+  });
+
+  // 체크박스
+  main.addEventListener('change', e => {
+    const ck = e.target.closest('.ckbox');
+    if (ck){
+      const it = itemOf(state.pid, '__checks');
+      const set = new Set(it.links.map(String));
+      if (ck.checked) set.add(ck.dataset.ck); else set.delete(ck.dataset.ck);
+      it.links = Array.from(set);
+      it.status = '진행중';
+      queueSave(state.pid, '__checks');
+      refreshProgress();
+      return;
+    }
+    const sel = e.target.closest('.st-sel');
+    if (sel){
+      const it = itemOf(state.pid, sel.dataset.id);
+      it.status = sel.value;
+      sel.dataset.v = sel.value;
+      const card = sel.closest('.deliv');
+      card.className = 'deliv st-' + sel.value;
+      // 완료로 바꾸면 완료일이 비어 있을 때만 오늘로 채운다
+      if (sel.value === '완료' && !it.done){
+        it.done = new Date().toISOString().slice(0, 10);
+        const di = card.querySelector('.fld[data-f="done"]');
+        if (di) di.value = it.done;
+      }
+      queueSave(state.pid, sel.dataset.id);
+      refreshProgress();
+    }
+  });
+
+  // 텍스트/날짜 필드
+  main.addEventListener('input', e => {
+    const f = e.target.closest('.fld');
+    if (!f) return;
+    const it = itemOf(state.pid, f.dataset.id);
+    it[f.dataset.f] = f.value;
+    queueSave(state.pid, f.dataset.id);
+  });
+
+  // ── 프로젝트 모달
+  $('#btn-newproj').addEventListener('click', () => {
+    ['p-name','p-client','p-site','p-start','p-target','p-pm'].forEach(id => { $('#' + id).value = ''; });
+    $('#m-proj').classList.add('open');
+    $('#p-name').focus();
+  });
+  $('#m-proj').addEventListener('click', e => {
+    if (e.target.id === 'm-proj' || e.target.hasAttribute('data-close')) $('#m-proj').classList.remove('open');
+  });
+  $('#p-save').addEventListener('click', saveProject);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') $('#m-proj').classList.remove('open');
+  });
+}
+
+function addLink(btn){
+  const box = btn.closest('.link-add');
+  const id  = btn.dataset.id;
+  const lab = box.querySelector('.lab').value.trim();
+  const url = box.querySelector('.url').value.trim();
+
+  if (!url){ toast('링크 주소를 입력해 주세요.', 'error'); box.querySelector('.url').focus(); return; }
+  if (/^\s*javascript:/i.test(url)){ toast('허용되지 않는 주소입니다.', 'error'); return; }
+
+  const it = itemOf(state.pid, id);
+  it.links.push({
+    id: uid(), label: lab || '문서', url,
+    by: state.who || '', at: new Date().toISOString().slice(0, 10),
+  });
+  if (it.status === '미착수') it.status = '진행중';
+  queueSave(state.pid, id);
+  refreshDeliv(id);
+  toast('링크를 등록했습니다.');
+}
+
+function copyText(t){
+  const done = () => toast('주소를 복사했습니다.');
+  if (navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(t).then(done, () => toast('복사 실패', 'error'));
+    return;
+  }
+  const ta = document.createElement('textarea');
+  ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done(); } catch (_) { toast('복사 실패', 'error'); }
+  document.body.removeChild(ta);
+}
+
+async function saveProject(){
+  const p = {
+    id: uid(),
+    name: $('#p-name').value.trim(),
+    client: $('#p-client').value.trim(),
+    site: $('#p-site').value.trim(),
+    startDate: $('#p-start').value,
+    targetDate: $('#p-target').value,
+    pm: $('#p-pm').value.trim(),
+  };
+  if (!p.name){ toast('프로젝트명을 입력해 주세요.', 'error'); return; }
+
+  busy(true);
+  if (!state.local){
+    try {
+      const r = await apiPost({ action: 'proc-project-save', project: p, author: state.who || '(익명)' });
+      if (r.id) p.id = r.id;
+    } catch (e) {
+      busy(false);
+      toast('등록 실패: ' + e.message, 'error');
+      return;
+    }
+  }
+  busy(false);
+
+  state.projects.push(p);
+  if (state.local) lsWrite();
+  state.pid = p.id;
+  try { localStorage.setItem('tld_proc_pid', state.pid); } catch (_) {}
+  $('#m-proj').classList.remove('open');
+  paintProjSel();
+  state.view = 'track';
+  $$('#viewseg button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'track')));
+  render();
+  toast('프로젝트를 등록했습니다.');
+}
+
+/* ============================================================
+   Init
+   ============================================================ */
+(function init(){
+  try {
+    const t = localStorage.getItem('tld_theme');
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  } catch (_) {}
+  bindEvents();
+  boot();
+})();
+</script>
+</body>
+</html>
