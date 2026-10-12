@@ -497,7 +497,7 @@ tbody tr.is-out .mgr{opacity:.5}
     <span class="mark">TLD</span>
     <span class="sub">Product Status</span>
   </div>
-  <span class="rev" id="rev">v2.0</span>
+  <span class="rev" id="rev"></span>
   <span class="who" id="who"></span>
   <button class="btn btn-quiet" id="btn-theme" title="라이트 / 다크 전환" aria-label="테마 전환">◐</button>
   <button class="btn-icon" id="btn-report" title="수정 요청 / 버그 신고" aria-label="수정 요청 보내기">
@@ -770,6 +770,27 @@ tbody tr.is-out .mgr{opacity:.5}
   </div>
 </div>
 
+<!-- CSV 내보내기 선택 -->
+<div class="dialog-wrap" id="dlg-export" role="dialog" aria-modal="true" aria-labelledby="export-title">
+  <div class="dialog narrow">
+    <div class="dialog-head">
+      <h2 id="export-title">CSV 내보내기</h2>
+      <button class="x" data-close="export" aria-label="닫기">&times;</button>
+    </div>
+    <div class="dialog-body">
+      <p style="font-size:13px;color:var(--ink-2);line-height:1.6">
+        CMS 비밀번호와 팀뷰어 아이디·비밀번호는 기본으로 빼고 내보냅니다.
+        받은 파일은 메일이나 메신저로 옮기면 사본이 남으니 주의해 주세요.
+      </p>
+    </div>
+    <div class="dialog-foot" style="flex-wrap:wrap">
+      <button class="btn btn-quiet" data-close="export">취소</button>
+      <button class="btn btn-danger" id="btn-export-secret">비밀번호 포함</button>
+      <button class="btn btn-primary" id="btn-export-plain">비밀번호 빼고 받기</button>
+    </div>
+  </div>
+</div>
+
 <div id="lightbox"><img id="lightbox-img" alt=""></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -781,7 +802,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v3.0 · 2026-08-21';
+const REV = 'v3.1 · 2026-10-12';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -818,9 +839,9 @@ const TABLE_COLS = [
   { key:'panelTotal',  label:'총 모듈수', mono:true },
   { key:'brightness',  label:'휘도', mono:true },
   { key:'player',      label:'MCU / Player' },
-  { key:'cmsId',       label:'CMS ID', mono:true },
+  { key:'cmsId',       label:'CMS ID', mono:true, adminOnly:true },
   { key:'inboundDate', label:'입고일', mono:true },
-  { key:'outboundDate',label:'반출일', mono:true },
+  { key:'outboundDate',label:'반출일', mono:true, adminOnly:true },
   { key:'updatedAt',   label:'최종수정', mono:true },
 ];
 const DEFAULT_COLS = ['manager','site','panelModel','panelArray','resX','resY','installDate'];
@@ -895,9 +916,23 @@ function driveImg(url){
   return m ? 'https://lh3.googleusercontent.com/d/' + m[1] : String(url);
 }
 
+// 오늘 날짜(이 기기 시간 기준). toISOString() 은 세계표준시라 한국 0~9시에 어제가 된다.
+function todayLocal(){
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
 function fmtDate(v){
   if (!v) return '';
   const s = String(v);
+  // 시각이 붙은 값(최종수정 등)은 세계표준시라 한국 날짜로 바꿔 보여 준다
+  if (/^\d{4}-\d{2}-\d{2}T\d/.test(s)) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const p = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+    }
+  }
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
   return s;
 }
@@ -1132,7 +1167,7 @@ function renderTiles(){
    Filter + sort + table
    ============================================================ */
 function visibleCols(){
-  const pool = TABLE_COLS.filter(c => c.key !== 'outboundDate' || state.isAdmin);
+  const pool = TABLE_COLS.filter(c => !c.adminOnly || state.isAdmin);
   if (!state.cols) return pool.filter(c => DEFAULT_COLS.includes(c.key));
   const picked = pool.filter(c => state.cols[c.key]);
   return picked.length ? picked : pool.filter(c => DEFAULT_COLS.includes(c.key));
@@ -1218,7 +1253,7 @@ function renderTable(){
    Column menu
    ============================================================ */
 function buildColMenu(){
-  const pool = TABLE_COLS.filter(c => c.key !== 'outboundDate' || state.isAdmin);
+  const pool = TABLE_COLS.filter(c => !c.adminOnly || state.isAdmin);
   const on = k => state.cols ? !!state.cols[k] : DEFAULT_COLS.includes(k);
   $('#cols-menu').innerHTML = '<div class="menu-title">테이블 열</div>'
     + pool.map(c => `<label><input type="checkbox" data-col="${c.key}" ${on(c.key) ? 'checked' : ''}> ${esc(c.label)}</label>`).join('');
@@ -1247,7 +1282,7 @@ function closeOverlay(name){
   else $('#dlg-' + name).classList.remove('open');
   if (!$('.dialog-wrap.open') && !$('.sheet.open')) document.body.style.overflow = '';
 }
-function closeAll(){ ['detail','form','login','report'].forEach(closeOverlay); }
+function closeAll(){ ['detail','form','login','report','export'].forEach(closeOverlay); }
 
 /* ============================================================
    Detail slide-over
@@ -1300,8 +1335,8 @@ function renderDetail(item, asItems){
     </div>`;
 
   const hasSecret = SECRETS.some(k => item[k] !== undefined);
-  html += `<div class="fieldset"><div class="legend">접속 정보</div><dl class="dl">
-    ${row('cmsId', item.cmsId, true)}`;
+  html += `<div class="fieldset"><div class="legend">접속 정보</div><dl class="dl">`;
+  if (state.isAdmin) html += row('cmsId', item.cmsId, true);
   if (hasSecret) {
     SECRETS.forEach(k => {
       const v = item[k];
@@ -1313,7 +1348,7 @@ function renderDetail(item, asItems){
       </div></dd>`;
     });
   } else {
-    html += `<dt>보안 항목</dt><dd class="blank">로그인하면 표시됩니다</dd>`;
+    html += `<dt>접속 정보</dt><dd class="blank">로그인하면 표시됩니다</dd>`;
   }
   html += `</dl></div>`;
 
@@ -1348,15 +1383,16 @@ function renderDetail(item, asItems){
       <div class="sel-wrap" style="flex:0 0 84px"><select id="as-kind" aria-label="구분">
         <option value="설치">설치</option><option value="수리" selected>수리</option>
       </select></div>
-      <input type="date" id="as-date" value="${new Date().toISOString().slice(0,10)}" aria-label="날짜">
+      <input type="date" id="as-date" value="${todayLocal()}" aria-label="날짜">
       <input type="text" id="as-text" maxlength="200" placeholder="내용 (200자 이내)" aria-label="내용">
       <button class="btn btn-ghost btn-sm" id="as-add-btn">추가</button>
     </div>`;
   }
   html += `</div>`;
 
-  html += `<div class="fieldset"><div class="legend">이력</div>
-    ${g(['updatedAt','updatedBy'])}</div>`;
+  // 수정자 이메일은 관리자에게만 (서버도 비로그인 응답에서 뺀다)
+  html += `<div class="fieldset"><div class="legend">마지막 수정</div>
+    ${g(state.isAdmin ? ['updatedAt','updatedBy'] : ['updatedAt'])}</div>`;
 
   $('#d-body').innerHTML = html;
 
@@ -1393,13 +1429,19 @@ async function addAS(id){
   const text = $('#as-text').value.trim();
   const kind = $('#as-kind') ? $('#as-kind').value : '';
   if (!date || !text) { toast('날짜와 내용을 모두 입력하세요', 'error'); return; }
+  const btn = $('#as-add-btn');
+  if (btn.disabled) return;
+  btn.disabled = true;
   busy(true);
   try {
     await apiPost({ action: 'as-add', token: state.token, id, date, text, kind,
                     updatedBy: state.email || 'admin' });
     toast('이력을 추가했습니다');
     await openDetail(id);
-  } catch (e) { fail(e); }
+  } catch (e) {
+    btn.disabled = false;                      // 실패하면 다시 누를 수 있게
+    fail(e);
+  }
   busy(false);
 }
 
@@ -1423,7 +1465,7 @@ async function retire(id){
   try {
     await apiPost({
       action: 'retire', token: state.token, id,
-      outboundDate: new Date().toISOString().slice(0, 10),
+      outboundDate: todayLocal(),
       updatedBy: state.email || 'admin',
     });
     closeOverlay('detail');
@@ -1513,31 +1555,62 @@ async function save(){
     }
   }
 
-  const id = $('#f-id').value;
+  const btn = $('#btn-save');
+  if (btn.disabled) return;                    // 저장 중 중복 클릭 방지
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '저장 중…';
   busy(true);
+
+  const wasNew = !$('#f-id').value;
   try {
-    let targetId = id;
+    let id = $('#f-id').value;
     if (id) {
-      await apiPost({
+      const r = await apiPost({
         action: 'update', token: state.token, id, data,
         updatedAt: $('#f-updatedAt').value,
         updatedBy: state.email || 'admin',
       });
+      if (r.updatedAt) $('#f-updatedAt').value = r.updatedAt;
     } else {
       const r = await apiPost({ action: 'create', token: state.token, data, updatedBy: state.email || 'admin' });
-      targetId = r.id;
+      id = r.id;
+      // 이 시점부터는 이미 등록된 행이다. 다시 저장하면 새로 만들지 않고 수정으로 간다.
+      $('#f-id').value = id;
+      if (r.updatedAt) $('#f-updatedAt').value = r.updatedAt;
+      $('#form-title').textContent = '정보 수정';
     }
 
+    // 사진은 한 장씩. 실패한 것만 남겨 두고 다시 저장할 때 그것만 올린다.
+    const failed = [];
     for (let n = 1; n <= 3; n++) {
-      const f = $('#file-' + n).files[0];
-      if (f) await uploadPhoto(targetId, n, f);
+      const input = $('#file-' + n);
+      const f = input.files[0];
+      if (!f) continue;
+      try {
+        const r = await uploadPhoto(id, n, f);
+        if (r && r.updatedAt) $('#f-updatedAt').value = r.updatedAt;
+        input.value = '';
+      } catch (e) {
+        if (e.authExpired) throw e;
+        failed.push(n);
+      }
     }
 
-    closeOverlay('form');
     await refresh();
-    toast(id ? '수정했습니다' : `등록했습니다 — ${targetId}`);
-  } catch (e) { fail(e); }
-  busy(false);
+    if (failed.length) {
+      toast(`정보는 저장됐지만 사진 ${failed.join(', ')}번은 올라가지 않았습니다. 저장을 다시 누르면 그 사진만 다시 올립니다`, 'error');
+      return;                                  // 폼을 열어 둔다
+    }
+    closeOverlay('form');
+    toast(wasNew ? `등록했습니다 — ${id}` : '수정했습니다');
+  } catch (e) {
+    fail(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+    busy(false);
+  }
 }
 
 function toBase64(file){
@@ -1551,7 +1624,7 @@ function toBase64(file){
 
 async function uploadPhoto(id, slot, file){
   const fileBase64 = await toBase64(file);
-  await apiPost({
+  return apiPost({
     action: 'upload', token: state.token, id, slot,
     fileBase64, mime: file.type, updatedBy: state.email || 'admin',
   });
@@ -1648,6 +1721,9 @@ async function sendReport(){
   const text   = $('#r-text').value.trim();
   if (!text) { toast('내용을 입력해 주세요', 'error'); $('#r-text').focus(); return; }
 
+  const btn = $('#btn-report-send');
+  if (btn.disabled) return;
+  btn.disabled = true;
   busy(true);
   try {
     await apiPost({ action: 'report-add', author, text });
@@ -1657,6 +1733,7 @@ async function sendReport(){
     if (state.isAdmin) await loadReports();   // 방금 접수분을 바로 보여 준다
     else closeOverlay('report');
   } catch (e) { fail(e); }
+  btn.disabled = false;
   busy(false);
 }
 
@@ -1664,17 +1741,36 @@ async function sendReport(){
    CSV
    ============================================================ */
 function exportCsv(){
-  const includeSecret = confirm('민감 정보(CMS PW, Teamviewer ID/PW)를 함께 내보낼까요?\n\n확인 = 포함    취소 = 제외');
-  const url = new URL(GAS_URL);
-  url.searchParams.set('action', 'export');
-  url.searchParams.set('token', state.token);
-  url.searchParams.set('includeSecret', includeSecret ? 'true' : 'false');
-  const d = new Date();
-  const p = n => String(n).padStart(2, '0');
-  const a = document.createElement('a');
-  a.href = url.toString();
-  a.download = `TLD_Product_Status_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.csv`;
-  document.body.appendChild(a); a.click(); a.remove();
+  openOverlay('export');
+  setTimeout(() => $('#btn-export-plain').focus(), 120);
+}
+
+// 링크로 이동하지 않고 받아서 저장한다 — 파일 이름이 지켜지고, 토큰이 붙은 주소가
+// 브라우저 다운로드 기록에 남지 않는다.
+async function downloadCsv(includeSecret){
+  closeOverlay('export');
+  busy(true);
+  try {
+    const url = new URL(GAS_URL);
+    url.searchParams.set('action', 'export');
+    url.searchParams.set('token', state.token);
+    url.searchParams.set('includeSecret', includeSecret ? 'true' : 'false');
+    const res = await fetch(url.toString());
+    const text = await res.text();
+    if (text.trim() === '권한 없음') { onAuthExpired(); return; }
+
+    const d = new Date(), p = n => String(n).padStart(2, '0');
+    const name = `TLD_Product_Status_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${includeSecret ? '_비밀번호포함' : ''}.csv`;
+    const blobUrl = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = blobUrl; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    toast(includeSecret ? '비밀번호를 포함해 내보냈습니다' : 'CSV를 내보냈습니다');
+  } catch (e) {
+    toast('CSV를 받지 못했습니다. 잠시 뒤 다시 시도해 주세요', 'error');
+  }
+  busy(false);
 }
 
 /* ============================================================
@@ -1720,6 +1816,8 @@ function wire(){
   $('#r-text').addEventListener('input', e => { $('#r-count').textContent = e.target.value.length; });
 
   $('#btn-csv').addEventListener('click', exportCsv);
+  $('#btn-export-plain').addEventListener('click', () => downloadCsv(false));
+  $('#btn-export-secret').addEventListener('click', () => downloadCsv(true));
   $('#btn-new').addEventListener('click', () => openForm(null));
   $('#btn-save').addEventListener('click', save);
   $('#f-panelArray').addEventListener('input', updateTotalHint);
