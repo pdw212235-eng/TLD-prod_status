@@ -303,6 +303,30 @@ tbody tr.is-out td{color:var(--muted)}
 .pill[data-s="창고"]{background:var(--st-store-bg);color:var(--st-store)}
 .pill[data-s="반출"]{background:var(--st-out-bg);color:var(--st-out)}
 
+/* ---- 불러오는 중 ---- */
+.skel-list{padding:6px 0}
+.skel-row{display:flex;gap:14px;padding:13px 14px}
+.skel{display:block;height:11px;border-radius:6px;
+  background:linear-gradient(90deg,var(--line-soft) 25%,var(--surface-2) 50%,var(--line-soft) 75%);
+  background-size:200% 100%;animation:skel 1.3s ease-in-out infinite}
+@keyframes skel{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+/* ---- 지금 열어 본 줄 ---- */
+tbody tr.is-active td{background:var(--accent-soft)}
+
+/* ---- 휴대폰 카드 목록 (720px 이하에서만 보인다) ---- */
+.cards{display:none}
+.card{display:block;width:100%;text-align:left;padding:12px 14px;border:none;border-radius:0;
+  border-bottom:1px solid var(--line-soft);background:var(--surface);cursor:pointer;font:inherit;color:inherit}
+.card:last-child{border-bottom:none}
+.card:active,.card.is-active{background:var(--accent-soft)}
+.card .c1{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card .site{font-weight:600;font-size:14.5px;line-height:1.35;color:var(--ink);word-break:break-word}
+.card .c2{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:12.5px;color:var(--muted)}
+.card .c3{display:block;margin-top:4px;font-family:var(--mono);font-size:12px;color:var(--ink-2);
+  font-variant-numeric:tabular-nums;word-break:break-word}
+.card.is-out{opacity:.6}
+
 /* ---- 관리 주체 ---- */
 .mgr{display:inline-flex;align-items:center;gap:6px;color:var(--c,var(--ink-2));font-weight:550;white-space:nowrap}
 .mgr i{width:7px;height:7px;border-radius:2px;background:var(--c,var(--muted));flex:0 0 auto}
@@ -473,7 +497,22 @@ tbody tr.is-out .mgr{opacity:.5}
 #bar.done{width:100%;opacity:0}
 
 @media (max-width:720px){
-  .table-scroll{max-height:none;min-height:0;overflow-x:auto;overflow-y:visible}
+  .table-scroll{display:none}
+  .cards{display:block}
+  /* 머리줄: 버전·부제를 숨겨 로고와 겹치지 않게 */
+  header{gap:6px;padding:0 10px}
+  .rev,.wordmark .sub{display:none}
+  .who{max-width:110px}
+  /* 아이폰에서 입력칸을 누를 때 화면이 확대되지 않게 16px */
+  input,select,textarea{font-size:16px}
+  /* 손가락으로 누르기 쉬운 크기 */
+  .btn-sm,.x,.btn-icon,#btn-theme{min-height:38px;min-width:38px}
+  /* 이력 추가 줄: 내용 칸을 한 줄 전체로 */
+  .as-add{flex-wrap:wrap}
+  .as-add > .sel-wrap{flex:0 0 96px !important}
+  .as-add input[type=date]{flex:1 1 auto}
+  .as-add input[type=text]{flex:1 1 100%;order:3}
+  .as-add .btn{order:4;flex:1 1 100%}
   thead th{position:static}
   .grid2{grid-template-columns:1fr}
   .slots{grid-template-columns:1fr}
@@ -545,6 +584,7 @@ tbody tr.is-out .mgr{opacity:.5}
         <tbody id="tbody"></tbody>
       </table>
     </div>
+    <div class="cards" id="cards"></div>
     <div class="foot">
       <span id="count">—</span>
       <button class="btn btn-quiet btn-sm" id="btn-clear">필터 초기화</button>
@@ -802,7 +842,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v3.1 · 2026-10-12';
+const REV = 'v3.2 · 2026-10-12';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -810,6 +850,10 @@ const STATUSES = ['현장설치', '렌트', '창고', '반출'];
    State
    ============================================================ */
 const state = {
+  loadState: 'loading',
+  loadError: '',
+  listsFailed: false,
+  activeId: null,
   token: '',
   isAdmin: false,
   email: '',
@@ -892,10 +936,13 @@ function mgrChip(name){
   return `<span class="mgr" style="--c:${mgrColor(name)}"><i></i>${esc(name)}</span>`;
 }
 
+let busyCount = 0;
 function busy(on){
+  busyCount = Math.max(0, busyCount + (on ? 1 : -1));
   const bar = $('#bar');
-  if (on) { bar.className = 'on'; }
-  else { bar.className = 'done'; setTimeout(() => { bar.className = ''; }, 320); }
+  if (busyCount > 0) { bar.className = 'on'; return; }
+  bar.className = 'done';
+  setTimeout(() => { if (busyCount === 0) bar.className = ''; }, 320);
 }
 
 let toastTimer;
@@ -940,11 +987,35 @@ function fmtDate(v){
 /* ============================================================
    API — 기존 계약 그대로 (GET: query, POST: text/plain JSON)
    ============================================================ */
+// 서버가 응답하지 않거나 HTML 오류 페이지를 주는 경우까지 사람이 읽을 수 있는 문구로 바꾼다.
+// 쓰기(POST)는 시간이 지나도 서버에서는 처리됐을 수 있어 안내를 다르게 한다.
+async function request(url, init, ms, isWrite){
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  let res;
+  try {
+    res = await fetch(url, Object.assign({}, init, { signal: ctrl.signal }));
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      throw new Error(isWrite
+        ? '서버 응답이 늦어 결과를 확인하지 못했습니다. 목록에서 저장됐는지 확인한 뒤 다시 시도해 주세요'
+        : '서버 응답이 너무 늦습니다. 잠시 뒤 다시 시도해 주세요');
+    }
+    throw new Error('인터넷 연결을 확인해 주세요');
+  } finally {
+    clearTimeout(timer);
+  }
+  try {
+    return await res.json();
+  } catch (_) {
+    throw new Error('서버가 잠시 응답하지 않습니다. 잠시 뒤 다시 시도해 주세요');
+  }
+}
+
 async function api(params){
   const url = new URL(GAS_URL);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString());
-  const json = await res.json();
+  const json = await request(url.toString(), {}, 25000, false);
   if (json.error) {
     const err = new Error(json.error);
     if (/관리자 권한이 필요합니다/.test(json.error)) {
@@ -957,12 +1028,11 @@ async function api(params){
 }
 
 async function apiPost(body){
-  const res = await fetch(GAS_URL, {
+  const json = await request(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(body),
-  });
-  const json = await res.json();
+  }, 90000, true);
   if (json.error) {
     const err = new Error(json.error);
     // 로그인 시도 자체의 실패(미등록 계정 등)는 만료가 아니다.
@@ -1093,7 +1163,11 @@ async function loadLists(){
       statuses: d.statuses || STATUSES,
       panelModels: d.panelModels || [],
     };
-  } catch (e) { console.warn('lists 로드 실패', e); }
+    state.listsFailed = false;
+  } catch (e) {
+    state.listsFailed = true;
+    if (!e.authExpired) toast('관리주체 목록을 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요', 'error');
+  }
 
   const sel = $('#f-manager-filter');
   sel.innerHTML = '<option value="">모든 관리주체</option>'
@@ -1118,9 +1192,12 @@ async function loadItems(){
       paintAuth();
       toast('이전 로그인이 만료되어 로그아웃했습니다', 'error');
     }
+    state.loadState = 'ready';
   } catch (e) {
     if (e.authExpired) return;   // 만료 안내는 onAuthExpired 가 이미 처리했다
-    toast('데이터를 불러오지 못했습니다 — ' + e.message, 'error');
+    // 이미 보이는 목록이 있으면 그대로 두고 알리기만 한다. 처음이면 실패 화면을 띄운다.
+    if (!state.items.length) { state.loadState = 'error'; state.loadError = e.message; }
+    toast('목록을 불러오지 못했습니다 — ' + e.message, 'error');
   }
 }
 
@@ -1219,13 +1296,14 @@ function renderTable(){
     renderTable();
   }));
 
-  if (!rows.length) {
-    $('#tbody').innerHTML = `<tr><td colspan="${cols.length}">
-      <div class="empty"><div class="t">해당하는 항목이 없습니다</div>
-      <div>검색어나 필터를 조정해 보세요.</div></div></td></tr>`;
+  const block = stateBlock(rows);
+  if (block) {
+    $('#tbody').innerHTML = `<tr><td colspan="${cols.length}">${block}</td></tr>`;
+    $('#cards').innerHTML = block;
   } else {
+    $('#cards').innerHTML = rows.map(cardHtml).join('');
     $('#tbody').innerHTML = rows.map(it => `
-      <tr data-id="${esc(it.id)}" class="${it.status === '반출' ? 'is-out' : ''}">
+      <tr data-id="${esc(it.id)}" tabindex="0" class="${it.status === '반출' ? 'is-out' : ''} ${state.activeId === it.id ? 'is-active' : ''}">
         ${cols.map(c => {
           if (c.key === 'status') {
             return `<td><span class="pill" data-s="${esc(it.status || '')}">${esc(it.status || '—')}</span></td>`;
@@ -1238,15 +1316,59 @@ function renderTable(){
           return `<td class="${cls}" title="${esc(v)}">${esc(v) || '<span style="color:var(--muted)">—</span>'}</td>`;
         }).join('')}
       </tr>`).join('');
-
-    $$('#tbody tr[data-id]').forEach(tr =>
-      tr.addEventListener('click', () => openDetail(tr.dataset.id)));
   }
 
   const total = state.items.length;
-  $('#count').textContent = rows.length === total
-    ? `${total}건`
+  $('#count').textContent = (state.loadState === 'loading' && !total) ? '불러오는 중…'
+    : rows.length === total ? `${total}건`
     : `${rows.length}건 / 전체 ${total}건`;
+}
+
+// 불러오는 중 / 실패 / 자료 없음 / 걸러 낸 결과 없음 — 표와 카드가 같은 안내를 쓴다
+function stateBlock(rows){
+  if (state.loadState === 'loading' && !state.items.length) {
+    return `<div class="skel-list" role="status" aria-label="불러오는 중">`
+      + Array.from({ length: 6 }).map(() => `<div class="skel-row">
+          <span class="skel" style="width:16%"></span><span class="skel" style="width:44%"></span>
+          <span class="skel" style="width:20%"></span></div>`).join('')
+      + `</div>`;
+  }
+  if (state.loadState === 'error' && !state.items.length) {
+    return `<div class="empty"><div class="t">목록을 불러오지 못했습니다</div>
+      <div>${esc(state.loadError || '')}</div>
+      <button class="btn btn-primary btn-sm" data-act="retry" style="margin-top:12px">다시 불러오기</button></div>`;
+  }
+  if (!state.items.length) {
+    return `<div class="empty"><div class="t">아직 등록된 항목이 없습니다</div>
+      ${state.isAdmin ? '<div>오른쪽 위 신규 등록으로 첫 항목을 추가해 주세요.</div>' : ''}</div>`;
+  }
+  if (!rows.length) {
+    return `<div class="empty"><div class="t">해당하는 항목이 없습니다</div>
+      <div>검색어나 필터를 조정해 보세요.</div>
+      <button class="btn btn-ghost btn-sm" data-act="clear" style="margin-top:12px">필터 초기화</button></div>`;
+  }
+  return '';
+}
+
+// 휴대폰 카드 한 장: 현장·제품명 / 관리주체·설치일 / 패널 사양 요약
+function cardHtml(it){
+  const res = (it.resX && it.resY) ? `${it.resX}×${it.resY}` : '';
+  const spec = [it.panelModel, it.panelArray, res]
+    .filter(v => v !== '' && v !== null && v !== undefined)
+    .map(v => esc(String(v))).join(' · ');
+  const date = fmtDate(it.installDate);
+  return `<button type="button" class="card ${it.status === '반출' ? 'is-out' : ''} ${state.activeId === it.id ? 'is-active' : ''}" data-id="${esc(it.id)}">
+    <span class="c1"><span class="site">${esc(it.site || '—')}</span>
+      <span class="pill" data-s="${esc(it.status || '')}">${esc(it.status || '—')}</span></span>
+    <span class="c2">${mgrChip(it.manager)}<span class="num">${date ? '설치 ' + esc(date) : '설치일 없음'}</span></span>
+    ${spec ? `<span class="c3">${spec}</span>` : ''}
+  </button>`;
+}
+
+function markActive(id){
+  state.activeId = id || null;
+  $$('[data-id].is-active').forEach(el => el.classList.remove('is-active'));
+  if (id) $$(`[data-id="${CSS.escape(String(id))}"]`).forEach(el => el.classList.add('is-active'));
 }
 
 /* ============================================================
@@ -1278,27 +1400,45 @@ function openOverlay(name){
   document.body.style.overflow = 'hidden';
 }
 function closeOverlay(name){
-  if (name === 'detail') { $('#scrim-detail').classList.remove('open'); $('#sheet-detail').classList.remove('open'); }
+  if (name === 'detail') {
+    $('#scrim-detail').classList.remove('open'); $('#sheet-detail').classList.remove('open');
+    detailSeq++;          // 아직 오는 중인 상세 응답이 창을 다시 열지 않게
+    markActive(null);
+  }
   else $('#dlg-' + name).classList.remove('open');
   if (!$('.dialog-wrap.open') && !$('.sheet.open')) document.body.style.overflow = '';
 }
-function closeAll(){ ['detail','form','login','report','export'].forEach(closeOverlay); }
 
 /* ============================================================
    Detail slide-over
    ============================================================ */
+// 누르면 목록에 이미 있는 정보로 바로 연다. 이력 등 나머지는 받아 오는 대로 채운다.
+// 빠르게 다른 줄을 누르거나 창을 닫으면 늦게 도착한 응답은 버린다.
+let detailSeq = 0;
 async function openDetail(id){
+  const my = ++detailSeq;
+  markActive(id);
+  const base = state.items.find(i => String(i.id) === String(id));
+  if (base) { renderDetail(base, null); openOverlay('detail'); }
+
   busy(true);
   try {
     const [{ item }, as] = await Promise.all([
       api(authed({ action: 'get', id })),
       api({ action: 'as-list', id }).catch(() => ({ items: [] })),
     ]);
+    if (my !== detailSeq) return;
     state.current = item;
     renderDetail(item, as.items || []);
     openOverlay('detail');
-  } catch (e) { fail(e); }
-  busy(false);
+  } catch (e) {
+    if (my !== detailSeq) return;
+    const w = $('#as-wrap');
+    if (w) w.innerHTML = `<div style="color:var(--danger);padding:6px 0">${esc(e.message)}</div>`;
+    fail(e);
+  } finally {
+    busy(false);
+  }
 }
 
 function rowHtml(k, html){
@@ -1368,8 +1508,11 @@ function renderDetail(item, asItems){
     </div></div>`;
   }
 
+  const loading = asItems === null;   // 목록 정보로 먼저 그린 상태
   html += `<div class="fieldset"><div class="legend">설치 및 수리 이력</div><div id="as-wrap">`;
-  html += asItems.length
+  html += loading
+    ? `<div style="color:var(--muted);padding:6px 0">불러오는 중…</div>`
+    : asItems.length
     ? asItems.map(a => `<div class="as-item">
         <span class="d">${esc(fmtDate(a.date))}</span>
         ${a.kind ? `<span class="kind" data-k="${esc(a.kind)}">${esc(a.kind)}</span>` : ''}
@@ -1378,7 +1521,7 @@ function renderDetail(item, asItems){
       </div>`).join('')
     : `<div style="color:var(--muted);padding:6px 0">등록된 이력이 없습니다.</div>`;
   html += `</div>`;
-  if (state.isAdmin) {
+  if (state.isAdmin && !loading) {
     html += `<div class="as-add">
       <div class="sel-wrap" style="flex:0 0 84px"><select id="as-kind" aria-label="구분">
         <option value="설치">설치</option><option value="수리" selected>수리</option>
@@ -1396,7 +1539,7 @@ function renderDetail(item, asItems){
 
   $('#d-body').innerHTML = html;
 
-  $('#d-foot').innerHTML = state.isAdmin
+  $('#d-foot').innerHTML = (state.isAdmin && !loading)
     ? `<button class="btn btn-danger" id="d-retire" ${item.status === '반출' ? 'disabled style="opacity:.4;cursor:default"' : ''}>반출 처리</button>
        <button class="btn btn-primary" id="d-edit">수정</button>`
     : '';
@@ -1496,7 +1639,14 @@ function buildSlots(item){
   }));
 }
 
-function openForm(item){
+async function openForm(item){
+  if (!state.lists.managers.length) {
+    await loadLists();
+    if (!state.lists.managers.length) {
+      toast('관리주체 목록이 없어 등록 창을 열 수 없습니다. 새로고침해 주세요', 'error');
+      return;
+    }
+  }
   const edit = !!item;
   $('#form-title').textContent = edit ? '정보 수정' : '신규 등록';
   $('#f-id').value = edit ? item.id : '';
@@ -1521,8 +1671,28 @@ function openForm(item){
 
   updateTotalHint();
   buildSlots(edit ? item : null);
+  snapForm();
   openOverlay('form');
   setTimeout(() => $('#f-site').focus(), 220);
+}
+
+let formSnap = null;
+function snapForm(){
+  formSnap = {};
+  FORM_KEYS.forEach(k => { const el = $('#f-' + k); formSnap[k] = el ? el.value : ''; });
+}
+function formDirty(){
+  if (!formSnap) return false;
+  const changed = FORM_KEYS.some(k => { const el = $('#f-' + k); return (el ? el.value : '') !== formSnap[k]; });
+  const files = [1, 2, 3].some(n => { const f = $('#file-' + n); return f && f.files.length > 0; });
+  return changed || files;
+}
+// 닫기·취소·Esc 는 여기를 거친다. 저장이 끝난 뒤에는 closeOverlay 를 바로 부른다.
+function requestClose(name){
+  if (name === 'form' && $('#dlg-form').classList.contains('open') && formDirty()
+      && !confirm('저장하지 않은 내용이 있습니다. 닫을까요?')) return false;
+  closeOverlay(name);
+  return true;
 }
 
 function calcTotal(arr){
@@ -1599,6 +1769,7 @@ async function save(){
 
     await refresh();
     if (failed.length) {
+      snapForm();                              // 글자 칸은 저장됐다. 남은 건 실패한 사진뿐
       toast(`정보는 저장됐지만 사진 ${failed.join(', ')}번은 올라가지 않았습니다. 저장을 다시 누르면 그 사진만 다시 올립니다`, 'error');
       return;                                  // 폼을 열어 둔다
     }
@@ -1829,33 +2000,60 @@ function wire(){
     b.textContent = hidden ? '가리기' : '보기';
   }));
 
-  $$('[data-close]').forEach(b => b.addEventListener('click', () => closeOverlay(b.dataset.close)));
+  $$('[data-close]').forEach(b => b.addEventListener('click', () => requestClose(b.dataset.close)));
   $('#scrim-detail').addEventListener('click', () => closeOverlay('detail'));
   $$('.dialog-wrap').forEach(w => w.addEventListener('click', e => {
-    if (e.target === w) closeOverlay(w.id.replace('dlg-', ''));
+    if (e.target !== w) return;
+    if (w.id === 'dlg-form') return;          // 입력 칸이 많은 폼은 바깥을 눌러도 닫지 않는다
+    closeOverlay(w.id.replace('dlg-', ''));
   }));
+
+  // 표 줄·카드는 한 번만 연결한다 (다시 그릴 때마다 붙이지 않음)
+  const onListClick = e => {
+    const act = e.target.closest('[data-act]');
+    if (act) { if (act.dataset.act === 'retry') reload(); else $('#btn-clear').click(); return; }
+    const row = e.target.closest('[data-id]');
+    if (row) openDetail(row.dataset.id);
+  };
+  $('#tbody').addEventListener('click', onListClick);
+  $('#cards').addEventListener('click', onListClick);
+  $('#tbody').addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const row = e.target.closest('tr[data-id]');
+    if (row) { e.preventDefault(); openDetail(row.dataset.id); }
+  });
   $('#lightbox').addEventListener('click', () => $('#lightbox').classList.remove('open'));
 
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
     if ($('#lightbox').classList.contains('open')) { $('#lightbox').classList.remove('open'); return; }
-    closeAll();
+    // 맨 위에 떠 있는 창 하나만 닫는다 (수정 폼은 상세 위에 열린다)
+    for (const name of ['export', 'report', 'login', 'form']) {
+      if ($('#dlg-' + name).classList.contains('open')) { requestClose(name); return; }
+    }
+    if ($('#sheet-detail').classList.contains('open')) closeOverlay('detail');
   });
 }
 
 /* ============================================================
    Boot
    ============================================================ */
-(async function boot(){
-  initTheme();
-  loadSession();
-  paintAuth();
-  wire();
+async function reload(){
+  state.loadState = 'loading';
+  renderTable();
   busy(true);
   await Promise.all([loadLists(), loadItems()]);
   renderTiles();
   renderTable();
   busy(false);
+}
+
+(async function boot(){
+  initTheme();
+  loadSession();
+  paintAuth();
+  wire();
+  await reload();
 })();
 </script>
 </body>
