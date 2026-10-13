@@ -55,6 +55,10 @@ function doPost(e) {
   const action = body.action || '';
   const token  = body.token  || '';
 
+  // 기록자는 화면이 보낸 값을 믿지 않고 로그인 토큰의 주인으로 정한다
+  const who = emailOfToken(token);
+  if (who) body.updatedBy = who;
+
   try {
     switch (action) {
       case 'google-auth': return jsonResponse(handleGoogleAuth(body));
@@ -140,6 +144,12 @@ function validateToken(token) {
   return true;
 }
 
+function emailOfToken(token) {
+  if (!validateToken(token)) return '';
+  const entry = getTokenStore()[token];
+  return (entry && entry.email) || '';
+}
+
 function requireAdmin(token) {
   if (!validateToken(token)) throw { message: '관리자 권한이 필요합니다.', code: 401 };
 }
@@ -179,10 +189,10 @@ const COLUMNS = [
   { key: 'smpsModel',    header: 'SMPS Model',       adminOnly: false },
   { key: 'smpsVoltage',  header: 'SMPS Output Voltage', adminOnly: false },
   { key: 'smpsQty',      header: 'SMPS Quantity',     adminOnly: false },
-  { key: 'cmsId',        header: 'CMS ID',           adminOnly: false },
-  { key: 'cmsPw',        header: 'CMS PW',           adminOnly: true  },
-  { key: 'tvId',         header: 'Teamviewer ID',    adminOnly: true  },
-  { key: 'tvPw',         header: 'Teamviewer PW',    adminOnly: true  },
+  { key: 'cmsId',        header: 'CMS ID',           adminOnly: true  },
+  { key: 'cmsPw',        header: 'CMS PW',           adminOnly: true, secret: true },
+  { key: 'tvId',         header: 'Teamviewer ID',    adminOnly: true, secret: true },
+  { key: 'tvPw',         header: 'Teamviewer PW',    adminOnly: true, secret: true },
   { key: 'inboundDate',  header: '입고일',           adminOnly: false },
   { key: 'outboundDate', header: '반출일',           adminOnly: false },
   { key: 'note1',        header: '비고1',            adminOnly: false },
@@ -193,10 +203,26 @@ const COLUMNS = [
   { key: 'photo2',       header: '사진2',            adminOnly: false },
   { key: 'photo3',       header: '사진3',            adminOnly: false },
   { key: 'updatedAt',    header: '최종수정일시',     adminOnly: false },
-  { key: 'updatedBy',    header: '최종수정자',       adminOnly: false },
+  { key: 'updatedBy',    header: '최종수정자',       adminOnly: true  },
 ];
 
 const ADMIN_KEYS = new Set(COLUMNS.filter(c => c.adminOnly).map(c => c.key));
+
+const STATUSES = ['현장설치', '렌트', '창고', '반출'];
+
+function validateStatus(data) {
+  if (data.status && STATUSES.indexOf(data.status) < 0) {
+    throw { message: '상태는 ' + STATUSES.join(', ') + ' 중 하나여야 합니다.', code: 400 };
+  }
+}
+
+// 배열식으로 계산이 되면 그 값을, 안 되면 기존 값을 그대로 둔다.
+// (예전에는 계산이 안 되면 빈칸으로 덮어써서 x 표기 행의 총 모듈수가 지워졌다)
+function applyPanelTotal(data) {
+  if (!data.panelArray) return;
+  const t = calcPanelTotal(data.panelArray);
+  if (t !== '') data.panelTotal = t;
+}
 
 // 글자수 제한이 있는 필드. 프론트의 maxlength 를 우회한 요청도 여기서 막는다.
 const FIELD_MAX = { hubBoard: 40, smpsModel: 40, smpsVoltage: 10 };
@@ -309,7 +335,7 @@ function handleGet(params, isAdmin) {
 
 function handleLists() {
   const sh = getListsSheet();
-  const statuses = ['현장설치', '렌트', '창고', '반출'];
+  const statuses = STATUSES.slice();
 
   if (!sh) return { managers: [], statuses, panelModels: [] };
 
@@ -358,25 +384,31 @@ function handleSummary(isAdmin) {
 
 function handleCreate(body) {
   const data = body.data || {};
-  const sheet = getSheet();
-  ensureHeaders(sheet);
-  const colIndex = buildColIndex(sheet);
-
-  // ID 생성
-  const newId = generateId(sheet, colIndex);
-  data.id = newId;
-  data.updatedAt = new Date().toISOString();
-  data.updatedBy = body.updatedBy || 'admin';
-
   validateFieldLengths(data);
+  validateStatus(data);
+  applyPanelTotal(data);
 
-  // panelTotal 자동계산
-  if (data.panelArray) data.panelTotal = calcPanelTotal(data.panelArray);
+  // 두 사람이 같은 순간 등록해도 관리번호가 겹치지 않도록 채번~기록을 잠근다
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const sheet = getSheet();
+    ensureHeaders(sheet);
+    const colIndex = buildColIndex(sheet);
 
-  const row = buildRow(data, colIndex, sheet.getLastColumn());
-  sheet.appendRow(row);
-  writeAuditLog('CREATE', newId, data.updatedBy, 'Site: ' + (data.site || ''));
-  return { id: newId };
+    const newId = generateId(sheet, colIndex);
+    data.id = newId;
+    data.updatedAt = new Date().toISOString();
+    data.updatedBy = body.updatedBy || 'admin';
+
+    const row = buildRow(data, colIndex, sheet.getLastColumn());
+    sheet.appendRow(row);
+    SpreadsheetApp.flush();
+    writeAuditLog('CREATE', newId, data.updatedBy, 'Site: ' + (data.site || ''));
+    return { id: newId, updatedAt: data.updatedAt };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function handleUpdate(body) {
@@ -397,12 +429,13 @@ function handleUpdate(body) {
   data.updatedAt = new Date().toISOString();
   data.updatedBy = body.updatedBy || 'admin';
   validateFieldLengths(data);
-  if (data.panelArray) data.panelTotal = calcPanelTotal(data.panelArray);
+  validateStatus(data);
+  applyPanelTotal(data);
 
   const row = buildRow(data, colIndex, sheet.getLastColumn());
   sheet.getRange(rowIdx, 1, 1, row.length).setValues([row]);
   writeAuditLog('UPDATE', id, data.updatedBy, '');
-  return { ok: true };
+  return { ok: true, updatedAt: data.updatedAt };
 }
 
 function handleRetire(body) {
@@ -463,7 +496,8 @@ function handleUpload(body) {
   sheet.getRange(rowIdx, 1, 1, row.length).setValues([row]);
 
   writeAuditLog('UPLOAD', id, existing.updatedBy, `사진${slot}: ${file.getId()}`);
-  return { url };
+  // 업로드도 수정시각을 바꾸므로, 화면이 다음 저장 때 쓸 새 값을 함께 돌려준다
+  return { url, updatedAt: existing.updatedAt };
 }
 
 function getOrCreateDriveFolder() {
@@ -484,7 +518,7 @@ function handleExport(params, isAdmin) {
   const includeSecret = params.includeSecret === 'true';
   const { items } = handleList(params, true); // 관리자로 전체 읽기
 
-  const visibleCols = COLUMNS.filter(c => isAdmin && includeSecret ? true : !c.adminOnly);
+  const visibleCols = COLUMNS.filter(c => includeSecret || !c.secret);
   const headers = visibleCols.map(c => c.header);
 
   const rows = items.map(item =>
@@ -536,9 +570,11 @@ function generateId(sheet, colIndex) {
 
 function calcPanelTotal(panelArray) {
   if (!panelArray) return '';
-  const parts = String(panelArray).split('*').map(Number);
-  if (parts.some(isNaN)) return '';
-  return parts.reduce((a, b) => a * b, 1);
+  const parts = String(panelArray).trim().split(/\s*[*xX×]\s*/);
+  if (parts.some(p => p === '')) return '';
+  const nums = parts.map(Number);
+  if (nums.some(n => !isFinite(n))) return '';
+  return nums.reduce((a, b) => a * b, 1);
 }
 
 function findRowById(sheet, colIndex, id) {
@@ -896,6 +932,56 @@ function migrateHistorySheet() {
 
   Logger.log(added.length ? '추가된 열: ' + added.join(', ') : '추가할 열 없음 (이미 적용됨)');
   Logger.log('Site/제품명 채운 행: ' + filled);
+}
+
+/**
+ * 데이터 정리 (2026-10). 편집기에서 한 번 실행하세요. 여러 번 실행해도 안전합니다.
+ *  1) 상태가 '로비' / 'ISB' 인 행 → 상태 '현장설치', 비고1 에 '위치: 로비' 처럼 기록
+ *  2) 총 모듈수가 비어 있고 패널 배열로 계산되는 행 → 총 모듈수 채움
+ *     (예전 계산이 x 표기를 몰라 앱에서 저장할 때 지워진 값 복구)
+ */
+function cleanupData() {
+  const sheet = getSheet();
+  const ci = buildColIndex(sheet);
+  const last = sheet.getLastRow();
+  if (last < 2) { Logger.log('데이터 없음'); return; }
+
+  ['상태', '비고1', 'Panel수량', '총 모듈수'].forEach(h => {
+    if (ci[h] === undefined) throw new Error('시트에 열이 없습니다: ' + h);
+  });
+
+  const n = last - 1;
+  const col = h => sheet.getRange(2, ci[h] + 1, n, 1);
+  const status = col('상태').getValues();
+  const note1  = col('비고1').getValues();
+  const arr    = col('Panel수량').getValues();
+  const total  = col('총 모듈수').getValues();
+
+  const LOCATIONS = ['로비', 'ISB'];
+  let moved = 0, filled = 0;
+
+  for (let i = 0; i < n; i++) {
+    const s = String(status[i][0]).trim();
+    if (LOCATIONS.indexOf(s) >= 0) {
+      const tag = '위치: ' + s;
+      const cur = String(note1[i][0]).trim();
+      if (cur.indexOf(tag) < 0) note1[i][0] = cur ? cur + ' / ' + tag : tag;
+      status[i][0] = '현장설치';
+      moved++;
+    }
+    if (String(total[i][0]).trim() === '') {
+      const t = calcPanelTotal(arr[i][0]);
+      if (t !== '') { total[i][0] = t; filled++; }
+    }
+  }
+
+  if (moved)  { col('상태').setValues(status); col('비고1').setValues(note1); }
+  if (filled) col('총 모듈수').setValues(total);
+  SpreadsheetApp.flush();
+
+  writeAuditLog('CLEANUP', '', 'admin', '로비/ISB→현장설치 ' + moved + '행, 총 모듈수 채움 ' + filled + '행');
+  Logger.log('로비/ISB → 현장설치: ' + moved + '행');
+  Logger.log('총 모듈수 채움: ' + filled + '행');
 }
 
 function addMissingColumns() {
