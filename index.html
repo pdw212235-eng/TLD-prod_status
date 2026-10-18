@@ -159,6 +159,12 @@ select{appearance:none;background-image:none;padding-right:26px;cursor:pointer}
 .btn-quiet:hover{color:var(--ink);background:var(--surface-2)}
 .btn-danger{background:transparent;color:var(--danger);border-color:var(--danger)}
 .btn-danger:hover{background:var(--danger-soft)}
+.btn-danger-solid{background:var(--danger);color:#FFF8F6;border-color:var(--danger)}
+.btn-danger-solid:hover{filter:brightness(.92)}
+.del-target{display:flex;flex-direction:column;gap:3px;padding:11px 13px;margin-bottom:14px;
+  border:1px solid var(--line);border-left:3px solid var(--danger);border-radius:var(--r-sm);background:var(--surface-2)}
+.del-target .eyebrow{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.04em}
+.del-target strong{font-size:14.5px;color:var(--ink);word-break:break-word}
 .btn-sm{padding:4px 10px;font-size:12px}
 
 /* ============================================================
@@ -749,6 +755,7 @@ tbody tr.is-out .mgr{opacity:.5}
       </div>
     </div>
     <div class="dialog-foot">
+      <button class="btn btn-danger" id="btn-delete" hidden style="margin-right:auto">삭제</button>
       <button class="btn btn-ghost" data-close="form">취소</button>
       <button class="btn btn-primary" id="btn-save">저장</button>
     </div>
@@ -831,6 +838,34 @@ tbody tr.is-out .mgr{opacity:.5}
   </div>
 </div>
 
+<!-- 삭제 최종 확인 -->
+<div class="dialog-wrap" id="dlg-delete" role="alertdialog" aria-modal="true"
+     aria-labelledby="delete-title" aria-describedby="delete-desc">
+  <div class="dialog narrow">
+    <div class="dialog-head">
+      <h2 id="delete-title">이 항목을 삭제할까요?</h2>
+      <button class="x" data-close="delete" aria-label="닫기">&times;</button>
+    </div>
+    <div class="dialog-body" id="delete-desc">
+      <div class="del-target">
+        <span class="eyebrow" id="del-id"></span>
+        <strong id="del-site"></strong>
+      </div>
+      <p style="font-size:13.5px;color:var(--ink-2);line-height:1.65">
+        시트에서 이 행이 지워지며 <strong style="color:var(--danger)">되돌릴 수 없습니다.</strong>
+        사진과 설치·수리 이력도 앱에서 더 이상 보이지 않습니다.
+      </p>
+      <p style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:10px">
+        기록은 남기고 목록에서만 빼려면 삭제 대신 상세 화면의 <b>반출 처리</b>를 쓰세요.
+      </p>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-ghost" data-close="delete" id="btn-delete-cancel">취소</button>
+      <button class="btn btn-danger-solid" id="btn-delete-confirm">삭제</button>
+    </div>
+  </div>
+</div>
+
 <div id="lightbox"><img id="lightbox-img" alt=""></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -842,7 +877,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v3.2 · 2026-10-12';
+const REV = 'v3.3 · 2026-10-18';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -1649,6 +1684,7 @@ async function openForm(item){
   }
   const edit = !!item;
   $('#form-title').textContent = edit ? '정보 수정' : '신규 등록';
+  $('#btn-delete').hidden = !edit;
   $('#f-id').value = edit ? item.id : '';
   $('#f-updatedAt').value = edit ? (item.updatedAt || '') : '';
 
@@ -1749,6 +1785,7 @@ async function save(){
       $('#f-id').value = id;
       if (r.updatedAt) $('#f-updatedAt').value = r.updatedAt;
       $('#form-title').textContent = '정보 수정';
+      $('#btn-delete').hidden = false;
     }
 
     // 사진은 한 장씩. 실패한 것만 남겨 두고 다시 저장할 때 그것만 올린다.
@@ -1909,6 +1946,48 @@ async function sendReport(){
 }
 
 /* ============================================================
+   삭제 — 수정 창에서만, 최종 확인을 거친다
+   ============================================================ */
+function askDelete(){
+  const id = $('#f-id').value;
+  if (!id) return;
+  const item = state.items.find(i => String(i.id) === String(id));
+  $('#del-id').textContent = id;
+  $('#del-site').textContent = (item && item.site) || $('#f-site').value || '(이름 없음)';
+  openOverlay('delete');
+  setTimeout(() => $('#btn-delete-cancel').focus(), 120);   // 기본 선택은 '취소'
+}
+
+async function doDelete(){
+  const id = $('#f-id').value;
+  const btn = $('#btn-delete-confirm');
+  if (!id || btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = '삭제 중…';
+  busy(true);
+  try {
+    await apiPost({
+      action: 'delete', token: state.token, id,
+      updatedAt: $('#f-updatedAt').value,
+      updatedBy: state.email || 'admin',
+    });
+    // 항목 자체가 없어졌으니 확인 없이 모두 닫는다
+    closeOverlay('delete');
+    closeOverlay('form');
+    closeOverlay('detail');
+    await refresh();
+    toast(`삭제했습니다 — ${id}`);
+  } catch (e) {
+    closeOverlay('delete');
+    fail(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '삭제';
+    busy(false);
+  }
+}
+
+/* ============================================================
    CSV
    ============================================================ */
 function exportCsv(){
@@ -1986,6 +2065,9 @@ function wire(){
   $('#btn-report-send').addEventListener('click', sendReport);
   $('#r-text').addEventListener('input', e => { $('#r-count').textContent = e.target.value.length; });
 
+  $('#btn-delete').addEventListener('click', askDelete);
+  $('#btn-delete-confirm').addEventListener('click', doDelete);
+
   $('#btn-csv').addEventListener('click', exportCsv);
   $('#btn-export-plain').addEventListener('click', () => downloadCsv(false));
   $('#btn-export-secret').addEventListener('click', () => downloadCsv(true));
@@ -2028,7 +2110,7 @@ function wire(){
     if (e.key !== 'Escape') return;
     if ($('#lightbox').classList.contains('open')) { $('#lightbox').classList.remove('open'); return; }
     // 맨 위에 떠 있는 창 하나만 닫는다 (수정 폼은 상세 위에 열린다)
-    for (const name of ['export', 'report', 'login', 'form']) {
+    for (const name of ['delete', 'export', 'report', 'login', 'form']) {
       if ($('#dlg-' + name).classList.contains('open')) { requestClose(name); return; }
     }
     if ($('#sheet-detail').classList.contains('open')) closeOverlay('detail');

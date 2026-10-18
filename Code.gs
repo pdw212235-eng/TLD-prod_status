@@ -66,6 +66,7 @@ function doPost(e) {
       case 'create':  requireAdmin(token); return jsonResponse(handleCreate(body));
       case 'update':  requireAdmin(token); return jsonResponse(handleUpdate(body));
       case 'retire':  requireAdmin(token); return jsonResponse(handleRetire(body));
+      case 'delete':  requireAdmin(token); return jsonResponse(handleDelete(body));
       case 'upload':  requireAdmin(token); return jsonResponse(handleUpload(body));
       case 'as-add':  requireAdmin(token); return jsonResponse(handleASAdd(body));
       case 'as-delete': requireAdmin(token); return jsonResponse(handleASDelete(body));
@@ -404,6 +405,7 @@ function handleCreate(body) {
     const row = buildRow(data, colIndex, sheet.getLastColumn());
     sheet.appendRow(row);
     SpreadsheetApp.flush();
+    rememberIdNumber(newId);
     writeAuditLog('CREATE', newId, data.updatedBy, 'Site: ' + (data.site || ''));
     return { id: newId, updatedAt: data.updatedAt };
   } finally {
@@ -436,6 +438,41 @@ function handleUpdate(body) {
   sheet.getRange(rowIdx, 1, 1, row.length).setValues([row]);
   writeAuditLog('UPDATE', id, data.updatedBy, '');
   return { ok: true, updatedAt: data.updatedAt };
+}
+
+// 항목 삭제 (관리자). 시트에서 행을 지운다. 되돌릴 수 없으므로
+// 지운 내용(비밀번호류 제외)을 AuditLog 에 남겨 필요하면 손으로 복구할 수 있게 한다.
+// 설치·수리 이력 시트의 행은 지우지 않는다. 번호를 다시 쓰지 않으므로 새 항목에 섞이지 않는다.
+function handleDelete(body) {
+  const id = String(body.id || '').trim();
+  if (!id) throw { message: 'id가 필요합니다.', code: 400 };
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const sheet = getSheet();
+    const colIndex = buildColIndex(sheet);
+    const { rowIdx, existing } = findRowById(sheet, colIndex, id);
+
+    // 수정 창을 연 뒤 다른 사람이 고쳤다면 지우지 않는다
+    if (body.updatedAt && existing.updatedAt && body.updatedAt !== existing.updatedAt) {
+      throw { message: '그사이 다른 사람이 이 항목을 수정했습니다. 새로고침한 뒤 다시 확인해 주세요.', code: 409 };
+    }
+
+    const snap = {};
+    COLUMNS.forEach(c => {
+      const v = existing[c.key];
+      if (!c.secret && v !== '' && v !== null && v !== undefined) snap[c.header] = v;
+    });
+
+    rememberIdNumber(id);
+    sheet.deleteRow(rowIdx);
+    SpreadsheetApp.flush();
+    writeAuditLog('DELETE', id, body.updatedBy || 'admin', JSON.stringify(snap));
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function handleRetire(body) {
@@ -549,23 +586,35 @@ const ID_PREFIX = 'Prod';
 const ID_PAD    = 3;
 const ID_RE     = /^Prod(\d+)$/i;
 
+// 지금까지 쓴 가장 큰 번호를 따로 기억한다. 맨 끝 항목을 지워도 그 번호를 다시 쓰지 않아,
+// 지운 항목의 설치·수리 이력이 새 항목에 붙는 일이 없다.
+const ID_MAX_KEY = 'MAX_ID_NUM';
+
+function idNumber(v) {
+  const m = String(v).trim().match(ID_RE);
+  return m ? parseInt(m[1], 10) : NaN;
+}
+
+function rememberIdNumber(id) {
+  const n = idNumber(id);
+  if (isNaN(n)) return;
+  const props = PropertiesService.getScriptProperties();
+  const cur = parseInt(props.getProperty(ID_MAX_KEY) || '0', 10) || 0;
+  if (n > cur) props.setProperty(ID_MAX_KEY, String(n));
+}
+
 function generateId(sheet, colIndex) {
-  const first = ID_PREFIX + '1'.padStart(ID_PAD, '0');
-  if (sheet.getLastRow() < 2) return first;
+  let max = parseInt(PropertiesService.getScriptProperties().getProperty(ID_MAX_KEY) || '0', 10) || 0;
 
   const idColIdx = colIndex['ID'];
-  if (idColIdx === undefined) return first;
-
-  const nums = sheet.getRange(2, idColIdx + 1, sheet.getLastRow() - 1, 1).getValues()
-    .flat()
-    .map(v => {
-      const m = String(v).trim().match(ID_RE);
-      return m ? parseInt(m[1], 10) : NaN;
-    })
-    .filter(n => !isNaN(n));
-
-  if (nums.length === 0) return first;
-  return ID_PREFIX + String(Math.max(...nums) + 1).padStart(ID_PAD, '0');
+  if (sheet.getLastRow() >= 2 && idColIdx !== undefined) {
+    sheet.getRange(2, idColIdx + 1, sheet.getLastRow() - 1, 1).getValues()
+      .forEach(r => {
+        const n = idNumber(r[0]);
+        if (!isNaN(n) && n > max) max = n;
+      });
+  }
+  return ID_PREFIX + String(max + 1).padStart(ID_PAD, '0');
 }
 
 function calcPanelTotal(panelArray) {
