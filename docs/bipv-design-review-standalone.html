@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BIPV 기구 설계 검토</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 단일 컬럼 기술 보고서, 넓은 표·도면은 가로 스크롤 컨테이너 */
+:root{
+  --bg:#f6f7f8; --surface:#ffffff; --fg:#1b2329; --muted:#5a6771; --line:#d9dee2;
+  --ink:#0f4c5c;           /* 주 강조: 딥 틸 */
+  --heat:#c2410c;          /* 열·위험 */
+  --heat-soft:#fde8dc; --ok:#2f7d4f; --ok-soft:#e2f2e8; --warn:#9a6700; --warn-soft:#fbf1d6;
+  --cool:#3b7ea1; --cool-soft:#e3eff6; --panel:#c9d6de; --metal:#9aa7b0;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12171b; --surface:#1a2126; --fg:#e4e9ec; --muted:#9aa6ae; --line:#2e383f;
+  --ink:#6cc0d4; --heat:#f08a5d; --heat-soft:#3a2218; --ok:#6cc58f; --ok-soft:#183024; --warn:#e0b44c; --warn-soft:#352b12;
+  --cool:#7db8d8; --cool-soft:#182b36; --panel:#3c4b55; --metal:#5f6d76; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171b; --surface:#1a2126; --fg:#e4e9ec; --muted:#9aa6ae; --line:#2e383f;
+  --ink:#6cc0d4; --heat:#f08a5d; --heat-soft:#3a2218; --ok:#6cc58f; --ok-soft:#183024; --warn:#e0b44c; --warn-soft:#352b12;
+  --cool:#7db8d8; --cool-soft:#182b36; --panel:#3c4b55; --metal:#5f6d76; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.65}
+.wrap{max-width:980px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:40px}
+header{display:flex;flex-direction:column;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:20px}
+.doc-meta{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.04em;display:flex;flex-wrap:wrap;gap:6px 18px}
+h1{font-size:30px;line-height:1.25;margin:0;text-wrap:balance;font-weight:700}
+h2{font-size:21px;margin:0;text-wrap:balance;display:flex;gap:10px;align-items:baseline}
+h2 .no{font-family:var(--f-mono);color:var(--ink);font-size:15px}
+h3{font-size:16px;margin:0}
+p{margin:0;max-width:72ch}
+section{display:flex;flex-direction:column;gap:14px}
+.lede{color:var(--muted);max-width:72ch}
+.roles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.role{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+.role b{display:block;font-size:13px;color:var(--ink)}
+.role span{font-size:13px;color:var(--muted)}
+.keys{display:flex;flex-direction:column;gap:8px;padding:0;margin:0;list-style:none}
+.keys li{background:var(--surface);border-left:3px solid var(--ink);padding:10px 14px;border-radius:0 6px 6px 0}
+.keys li.hot{border-left-color:var(--heat)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:9px 11px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{background:var(--bg);font-weight:600;font-size:12.5px;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.loc{font-weight:600;min-width:120px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono);font-size:12.5px;white-space:nowrap}
+.issue td:first-child{min-width:120px}
+.wide table{min-width:860px}
+.mid table{min-width:640px}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:10px;white-space:nowrap;font-family:var(--f-mono)}
+.p1{background:var(--heat-soft);color:var(--heat)}
+.p2{background:var(--warn-soft);color:var(--warn)}
+.p3{background:var(--cool-soft);color:var(--cool)}
+.new{background:var(--ok-soft);color:var(--ok)}
+.ref{color:var(--muted);font-size:12px}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.fig .svgbox{overflow-x:auto}
+.fig figcaption{font-size:12.5px;color:var(--muted)}
+.fig svg{display:block;max-width:100%;height:auto}
+svg text{font-family:var(--f-body);fill:var(--fg)}
+svg .m{fill:var(--muted)} svg .mono{font-family:var(--f-mono)}
+.note{background:var(--warn-soft);border-radius:6px;padding:12px 14px;font-size:14px}
+.note b{color:var(--warn)}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card ul{margin:0;padding-left:18px;font-size:14px}
+.script{background:var(--surface);border:1px dashed var(--ink);border-radius:6px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;font-size:14.5px}
+.script p{max-width:none}
+.copy{align-self:flex-start;font:inherit;font-size:13px;padding:6px 14px;border-radius:5px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+.copy:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+ol.src{font-size:12.5px;color:var(--muted);margin:0;padding-left:20px;word-break:break-all}
+ol.src a{color:var(--ink)}
+@media (max-width:640px){.roles,.cols{grid-template-columns:1fr} h1{font-size:24px}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-27</span><span>내부 검토안 v1</span></div>
+  <h1>유리 LED + PV 합지 패널 기구 설계 검토</h1>
+  <p class="lede">업체가 보내준 기구물 설계(고정 프레임 30×20mm, 후면 알루미늄 판에 Hub board·SMPS 고정 후 커버)를 내부에서 검토한 결과입니다. 검토 위치마다 문제점, 예상 현상, 개선 검토 사항을 정리했고, 우리 요청사항의 근거와 기술적으로 보완하거나 고칠 점을 덧붙였습니다.</p>
+  <div class="roles">
+    <div class="role"><b>열관리·전원 검토</b><span>일사, 열수지, SMPS 수명·디레이팅, 5V 대전류</span></div>
+    <div class="role"><b>기구·유지보수 검토</b><span>FPCB, 구조·방수·낙하, 법규, 교체 방식</span></div>
+    <div class="role"><b>중재 정리</b><span>상충 의견 조정, 요청사항 수정안, 업체 전달 문안</span></div>
+  </div>
+</header>
+
+<section>
+  <h2><span class="no">00</span>핵심 결론</h2>
+  <ul class="keys">
+    <li class="hot"><b>방열 우려는 근거가 충분합니다.</b> 패널 0.5m²에서 LED 400W를 쓰면 800W/m²로, 여름 남향 수직면 피크 일사(약 300~350W/m²)의 2배가 넘습니다. 현 구조(밀폐, 공기층 20mm)에서 SMPS 주변온도는 약 55~85°C로 추정돼 우리가 잡은 70°C 고장 임계를 넘습니다.</li>
+    <li class="hot"><b>"한여름 50°C 내외" 목표는 대상과 조건을 정해서 다시 써야 합니다.</b> 외기 35~38°C에서 패널 배면을 50°C로 유지하는 건 불가능합니다. 대상을 <b>분리된 SMPS 함체 주변공기 ≤50°C, 전해콘덴서 케이스 ≤75°C(외기 38°C, 일사 650W/m²)</b>로 바꾸면 측정할 수 있고 달성도 가능합니다.</li>
+    <li><b>팬은 보조 수단으로 낮춥니다.</b> 팬은 외기보다 낮게 식힐 수 없고 자체가 고장점입니다. 자연대류(수직 핀)만으로 합격하도록 설계하고, 팬은 부스트용으로 두면서 회전수(tach)로 고장을 감지합니다.</li>
+    <li><b>"400W"가 최대인지 평균인지 먼저 정해야 합니다.</b> 이 값에 따라 패널 온도가 30K 가까이 달라집니다(그림 1). 온도에 연동한 휘도 제한을 필수로 넣습니다.</li>
+    <li><b>요청서에 없던 항목 5가지를 추가합니다.</b> 5V 80A 배선 전압강하, 밀폐 함체 결로, 외벽 단열재 준불연 법규, 낙하 방지 이중 체결, PV 고전압과 LED 저전압의 분리.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="no">01</span>방열 요청의 정량 근거</h2>
+  <p>업체 설득용 근거입니다. 별도 출처가 없는 수치는 간이 계산에 따른 추정이며 ±10K 오차를 전제로 합니다. 최종 판단은 업체 열해석과 실증 결과로 합니다.</p>
+
+  <div class="cols">
+    <div class="tbl"><table>
+      <thead><tr><th>시기 (서울)</th><th class="num">남중고도</th><th class="num">수직면 피크 일사</th><th class="num">외기</th></tr></thead>
+      <tbody>
+        <tr><td>하지 6~8월</td><td class="num">76°</td><td class="num">300~350 W/m²</td><td class="num">35°C+</td></tr>
+        <tr><td>춘·추분 3·9월</td><td class="num">52.5°</td><td class="num">550~650 W/m²</td><td class="num">~30°C</td></tr>
+        <tr><td>동지 12월</td><td class="num">29°</td><td class="num">650~750 W/m²</td><td class="num">~0°C</td></tr>
+      </tbody></table></div>
+    <div class="tbl"><table>
+      <thead><tr><th>패널당 열부하 (0.5m²)</th><th class="num">평균 운전</th><th class="num">최대 설정</th></tr></thead>
+      <tbody>
+        <tr><td>LED·구동 IC 발열</td><td class="num">135 W</td><td class="num">360 W</td></tr>
+        <tr><td>SMPS 손실 (η≈90%)</td><td class="num">17 W</td><td class="num">44 W</td></tr>
+        <tr><td>Hub board K5+</td><td class="num">3 W</td><td class="num">3 W</td></tr>
+        <tr><td>흡수 일사 − PV 발전</td><td class="num">133~228 W</td><td class="num">133~228 W</td></tr>
+        <tr><td><b>합계</b></td><td class="num"><b>290~380 W</b></td><td class="num"><b>540~635 W</b></td></tr>
+      </tbody></table></div>
+  </div>
+  <p class="ref">남향 수직면은 여름에 태양고도가 높아 일사가 오히려 적습니다. 그래서 최악 조건은 <b>7~8월(외기 최고)</b>과 <b>9월 초(외기 30°C에 일사 600W/m²)</b> 두 가지이며, 둘 다 검증해야 합니다.</p>
+
+  <figure class="fig">
+    <div class="svgbox">
+    <svg viewBox="0 0 640 312" width="640" role="img" aria-label="시나리오별 패널 평균 온도 추정, 밀폐 구조와 환기 구조 비교">
+      <g stroke="var(--line)" stroke-width="1">
+        <line x1="200" y1="22" x2="200" y2="272"/><line x1="290.9" y1="22" x2="290.9" y2="272"/>
+        <line x1="381.8" y1="22" x2="381.8" y2="272"/><line x1="472.7" y1="22" x2="472.7" y2="272"/><line x1="563.6" y1="22" x2="563.6" y2="272"/>
+      </g>
+      <g font-size="11" class="mono" text-anchor="middle">
+        <text x="200" y="290" class="m mono">0</text><text x="290.9" y="290" class="m mono">25</text><text x="381.8" y="290" class="m mono">50</text><text x="472.7" y="290" class="m mono">75</text><text x="563.6" y="290" class="m mono">100°C</text>
+      </g>
+      <g font-size="12" text-anchor="end">
+        <text x="190" y="47">7월 정오 · 평균 영상</text>
+        <text x="190" y="95">7월 정오 · 최대 설정</text>
+        <text x="190" y="143">9월 정오 · 평균 영상</text>
+        <text x="190" y="191">9월 정오 · 최대 설정</text>
+        <text x="190" y="239">여름 밤 · 평균 영상</text>
+      </g>
+      <g style="fill:var(--heat)">
+        <rect x="200" y="30" width="243.6" height="14"/><rect x="200" y="78" width="345.4" height="14"/>
+        <rect x="200" y="126" width="261.8" height="14"/><rect x="200" y="174" width="363.6" height="14"/>
+        <rect x="200" y="222" width="163.6" height="14"/>
+      </g>
+      <g style="fill:var(--cool)">
+        <rect x="200" y="47" width="218.2" height="14"/><rect x="200" y="95" width="298.2" height="14"/>
+        <rect x="200" y="143" width="229.1" height="14"/><rect x="200" y="191" width="309.1" height="14"/>
+        <rect x="200" y="239" width="149.1" height="14"/>
+      </g>
+      <g font-size="11" class="mono">
+        <text x="447.6" y="41">67</text><text x="422.2" y="58">60</text>
+        <text x="549.4" y="89">95</text><text x="502.2" y="106">82</text>
+        <text x="465.8" y="137">72</text><text x="433.1" y="154">63</text>
+        <text x="567.6" y="185">100</text><text x="513.1" y="202">85</text>
+        <text x="367.6" y="233">45</text><text x="353.1" y="250">41</text>
+      </g>
+      <line x1="454.5" y1="18" x2="454.5" y2="272" stroke="var(--heat)" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="458" y="14" font-size="11" style="fill:var(--heat)">70°C 구동부 고장 임계</text>
+      <line x1="381.8" y1="18" x2="381.8" y2="272" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="2 3"/>
+      <text x="377" y="14" font-size="11" text-anchor="end" style="fill:var(--ok)">50°C 목표</text>
+      <g font-size="11"><rect x="200" y="298" width="10" height="10" style="fill:var(--heat)"/><text x="215" y="307">밀폐 (현 구조)</text>
+      <rect x="310" y="298" width="10" height="10" style="fill:var(--cool)"/><text x="325" y="307">환기 공기층 적용</text></g>
+    </svg>
+    </div>
+    <figcaption>그림 1. 패널 면 평균 온도 추정(간이 열수지). 전면 h≈15, 배면 밀폐 h≈3, 환기 h≈8 W/m²K로 가정했습니다. 상단부는 굴뚝효과로 +5~10K 더 높고, 세로로 연속 배치하면 위층으로 갈수록 누적됩니다. 현 구조에서 같은 판에 붙은 SMPS는 이 온도에 가까워집니다.</figcaption>
+  </figure>
+
+  <div class="cols">
+    <div class="tbl"><table>
+      <thead><tr><th>SMPS 콘덴서 등급</th><th class="num">75°C</th><th class="num">85°C</th><th class="num">95°C</th></tr></thead>
+      <tbody>
+        <tr><td>105°C / 2,000h (저가품)</td><td class="num">2.4년</td><td class="num" style="color:var(--heat)"><b>1.2년</b></td><td class="num">0.6년</td></tr>
+        <tr><td>105°C / 5,000h</td><td class="num">6.1년</td><td class="num">3년</td><td class="num">1.5년</td></tr>
+        <tr><td>105°C / 10,000h</td><td class="num">12년</td><td class="num">6년</td><td class="num">3년</td></tr>
+      </tbody></table></div>
+    <div class="card">
+      <h3>수명 근거 읽는 법</h3>
+      <p style="font-size:14px">전해콘덴서 수명은 10°C 오를 때마다 절반이 됩니다(Arrhenius 근사, 하루 18시간 운전 가정). 우리가 우려한 "2년 내 교체"는 <b>저가 SMPS가 85°C에서 도는 경우</b>와 정확히 맞아떨어집니다. 그래서 관리 기준은 콘덴서 케이스 온도로 잡는 것이 가장 실효적입니다.</p>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="card"><h3>SMPS 디레이팅</h3><ul>
+      <li>대표적인 5V 400W 제품은 50°C까지 100%이고, 70°C 부근에서 50~60% 이하로 떨어집니다. 실제 채택 모델의 곡선을 업체에 요청해야 합니다.</li>
+      <li>평소에는 2대가 각각 50%(200W)를 담당합니다. 1대가 고장 나면 남은 1대가 100%를 지고, <b>이때 고온이면 보호동작으로 꺼집니다.</b></li></ul></div>
+    <div class="card"><h3>통기는 PV에도 이득</h3><ul>
+      <li>결정질 PV 온도계수는 −0.3~−0.4%/K입니다. 배면 환기로 셀 온도를 15~20K 낮추면 출력이 약 5~8% 오릅니다.</li>
+      <li>국내 실측에서 비환기 파사드 PV는 환기형보다 약 13.4°C 높았고, DTU 1년 실증에서 환기형은 연간 PR이 약 6%p 높았습니다.</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">02</span>검토 항목 (위치 · 문제점 · 예상 현상 · 개선 검토 사항)</h2>
+  <p class="ref"><span class="pill new">추가</span> 표시는 기존 요청서에 없던 항목입니다.</p>
+  <div class="tbl wide"><table class="issue">
+    <thead><tr><th>#</th><th>검토 위치</th><th>문제점</th><th>예상 현상</th><th>개선 검토 사항</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1-1</td><td class="loc">FPCB 90° 굴곡부 / 프레임·판 모서리</td><td>압출·절단면 버(burr)와 날카로운 모서리가 FPCB에 직접 닿음</td><td>풍진동과 열팽창으로 커버레이가 마모되고 끊어짐 → 도체 노출, 단락·단선, 수분 침투</td><td>모서리 R0.5 이상 또는 C0.5 면취, 디버링. 관통부에 엣지 프로텍터나 EPDM 그로밋. 굴곡 R은 총두께 10배 이상(t=0.2mm면 R≥2mm). 굴곡부에 비아·패드 금지</td></tr>
+      <tr><td class="num">1-2</td><td class="loc">FPCB 실리콘 피복부</td><td>실리콘 종류가 정해지지 않음. 굴곡부까지 덮으면 강성이 급격히 바뀜</td><td>초산형 실리콘은 경화 중 초산이 나와 구리·커넥터를 부식시킴. 경계부 응력 집중으로 도체 크랙</td><td><b>중성(알콕시)형, 저분자 실록산</b> 제품. 굴곡부는 비우거나 저경도(Shore A 20~30)로. 경계 테이퍼. 커넥터 아래 보강판과 스트레인 릴리프</td></tr>
+      <tr><td class="num">1-3</td><td class="loc">FPCB 전원 라인</td><td>5V 대전류(패널당 최대 80A)가 FPCB를 통과하는지 불명확</td><td>얇은 동박이 국부 발열 → 휘도 불균일, PI 열화. 실리콘이 덮이면 더 나빠짐</td><td>FPCB에는 신호만 흘리고 전원은 버스바·전선으로 분리. FPCB로 통전한다면 IPC-2152 기준 ΔT≤10K 계산서 요청</td></tr>
+      <tr><td class="num">2-1</td><td class="loc">SMPS·Hub board 장착 위치 (PV 배면 20mm)</td><td>패널 열이 프레임 전도와 배면 복사로 그대로 전달됨. 공기층 상하가 막혀 있음</td><td>SMPS 주변온도 약 55~85°C → 디레이팅 구간 진입, 오동작, 콘덴서 수명 1~3년</td><td>SMPS를 별도 함체로 빼고 패널에서 50mm 이상 이격(단열 스탠드오프). 함체는 수직 배치로 핀이 외기에 닿게. 패널 쪽 면에 단열재와 저방사(ε&lt;0.1) Al 포일</td></tr>
+      <tr><td class="num">2-2</td><td class="loc">패널 배면 공기층</td><td>20mm 밀폐층이라 비환기 BIPV처럼 거동함</td><td>환기형보다 13K 이상 높고, 상단과 위층으로 갈수록 누적 상승</td><td>공기층 50~100mm, 하부 흡기와 상부 배기 개구(방충망·물끊기). 1~2장마다 수평 차단해 위층으로 열이 누적되지 않게</td></tr>
+      <tr><td class="num">2-3</td><td class="loc">SMPS 함체 히트싱크·팬</td><td>핀 방향과 열저항 목표가 없음. 팬에 의존하는 설계</td><td>수평 핀은 자연대류 성능이 크게 떨어짐. 팬이 고장 나면 핀 열전달이 1/3~1/5로 떨어져 바로 과열</td><td><b>수직 핀 일체형</b> 다이캐스트. 2대 합계 손실 44W에 ΔT 15K면 R<sub>sa</sub>≤0.34K/W(약 300×200×40mm급). 팬 없이 합격하는 것이 기준이고, 팬은 IP68에 tach 감시</td></tr>
+      <tr><td class="num">2-4</td><td class="loc">밀폐 함체 내부 <span class="pill new">추가</span></td><td>주야 온도차로 함체가 "호흡"함</td><td>습기를 빨아들여 결로 → 부식, 누설, 보드 단락</td><td>ePTFE 압력평형 벤트(IP67/68) 하단 측면, 최저점 배수공, 보드 컨포멀 코팅, 개스킷 압축률 25~35%, IP65 이상(가능하면 IP66)</td></tr>
+      <tr><td class="num">2-5</td><td class="loc">SMPS 이중화 구성 <span class="pill new">추가</span></td><td>2대가 병렬 이중화인지 구역 분할 급전인지 불명확</td><td>1대 고장 시 남은 1대가 100% 부하 → 고온에서 셧다운, 화면 블랙아웃</td><td>구성 방식 명시. 이중화라면 전류분담과 OR-ing, 1대 고장 시 자동 휘도 감축. N+1 시험(1대 OFF로 1시간)</td></tr>
+      <tr><td class="num">2-6</td><td class="loc">휘도·소비전력 운용 <span class="pill new">추가</span></td><td>400W가 최대인지 평균인지 정의되지 않음</td><td>최대 설정으로 연속 운전하면 패널 95~100°C(그림 1)</td><td>최대·평균·야간 휘도 프로파일 정의. 온도 연동 휘도 제한(예: 65°C부터 단계적으로 70%까지)</td></tr>
+      <tr><td class="num">3-1</td><td class="loc">SMPS → 패널 5V 배선 <span class="pill new">추가</span></td><td>SMPS 1대당 40A, 패널당 80A의 저전압 대전류</td><td>6mm² 왕복 2m면 40A에서 0.23V(4.6%) 강하. 함체를 멀리 빼면 더 커짐. 단자 접촉저항 발열</td><td>5V 케이블은 0.5m 이하, 16mm²급 또는 버스바, 다점 급전. 커넥터는 정격 1.5배 이상, 온도상승 30K 이하, 체결 토크 관리</td></tr>
+      <tr><td class="num">3-2</td><td class="loc">PV 직류와 LED 저전압 혼재 <span class="pill new">추가</span></td><td>PV 스트링 DC 수백~1,000V 이상과 5V 전원·신호가 같은 공간에 있음</td><td>절연 파괴, DC 아크(잘 꺼지지 않음), 화재, 신호 노이즈</td><td>PV 전용 케이블(H1Z2Z2-K)과 MC4 호환 커넥터, 격벽·이격, 등전위 접지(KEC). 합지 후에도 PV 인증(IEC 61730)이 유효한지 확인</td></tr>
+      <tr><td class="num">4-1</td><td class="loc">단열재·실리콘·개스킷 소재 <span class="pill new">추가</span></td><td>단열재 재질이 지정되지 않음</td><td>PE·EPS·우레탄폼을 쓰면 외벽 화재 확산, 법규 위반</td><td>3층 이상 또는 9m 이상 건축물은 외벽 마감재와 단열재가 준불연 이상이어야 함(건축법 시행령 제61조, 피난·방화규칙 제24조, 현행 조문 확인 필요). 무기질 계열(세라믹울, 글라스울 보드, 준불연 에어로겔) + 시험성적서</td></tr>
+      <tr><td class="num">4-2</td><td class="loc">패널·함체 체결 <span class="pill new">추가</span></td><td>1차 체결만 있는지 확인되지 않음. 4~8층 높이</td><td>유리나 함체가 떨어지면 인명 사고(최중대 리스크)</td><td>1차 브래킷 + 2차 기계적 걸림(hook) 이중화. 접착만으로 지지하지 않음. 함체·커버에 SUS 테더와 캡티브 스크류. 강화유리라면 HST, 합판유리 여부 확인</td></tr>
+      <tr><td class="num">4-3</td><td class="loc">30×20 프레임 / 유리-Al 접합 <span class="pill new">추가</span></td><td>단면 성능과 풍압 계산이 없음. 유리와 Al의 열팽창이 다름</td><td>1m 기준 ΔT 100K에서 상대변위 약 1.4mm → 유리 엣지 응력, 합지 박리, FPCB 프레팅. 코너존 부압 −3kPa 이상 가능</td><td>구조계산서(KDS 41 외장재 풍압, 처짐 L/175). 구조용 실리콘이나 EPDM 탄성 접합, 한쪽은 슬롯 홀. 이종금속(Al-SUS)은 절연 와셔와 아노다이징으로 전식 방지</td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <h2><span class="no">03</span>우리 요청사항 수정 제안</h2>
+  <p>내부 검토안 문구 중 그대로 보내면 업체와 해석이 갈리거나 기술적으로 맞지 않는 부분입니다.</p>
+  <div class="tbl wide"><table>
+    <thead><tr><th>기존 요청</th><th>수정 제안</th><th>이유</th></tr></thead>
+    <tbody>
+      <tr><td>한여름에도 50°C 내외 유지</td><td><b>외기 38°C, 면 일사 650W/m², 무풍, 정의된 최대 휘도에서 2시간 열평형 후:</b> SMPS 주변공기 ≤50°C(또는 디레이팅 곡선 이내), 전해콘덴서 케이스 ≤75°C, Hub board는 사양 상한 −10K, 패널 ≤85°C</td><td>대상·조건·측정점이 없으면 합격 판정을 할 수 없음. 패널 배면 50°C는 물리적으로 불가능</td></tr>
+      <tr><td>히트싱크에 방수 fan을 달아 방열 효율 향상</td><td>수직 핀 자연대류만으로 위 기준을 충족하고, 팬은 부스트 옵션(IP68, tach 고장 알람). 팬 정지 시에는 휘도 감축으로 기준 유지</td><td>팬은 외기 이하로 식히지 못함. 수명이 3~7만 시간이고 먼지·결빙·방수 문제가 있어, 팬 하나가 고장 나면 시스템이 과열됨</td></tr>
+      <tr><td>SMPS는 2년 내 교체가 필요할 수 있음</td><td>설계 목표: <b>SMPS 교체 주기 5년 이상</b>(105°C/5,000h 이상 장수명 콘덴서 + 콘덴서 75°C 이하). 동시에 원터치 교체 구조도 요구</td><td>2년은 "전제"가 아니라 막아야 할 결과임. 교체 주기가 짧으면 곤돌라 동원비가 운영비를 좌우함</td></tr>
+      <tr><td>커버를 수직 방향으로 배치하거나 단열재로 복사열 차단</td><td>둘 다 적용: 함체를 패널에서 50mm 이상 이격해 수직 배치하고, 패널 쪽 면에 준불연 단열재와 저방사 포일. 공기층 상하 개구 필수</td><td>이격만 하면 복사가 남고, 단열만 하면 갇힌 열이 빠져나갈 길이 없음. 통기와 함께 있어야 효과가 있음</td></tr>
+      <tr><td>SMPS 커버는 방수·방열 알루미늄</td><td>IP65 이상(가능하면 IP66) + ePTFE 벤트 + 배수공, 다이캐스트 일체형, 이종금속 절연</td><td>방수 밀폐만 하면 결로가 생김. 등급과 벤트를 명시해야 함</td></tr>
+      <tr><td>실리콘 작업 위치 공유 요청</td><td>위치뿐 아니라 <b>재질(중성 알콕시형), 도포 폭·두께, 경도, 경화 조건, 굴곡 R, 보강판·엣지 프로텍터 위치</b>까지 도면에 표기</td><td>초산형이면 구리가 부식되고, 굴곡부를 덮으면 크랙이 생김. 위치만 받으면 검증할 수 없음</td></tr>
+      <tr><td>(없음)</td><td>사용 전류 400W의 정의(최대/평균)와 온도 연동 휘도 제한 추가</td><td>열 설계의 가장 큰 변수인데 요청서에 빠져 있음</td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <h2><span class="no">04</span>실현 방향</h2>
+  <figure class="fig">
+    <div class="svgbox">
+    <svg viewBox="0 0 680 330" width="680" role="img" aria-label="현 구조와 권장 구조의 단면 비교">
+      <text x="20" y="22" font-size="13" font-weight="600">현 구조 (밀폐)</text>
+      <text x="360" y="22" font-size="13" font-weight="600">권장안 B (분리 함체 + 환기)</text>
+      <!-- 현 구조 -->
+      <text x="20" y="44" font-size="10" class="m">외기·일사 →</text>
+      <rect x="40" y="56" width="14" height="230" style="fill:var(--cool-soft);stroke:var(--cool)"/>
+      <rect x="54" y="56" width="10" height="230" style="fill:var(--panel)"/>
+      <rect x="64" y="56" width="12" height="230" style="fill:var(--cool-soft);stroke:var(--cool)"/>
+      <rect x="76" y="56" width="10" height="230" style="fill:var(--ink)"/>
+      <rect x="86" y="56" width="26" height="230" style="fill:var(--heat-soft)"/>
+      <rect x="86" y="56" width="26" height="8" style="fill:var(--metal)"/><rect x="86" y="278" width="26" height="8" style="fill:var(--metal)"/>
+      <rect x="112" y="56" width="6" height="230" style="fill:var(--metal)"/>
+      <rect x="118" y="110" width="40" height="56" rx="3" style="fill:var(--heat)"/>
+      <rect x="118" y="186" width="40" height="56" rx="3" style="fill:var(--heat)"/>
+      <rect x="118" y="80" width="24" height="18" rx="2" style="fill:var(--warn)"/>
+      <rect x="168" y="60" width="5" height="222" style="fill:var(--metal)"/>
+      <rect x="230" y="40" width="16" height="262" style="fill:var(--line)"/>
+      <g font-size="10">
+        <text x="99" y="304" text-anchor="middle">20mm 밀폐</text>
+        <text x="180" y="140">SMPS</text><text x="180" y="216">SMPS</text><text x="150" y="76" font-size="9">Hub</text>
+        <text x="238" y="318" text-anchor="middle" class="m">벽체</text>
+        <text x="40" y="318" class="m">유리LED / PV</text>
+      </g>
+      <g fill="none" stroke="var(--heat)" stroke-width="2">
+        <path d="M80 140 Q100 130 116 138"/><path d="M80 214 Q100 204 116 212"/>
+      </g>
+      <text x="180" y="262" font-size="10" style="fill:var(--heat)">주변 55~85°C</text>
+      <!-- 권장 구조 -->
+      <text x="360" y="44" font-size="10" class="m">외기·일사 →</text>
+      <rect x="380" y="56" width="14" height="230" style="fill:var(--cool-soft);stroke:var(--cool)"/>
+      <rect x="394" y="56" width="10" height="230" style="fill:var(--panel)"/>
+      <rect x="404" y="56" width="12" height="230" style="fill:var(--cool-soft);stroke:var(--cool)"/>
+      <rect x="416" y="56" width="10" height="230" style="fill:var(--ink)"/>
+      <rect x="426" y="56" width="64" height="230" style="fill:var(--cool-soft)"/>
+      <g fill="none" stroke="var(--cool)" stroke-width="2"><path d="M446 270 V80"/><path d="M466 270 V80"/><path d="M440 88 L446 78 L452 88"/><path d="M460 88 L466 78 L472 88"/></g>
+      <rect x="490" y="56" width="10" height="230" style="fill:var(--warn-soft);stroke:var(--warn)"/>
+      <rect x="500" y="56" width="2" height="230" style="fill:var(--metal)"/>
+      <rect x="502" y="140" width="14" height="6" style="fill:var(--metal)"/><rect x="502" y="214" width="14" height="6" style="fill:var(--metal)"/>
+      <rect x="516" y="120" width="42" height="120" rx="3" style="fill:var(--metal)"/>
+      <rect x="522" y="130" width="30" height="44" rx="2" style="fill:var(--ok)"/>
+      <rect x="522" y="186" width="30" height="44" rx="2" style="fill:var(--ok)"/>
+      <g style="fill:var(--metal)"><rect x="558" y="124" width="22" height="4"/><rect x="558" y="140" width="22" height="4"/><rect x="558" y="156" width="22" height="4"/><rect x="558" y="172" width="22" height="4"/><rect x="558" y="188" width="22" height="4"/><rect x="558" y="204" width="22" height="4"/><rect x="558" y="220" width="22" height="4"/><rect x="558" y="232" width="22" height="4"/></g>
+      <rect x="620" y="40" width="16" height="262" style="fill:var(--line)"/>
+      <g font-size="10">
+        <text x="458" y="304" text-anchor="middle">공기층 50~100mm</text>
+        <text x="458" y="318" text-anchor="middle" class="m">하부 흡기 → 상부 배기</text>
+        <text x="495" y="50" text-anchor="middle" font-size="9">단열+저방사</text>
+        <text x="537" y="114" text-anchor="middle">SMPS 함체</text>
+        <text x="569" y="256" text-anchor="middle" font-size="9">수직 핀</text>
+        <text x="537" y="270" text-anchor="middle" style="fill:var(--ok)">50~58°C</text>
+        <text x="628" y="318" text-anchor="middle" class="m">벽체</text>
+      </g>
+      <g fill="none" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="3 3"><path d="M590 250 V110"/><path d="M585 118 L590 108 L595 118"/></g>
+    </svg>
+    </div>
+    <figcaption>그림 2. 단면 개념도(비율은 실제와 다름). 현 구조는 SMPS가 PV 배면 열을 그대로 받습니다. 권장안은 환기 공기층으로 패널 열을 빼내고, 단열·저방사 층과 스탠드오프로 함체를 떼어놓고, 수직 핀이 외기로 자연대류합니다. 온도는 외기 35~38°C 기준 추정치입니다.</figcaption>
+  </figure>
+
+  <div class="tbl wide"><table>
+    <thead><tr><th></th><th>A. 현 구조 보완</th><th>B. SMPS 분리 방열 함체 (권장 기본안)</th><th>C. 배전 구조 변경</th></tr></thead>
+    <tbody>
+      <tr><td class="loc">내용</td><td>PV와 Al판 사이 단열재와 저방사 포일, 공기층 확대와 상하 개구, SMPS를 공기층 하부로, 장수명 콘덴서 SMPS, 온도 연동 휘도 제한</td><td>다이캐스트 Al 함체(IP66), 수직 핀 일체형, 패널에서 50mm 이상 이격, 단열 스탠드오프, ePTFE 벤트와 배수, 커넥터식 원터치 교체, 팬 옵션과 tach, 원격 온도 감시</td><td>AC-DC 48V를 실내나 음영 기계실에 모으고, 패널 근처에는 48→5V DC-DC(효율 95~97%, 포팅형)만 둠</td></tr>
+      <tr><td class="loc">SMPS 온도 (외기 35~38°C)</td><td>55~70°C (추정)</td><td><b>50~58°C</b> (추정)</td><td>외벽 발열 44W → 약 15W, 전해콘덴서가 외벽에서 빠짐</td></tr>
+      <tr><td class="loc">비용·복잡도</td><td>낮음</td><td>중간 (함체 금형, 배선 재설계)</td><td>높음 (패널당 DC-DC, 48V 배전·보호)</td></tr>
+      <tr><td class="loc">리스크</td><td>최대 휘도나 9월 조건에서 미달 가능. 교체성 개선이 제한적</td><td>함체 무게와 풍하중. 5V 케이블은 0.5m 이하로 유지해야 함</td><td>초기 개발비, DC-DC 자체 열관리</td></tr>
+      <tr><td class="loc">적용</td><td>파일럿·단기</td><td><b>양산 기본안</b></td><td>10년 이상 장수명, 접근이 어려운 고층부 장기안</td></tr>
+    </tbody></table></div>
+  <p class="note"><b>중재 의견:</b> 열 쪽 검토는 B를 기본으로 하고 C를 장기안으로 비교할 것을 권했고, 기구 쪽 검토는 구동부 박스 원터치 교체를 권했습니다. 두 의견은 같은 방향이라 <b>B안 함체를 그대로 교체 단위로 쓰는 것</b>으로 합쳤습니다. 팬 필수 요구는 기존 요청에서 "옵션 + 고장 감지"로 낮추는 것을 권장합니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">05</span>유지보수 문의 보강</h2>
+  <p>원래 문의(한 패널씩 교체하는지, 모듈 묶음으로 교체하는지, 캣워크가 있는지)에 비교 기준을 붙여 보내면 업체가 구체적으로 답하기 쉽습니다.</p>
+  <div class="tbl wide"><table>
+    <thead><tr><th></th><th>① 패널 단위 교체</th><th>② N개 모듈 유닛 통째 교체</th><th>③ 구동부 함체만 원터치 교체</th></tr></thead>
+    <tbody>
+      <tr><td class="loc">교체 중량</td><td class="num">15~20 kg/장 (추정)</td><td class="num">수십~100 kg+</td><td class="num">3~5 kg</td></tr>
+      <tr><td class="loc">접근</td><td>외부 곤돌라·BMU·로프</td><td>곤돌라 + 크레인·윈치</td><td>캣워크나 실내 점검구에서 가능하게 설계 가능</td></tr>
+      <tr><td class="loc">1건 작업시간 (추정)</td><td class="num">1~2 h + 장비 설치</td><td class="num">반나절~1일</td><td class="num">15~30 min</td></tr>
+      <tr><td class="loc">안전</td><td>유리 취급·낙하 리스크 높음</td><td>가장 높음 (중량물 양중)</td><td>낮음 (테더 적용 시)</td></tr>
+      <tr><td class="loc">예비품</td><td>완제품 패널 (고가, 색 보정 필요)</td><td>유닛 전체 (최고가)</td><td>함체 (저가, 표준화 쉬움)</td></tr>
+      <tr><td class="loc">적합 용도</td><td>LED·유리 파손</td><td>대규모 리뉴얼</td><td>SMPS·K5+·팬 일상 정비</td></tr>
+    </tbody></table></div>
+  <div class="cols">
+    <div class="card"><h3>권장 조합</h3><ul>
+      <li>③을 기본으로, ①을 보조로. 고장률이 높은 SMPS·K5+·팬은 함체로 묶어 원터치 교체하고, 유리 LED·PV는 장수명 부품으로 보고 ①로 대응</li>
+      <li>함체와 패널은 IP67 방수 커넥터(키잉) 하나로 연결. FPCB는 직접 탈착하지 않음</li>
+      <li>툴리스 래치나 1/4턴 패스너, 걸어둔 채 커넥터를 분리할 수 있는 hook, SUS 테더</li>
+      <li>예비품 3~5% 현장 비치, 같은 Lot 패널 확보, 단종 대비 호환 모델</li></ul></div>
+    <div class="card"><h3>캣워크 유무가 설계를 바꿉니다</h3><ul>
+      <li><b>있음:</b> 배면 탈착형 함체로 상시 접근. 초기비는 늘고 운영비는 줄어듦. 캣워크 하중·난간·조명 설계 필요</li>
+      <li><b>없음:</b> 곤돌라·로프 고소작업(풍속 10m/s 이상이면 작업 중지)이나 실내 점검구 필요. 전면 탈착 구조로 가야 할 수 있음</li>
+      <li>건물 설계사와 조기에 확정해야 함 → 함체 탈착 방향이 이것으로 결정됨</li>
+      <li>원격 모니터링(함체 온습도, SMPS DC-OK, 팬 tach)으로 교체를 묶어 처리하면 곤돌라 동원 횟수가 줄어듦</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">06</span>업체 검증 요청</h2>
+  <div class="cols">
+    <div class="card"><h3>열해석 (CFD)</h3><ul>
+      <li>단품이 아니라 세로 3장 이상 연속 배열 + 벽체 공기층</li>
+      <li>외기 35/38/40°C, 일사 350/650/0 W/m², 풍속 0.5/2 m/s, LED 100/50/30%</li>
+      <li>산출물: 부품별 온도 맵, 콘덴서 위치 온도, 공기층 유속·출구온도</li>
+      <li>팬 정지 시나리오, SMPS 1대 고장 시나리오</li></ul></div>
+    <div class="card"><h3>실증 mock-up</h3><ul>
+      <li>남향 수직 3×3 이상, 7~8월과 9월 각각 맑은 날 7일 이상</li>
+      <li>챔버: 40/45°C + 일사 모사 700W/m²(IEC 60068-2-5) + 최대 휘도 4h, 고온고습·온도 사이클, IP 시험</li>
+      <li>측정점: PV 배면 상·중·하, 공기층 입·출구, SMPS 케이스와 주 전해콘덴서, 출력 단자, K5+ 주 IC, 함체 내부 공기</li>
+      <li>기록: 그늘 외기온도, 면 일사, 풍속, 패널 단 5V 전압, 1분 간격 로깅</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">07</span>업체 질의·요청 목록</h2>
+  <div class="tbl mid"><table>
+    <thead><tr><th>순위</th><th>항목</th><th>요청 내용</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill p1">P1</span></td><td>유지보수 개념</td><td>교체 단위, 교체 방향(전면/배면), 접근 방식(곤돌라·실내·캣워크), 1건당 소요시간</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>열 설계</td><td>열해석 조건·결과, SMPS·K5+ 공식 데이터시트(동작온도, 디레이팅 곡선, 콘덴서 사양)</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>낙하 방지</td><td>1·2차 체결 상세, 테더, 유리 종류(합판/강화, HST)</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>구조계산서</td><td>패널 중량, 프레임 단면 성능, 외장재 풍압 처짐·응력, 앵커 내력</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>법규·전기 분리</td><td>단열재·개스킷 준불연 성적서, PV 최대 DC 전압·케이블·격벽·접지 계통도, 합지 후 PV 인증</td></tr>
+      <tr><td><span class="pill p2">P2</span></td><td>FPCB</td><td>층구성·두께, 굴곡 R, 보강판, 전원 라인 허용전류, 실리콘 사양이 표기된 도면</td></tr>
+      <tr><td><span class="pill p2">P2</span></td><td>전원 구성</td><td>SMPS 2대 구성 방식, 5V 배선 길이·단면적, 커넥터 정격, 1대 고장 시 동작</td></tr>
+      <tr><td><span class="pill p2">P2</span></td><td>방수·결로</td><td>목표 IP 등급과 시험 계획, 개스킷, 벤트·배수 위치, 팬 방수 사양</td></tr>
+      <tr><td><span class="pill p2">P2</span></td><td>열팽창·전식</td><td>상대변위 흡수 방식, 체결재 재질, 절연 와셔, 표면처리</td></tr>
+      <tr><td><span class="pill p3">P3</span></td><td>모니터링·예비품</td><td>K5+ 모니터링 항목, 추가 센서, 권장 예비율, 단종 대응</td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <h2><span class="no">08</span>업체 전달용 문안 (구어체 초안)</h2>
+  <div class="script" id="script">
+    <p><b>1. FPCB</b><br>패널이랑 Hub board 잇는 FPCB를 실리콘으로 감싸실 것 같은데, 90도로 꺾이는 부분에서 프레임 모서리가 날카로워 보여요. 바람이나 열팽창으로 미세하게 흔들리면 커버레이가 닳아서 단선이나 단락이 날 수 있으니까 모서리 R0.5 이상이나 면취, 디버링하고 엣지 프로텍터 넣어주세요. 굴곡 R은 FPCB 두께의 10배 이상으로 부탁드려요. 실리콘은 초산형 쓰면 구리가 부식되니까 중성(알콕시)형으로 해주시고, 다음 도면에는 실리콘 들어가는 위치랑 재질, 두께, 굴곡 R, 보강판 위치까지 같이 표기해주세요. 그리고 FPCB로 5V 전원도 흐르는지 알려주세요. 흐른다면 허용전류 계산도 필요해요.</p>
+    <p><b>2. 방열</b><br>SMPS랑 Hub board는 주변온도 70도부터 오동작이나 고장 확률이 확 올라가요. 그런데 패널 하나가 0.5m²에 LED만 최대 400W라 면적당 800W/m²이고, 여름 남향 벽 일사의 두 배가 넘어요. 저희가 간단히 계산해보니 지금처럼 20mm 밀폐 공간에 SMPS를 붙이면 주변이 55~85도까지 갈 수 있어요. 그래서 SMPS는 별도 알루미늄 함체로 빼서 패널에서 50mm 이상 띄우고, 수직으로 세워서 핀이 바깥 공기에 닿게 해주세요. 패널 쪽 면에는 단열재랑 반사 포일로 복사열을 막고, 패널 뒤 공기층은 아래에서 들어와서 위로 빠지게 뚫어주셨으면 해요. 단열재는 외벽이라 준불연 이상이어야 하니까 성적서도 같이 부탁드려요.</p>
+    <p>함체는 IP65 이상으로 방수하되 결로가 안 생기게 압력평형 벤트랑 배수공을 넣어주시고, 히트싱크는 수직 핀 일체형으로 부탁드려요. 팬은 달아도 좋은데, 팬이 멈춰도 기준을 맞출 수 있게 기본은 자연대류로 설계해주시고 팬 고장은 감지되게 해주세요.</p>
+    <p>목표는 "외기 38도, 일사 650W/m², 무풍, 최대 휘도에서 SMPS 주변 50도 이하, 콘덴서 75도 이하"로 잡고 싶어요. 이 조건으로 열해석이랑 목업 시험 결과를 받아볼 수 있을까요? SMPS는 105도 장수명 콘덴서 제품으로 교체 주기 5년 이상을 목표로 하고, 그래도 교체가 쉽게 커넥터 하나로 빠지는 구조면 좋겠어요.</p>
+    <p><b>3. 문의</b><br>유지보수는 어떻게 생각하고 계세요? 한 패널씩 바꾸는 건지, 몇 장을 묶어 통째로 바꾸는 건지, 아니면 구동부 함체만 따로 빼서 바꾸는 건지 궁금해요. 캣워크나 실내 쪽 점검구가 있는지에 따라 함체를 앞에서 뺄지 뒤에서 뺄지가 달라져서요. 그리고 높이가 4~8층이라 패널이나 함체가 떨어지지 않게 2차 체결이나 안전와이어도 꼭 들어갔으면 해요.</p>
+  </div>
+  <button class="copy" id="copyBtn" type="button">문안 복사</button>
+</section>
+
+<section>
+  <h2><span class="no">09</span>근거 출처와 확인 필요 사항</h2>
+  <p class="ref">확인 필요: K5+ 동작온도 공식값(동사 N6 mini는 최대 75°C), 채택 SMPS 디레이팅 곡선과 콘덴서 사양, 서울 수직면 일사 실측, 실제 평균 소비전력, 건축법 시행령 제61조·피난방화규칙 제24조 현행 조문, KDS 41 풍하중 현장 계산, IPC-2223 원문 수치.</p>
+  <ol class="src">
+    <li><a href="https://koreascience.or.kr/article/CFKO200803977432492.page">KIEE 2008, 비환기 파사드 PV 모듈 온도 비교</a></li>
+    <li><a href="https://www.pv-magazine.com/2024/10/25/scientists-unveil-results-of-full-year-analysis-on-bipv-modules/">DTU BIPV 1년 실증 (pv magazine)</a></li>
+    <li><a href="https://lirias.kuleuven.be/retrieve/591579">KU Leuven, 환기형 BIPV 민감도 분석</a></li>
+    <li><a href="https://store.azarpixel.com/collections/receiving-cards/products/colorlight-k5-receiving-card">Colorlight K5+ 사양 (판매처)</a></li>
+    <li><a href="https://www.hikvision.com/content/dam/hikvision/vn/product-datasheet/DS-D43Q200PT-5V.pdf">5V LED 전원 동작온도 사례 (Hikvision 데이터시트)</a></li>
+    <li><a href="https://jlcpcb.com/blog/flexible-pcb-bend-radius">FPCB 굴곡 반경 가이드 (IPC-2223 인용)</a></li>
+    <li><a href="https://www.molit.go.kr/mta/USR/law/m_37141/dtl.jsp?r_id=3998">국토교통부 외벽 마감재료 질의회신</a></li>
+    <li>일반 공학식: Arrhenius 10°C 법칙, IPC-2152 도체 허용전류, 결정질 PV 온도계수, IEC 60529 IP 등급</li>
+  </ol>
+</section>
+
+</div>
+<script>
+document.getElementById('copyBtn').addEventListener('click', function(){
+  var el=document.getElementById('script'), btn=this, text=el.innerText;
+  function done(msg){btn.textContent=msg;setTimeout(function(){btn.textContent='문안 복사'},1800)}
+  function fallback(){try{var r=document.createRange();r.selectNodeContents(el);var s=window.getSelection();s.removeAllRanges();s.addRange(r);done('선택됨 · Ctrl+C로 복사')}catch(e){done('직접 선택해 복사하세요')}}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){done('복사됨')},fallback)}else{fallback()}
+});
+</script>
+</body>
+</html>
