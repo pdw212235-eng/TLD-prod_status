@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BIPV 기구 설계 검토</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -86,11 +91,13 @@ ol.src a{color:var(--ink)}
 @media (max-width:760px){.roles{grid-template-columns:repeat(2,minmax(0,1fr))} .cols3{grid-template-columns:1fr}}
 @media (max-width:640px){.roles,.cols{grid-template-columns:1fr} h1{font-size:24px}}
 </style>
+</head>
+<body>
 
 <div class="wrap">
 
 <header>
-  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-28</span><span>내부 검토안 v3.5 (수평 배기 검토 추가)</span></div>
+  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-28</span><span>내부 검토안 v3.6</span></div>
   <h1>유리 LED + PV 합지 패널 기구 설계 검토</h1>
   <p class="lede">업체 기구 설계를 내부에서 검토한 결과입니다. 현 구조(하단만 열린 500×20×300mm 공기층, Hub·SMPS 밀폐 함체), SMPS HWA805V0J-SS ×2, 한낮 400W·야간 200W 운전을 기준으로, 일사와 온도를 Python 계산으로 검증했습니다. v3에서는 개선안을 세 가지로 정리했습니다. 1안은 뒷판을 수직으로 빼는 방법, 2안은 SMPS 핀형 방열 함체 분리, 3안은 장기안으로 48V 배전과 분전반 실내 이전입니다.</p>
   <div class="roles">
@@ -111,7 +118,7 @@ ol.src a{color:var(--ink)}
     <li class="good"><b>2안(SMPS 핀형 방열 함체 분리)이 가장 확실합니다.</b> 핀 B안은 약 59°C, D안은 약 54°C입니다. SMPS가 빠지면서 공기층이 150mm로 줄어 뜨거운 구간 면적이 절반이 되고, 공기층과 Hub 쪽 온도도 1~2K 내려갑니다.</li>
     <li class="long"><b>3안(48V 배전, 분전반 실내)은 장기 사용에 가장 유리합니다.</b> 패널 쪽 발열이 55W에서 19W로 약 1/3이 됩니다. 2안과 합치면 DC-DC 약 56°C이고, 고장이 잦은 AC-DC 정류기를 실내에서 정비할 수 있습니다. 단기에는 2안으로 가고, 3안으로 바꿀 수 있게 장착 구조를 맞춰 두는 것을 권장합니다.</li>
     <li class="hot"><b>평소 기온으로 보면 현 구조는 1년에 약 3,500시간 동안 SMPS가 60°C를 넘습니다.</b> 8월 평균 최고기온(30.6°C) 맑은 날에 84°C이고, 4~10월 낮에는 평범한 날에도 70°C를 넘습니다. 2안 B는 같은 날 55°C로, 평년 기온에서는 60°C를 넘는 시간이 없습니다(06장).</li>
-    <li><b>세로로 이어 붙이면 벽 쪽 공기가 위로 갈수록 데워집니다.</b> 어느 안이든 위층 패널 뒤 공기가 14~27K 올라가므로, 2~3장마다 끊어서 옆으로 빼줘야 합니다.</li>
+    <li class="hot"><b>세로로 이어 붙이면 벽 쪽 공기가 위로 갈수록 데워집니다.</b> 2안 기준으로 16장이 막힌 채 이어지면 최상단 패널 뒤 공기가 30~40K 올라가 SMPS가 85~94°C가 됩니다(벽 간격 150~200mm). 1~2장마다 경사 차단판으로 끊어 배열 양 끝으로 수평 배기하고, 벽 간격 200mm 이상과 핀 함체 D를 쓰면 약 60°C로 내려갑니다(11장).</li>
   </ul>
 </section>
 
@@ -359,14 +366,15 @@ ol.src a{color:var(--ink)}
       <p class="ref">뜨거운 구간(유리 90°C대) 면적이 패널의 30%에서 15%로 절반이 됩니다. SMPS는 핀 함체로 직접 방열하므로 공기층 영향을 거의 받지 않습니다. FPCB 구간은 LED 열이 지배해 크게 내려가지 않습니다.</p></div>
     <div class="card"><h3>세로로 이어 붙일 때 (16장, 벽 쪽 측면이 막힌 경우)</h3>
       <div class="tbl"><table>
-        <thead><tr><th>벽 간격</th><th class="num">최상단 뒤 공기 상승</th><th class="num">1안 최상단 SMPS (a) / (b)</th></tr></thead>
+        <thead><tr><th>구성 · 벽 간격</th><th class="num">최상단 뒤 공기 상승</th><th class="num">최상단 SMPS</th></tr></thead>
         <tbody>
-          <tr><td>250 mm</td><td class="num">+26.5 K</td><td class="num">90.6 / 80.0</td></tr>
-          <tr><td>300 mm</td><td class="num">+23.0 K</td><td class="num">88.5 / 77.3</td></tr>
-          <tr><td>400 mm</td><td class="num">+18.6 K</td><td class="num">85.7 / 73.9</td></tr>
-          <tr><td>600 mm</td><td class="num">+13.9 K</td><td class="num">82.7 / 70.3</td></tr>
+          <tr class="bad"><td>2안 B · 100 mm</td><td class="num">+66.6 K</td><td class="num">119.7°C</td></tr>
+          <tr><td>2안 B / D · 150 mm</td><td class="num">+39.0 K</td><td class="num">93.9 / 90.3°C</td></tr>
+          <tr><td>2안 B / D · 200 mm</td><td class="num">+29.6 K</td><td class="num">85.2 / 80.5°C</td></tr>
+          <tr><td>1안 (a) / (b) · 250 mm</td><td class="num">+26.5 K</td><td class="num">90.6 / 80.0°C</td></tr>
+          <tr><td>1안 (a) / (b) · 600 mm</td><td class="num">+13.9 K</td><td class="num">82.7 / 70.3°C</td></tr>
         </tbody></table></div>
-      <p class="ref">패널마다 뒤로 150~245W를 내보내 위로 갈수록 데워집니다. 2안도 같은 이유로 상부 패널이 오릅니다(벽 간격 100mm에서 하단 55°C → 상단 82°C). 2~3장마다 수평으로 끊고 옆으로 빼줘야 합니다.</p></div>
+      <p class="ref">패널마다 뒤로 230~250W를 내보내 위로 갈수록 데워집니다. 2안은 핀 함체(돌출 90~100mm)가 벽 쪽 공간 일부를 막아 상승폭이 더 큽니다. 1~2장마다 수평으로 끊어 옆으로 빼야 합니다(11장).</p></div>
   </div>
   <p class="note"><b>추가로 볼 점:</b> 공기층 구간의 전면 LED 유리층이 계산상 90°C 안팎까지 올라갑니다(1안은 공기층이 없어져 약 76°C). LED 필름, OCA 접착층, FPCB 커넥터의 허용 온도를 업체에 확인해야 합니다.</p>
 </section>
@@ -439,7 +447,7 @@ ol.src a{color:var(--ink)}
       <tr><td class="loc">7월 케이스</td><td>함체 그대로 84°C, 패드+핀 약 62°C</td><td><b>B 59°C / D 54°C</b></td><td>DC-DC 56~64°C (허용 온도 높음)</td></tr>
       <tr><td class="loc">패널·FPCB 쪽</td><td>공기층이 없어져 유리 약 76°C로 가장 유리</td><td>공기층 150mm로 뜨거운 면적 절반</td><td>조합한 안을 따름</td></tr>
       <tr><td class="loc">FPCB 경로</td><td>Hub를 판 뿌리에 패널과 평행하게 둬야 100mm로 가능. 아니면 150mm 이상 재설계</td><td>현 경로 유지</td><td>변경 없음</td></tr>
-      <tr><td class="loc">벽 쪽 공간</td><td><b>250mm 이상 필요</b>, 외벽 돌출 약 250~350mm</td><td>핀 함체 깊이만큼(약 100mm) 필요</td><td>배선 경로와 슬래브 관통 필요</td></tr>
+      <tr><td class="loc">벽 쪽 공간</td><td><b>250mm 이상 필요</b>, 외벽 돌출 약 250~350mm</td><td>200mm 이상 권장(핀 함체 돌출 90~100mm + 공기 통로)</td><td>배선 경로와 슬래브 관통 필요</td></tr>
       <tr><td class="loc">구조</td><td>판 끝에 함체 3~5kg이 달린 캔틸레버. 패널 프레임에 장당 5~7N·m 추가 모멘트, 진동·볼트 풀림 검토</td><td>SMPS 함체를 건물 쪽 서브프레임에 독립 고정 가능</td><td>패널 쪽 부품이 가벼워짐</td></tr>
       <tr><td class="loc">교체 접근</td><td>판이 패널 뒤에 숨어 앞(곤돌라)에서 접근 불가. <b>캣워크나 실내 점검구가 있어야 유효</b></td><td>원터치 교체, FPCB 건드리지 않음</td><td>정류기는 실내 분전반에서 정비. 패널에는 DC-DC만</td></tr>
       <tr><td class="loc">핵심 리스크</td><td>벽 간격, 교체성, 위층 누적 열</td><td>5V 회로당 20A 커넥터 여유 부족, 커넥터 풀림 시 과열(10장)</td><td>초기 개발비, 48V 배선·보호 설계, DC-DC 데이터 확보</td></tr>
@@ -720,7 +728,7 @@ ol.src a{color:var(--ink)}
       <li>차단판을 고정할 서브프레임 위치, 차단판을 지나는 배선의 그로밋</li>
       <li>건물 모서리 풍압 자료(역류·풍력 이용 검토용)</li></ul></div>
   </div>
-  <p class="note"><b>중재 의견:</b> 수평 배기는 효과가 분명합니다. 최상단 SMPS가 85~94°C에서 60~66°C로 내려갑니다. 다만 자연 배출만으로는 무풍 한낮에 목표를 넘으므로, <b>A안 + 벽 쪽 공간 200mm + 1~2장마다 차단 + 핀 함체 D</b>를 기본으로 하고, 소형 수평 팬을 추가 옵션으로 두는 것을 권합니다. 또 이번 계산은 핀 함체가 벽 쪽 공간을 일부 막는 효과를 넣어서, 앞(00·05장)에 쓴 적층 상승폭(14~27K)보다 크게 나왔습니다(150mm 기준 39K). 앞 장 수치를 이번 결과로 맞출지는 확인 후 반영하겠습니다.</p>
+  <p class="note"><b>중재 의견:</b> 수평 배기는 효과가 분명합니다. 최상단 SMPS가 85~94°C에서 60~66°C로 내려갑니다. 다만 자연 배출만으로는 무풍 한낮에 목표를 넘으므로, <b>A안 + 벽 쪽 공간 200mm + 1~2장마다 차단 + 핀 함체 D</b>를 기본으로 하고, 소형 수평 팬을 추가 옵션으로 두는 것을 권합니다.</p>
 </section>
 
 <section>
@@ -752,7 +760,7 @@ ol.src a{color:var(--ink)}
       <tr><td>한여름에도 50°C 내외 유지</td><td><b>외기 38°C, 일사 650W/m², 무풍, 400W, 2시간 열평형에서:</b> 팬 정지 상태에서도 SMPS 케이스 ≤60°C, 팬 동작 시 ≤50°C, 전해콘덴서 ≤75°C</td><td>자연대류만으로는 최선(D안)도 약 54°C(보수 60°C). 50°C 이하는 팬을 써야 안정적으로 도달</td></tr>
       <tr><td>단열재로 복사열 차단</td><td>보조 수단으로 둡니다. 핵심은 SMPS 열을 핀으로 바깥 공기에 내보내는 것</td><td>복사 차단 효과는 −2K 내외. SMPS 자체 손실만으로 74.5°C</td></tr>
       <tr><td>SMPS를 패널과 이격 (커버 수직 배치)</td><td>1안(뒷판 수직)은 <b>써멀패드와 세로 핀을 반드시 함께</b> 적용. 벽 간격 250mm 이상과 교체 접근 경로가 있을 때만. 그렇지 않으면 2안</td><td>함체 그대로 세우면 −3K(84°C). 핀을 달면 약 62°C</td></tr>
-      <tr><td>통기 구조 검토</td><td>공기층 윗면·옆면·뒷면은 개구 불가. 2안으로 공기층 높이를 150mm로 줄이고, 벽 쪽 공간은 2~3장마다 수평 차단</td><td>공기층 −2K, 뜨거운 면적 절반. 위층 누적 14~27K</td></tr>
+      <tr><td>통기 구조 검토</td><td>공기층 윗면·옆면·뒷면은 개구 불가. 2안으로 공기층 높이를 150mm로 줄이고, 벽 쪽 공간은 200mm 이상 확보해 1~2장마다 경사 차단판 + 배열 끝단 루버로 수평 배기</td><td>공기층 −2K, 뜨거운 면적 절반. 막힌 채 이어지면 최상단 +30~40K, 수평 배기 시 최상단 SMPS 약 60°C(11장)</td></tr>
       <tr><td>SMPS 별도 커버, 방수·방열 알루미늄, 히트싱크</td><td>2안: 세로 핀 일체형 Al 함체. 베이스 300×250 이상, 핀 높이 40~50, 두께 2, 간격 10.5mm. IP65 이상 + ePTFE 벤트</td><td>B안 59°C, D안 54°C</td></tr>
       <tr><td>히트싱크에 방수 fan</td><td>팬은 50°C 목표를 위한 보조로 사용(IP68, 회전수 감시). 팬이 멈춰도 60°C 이하가 되도록 핀 설계</td><td>팬 사용 시 46°C, 미사용 시 54~59°C</td></tr>
       <tr><td>SMPS 2년 내 교체 가능</td><td>목표 교체 주기 5년 이상(장수명 콘덴서 + 케이스 60°C 이하). 교체 단위는 SMPS 함체 원터치. 장기적으로는 3안으로 정류기를 실내로</td><td>케이스 87°C와 57°C는 콘덴서 수명이 약 8배 차이(10°C마다 2배)</td></tr>
@@ -857,3 +865,5 @@ document.getElementById('copyBtn').addEventListener('click', function(){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){done('복사됨')},fallback)}else{fallback()}
 });
 </script>
+</body>
+</html>
