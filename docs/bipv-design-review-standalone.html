@@ -97,7 +97,7 @@ ol.src a{color:var(--ink)}
 <div class="wrap">
 
 <header>
-  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-28</span><span>내부 검토안 v3.4 (5V 연결 XT90 ×4)</span></div>
+  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-28</span><span>내부 검토안 v3.5 (수평 배기 검토 추가)</span></div>
   <h1>유리 LED + PV 합지 패널 기구 설계 검토</h1>
   <p class="lede">업체 기구 설계를 내부에서 검토한 결과입니다. 현 구조(하단만 열린 500×20×300mm 공기층, Hub·SMPS 밀폐 함체), SMPS HWA805V0J-SS ×2, 한낮 400W·야간 200W 운전을 기준으로, 일사와 온도를 Python 계산으로 검증했습니다. v3에서는 개선안을 세 가지로 정리했습니다. 1안은 뒷판을 수직으로 빼는 방법, 2안은 SMPS 핀형 방열 함체 분리, 3안은 장기안으로 48V 배전과 분전반 실내 이전입니다.</p>
   <div class="roles">
@@ -630,7 +630,108 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">11</span>검토 항목 (위치 · 문제점 · 예상 현상 · 개선 검토 사항)</h2>
+  <h2><span class="no">11</span>수평 배기 검토: 벽 쪽 더운 공기를 옆으로 빼기</h2>
+  <p>패널을 세로로 16장(4~8층) 이어 붙이면, 패널마다 뒤로 내보내는 열(장당 약 230~250W)이 벽 쪽 공간을 따라 위로 쌓입니다. 이 열을 위로 올려보내지 않고 몇 장마다 끊어서 <b>옆(수평)으로 빼내는 방법</b>을 기구 쪽에서 구상하고, 열계산 쪽에서 효과를 계산했습니다. 2안(SMPS 핀 함체 B·D), 7월 설계와 8월 평균일 기준입니다.</p>
+  <ul class="keys">
+    <li class="hot"><b>막힌 채로 위로 이어지면 최상단 SMPS가 85~94°C까지 올라갑니다.</b> 벽 쪽 공간 깊이 150mm에서 최상단 뒤 공기가 39K, 200mm에서 30K 올라갑니다. 100mm면 핀 함체가 공간을 막아 120°C에 이릅니다.</li>
+    <li><b>자연 굴뚝 효과만으로는 한계가 있습니다.</b> 1m 높이 굴뚝이 만드는 압력이 0.2~0.7Pa밖에 안 돼서, 매 장마다 끊고 배기구를 키워도 뒤 공기 상승이 11~18K 아래로 내려가지 않습니다.</li>
+    <li><b>옆으로 보낼 수 있는 거리는 약 1m(패널 1~2열)까지입니다.</b> 그보다 멀면 공기가 쌓여 마찰이 급격히 커지고 상승폭이 두 배 이상 됩니다. 파사드 끝까지 몇 m를 끌고 가려면 통로를 400mm 이상으로 키우거나 팬이 필요합니다.</li>
+    <li><b>바람은 굴뚝 효과보다 5~20배 강합니다.</b> 2m/s 미풍만으로 3~4Pa가 생겨 크게 도움이 되지만 방향이 바뀌면 역류합니다. 그래서 설계는 무풍(여름 한낮 최악)으로 하고, 양쪽 끝에 루버를 둬서 풍향과 관계없이 한쪽은 들어오고 한쪽은 나가게 합니다.</li>
+    <li class="good"><b>목표(최상단 SMPS ≤60°C)를 맞추는 조합:</b> 핀 함체 D + 벽 쪽 공간 200mm + 매 장 차단(자연 배출 60.4°C, 경계), 또는 핀 함체 B·D + 1~2장마다 차단 + 소형 수평 팬(패널당 1~8W)입니다.</li>
+  </ul>
+
+  <figure class="fig">
+    <div class="svgbox">
+    <svg viewBox="0 0 640 310" width="640" role="img" aria-label="경사 차단판과 배열 끝단 루버로 수평 배출하는 입면 개념도">
+      <rect x="140" y="40" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="200" y="40" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="260" y="40" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="320" y="40" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="380" y="40" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="440" y="40" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="140" y="76" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="200" y="76" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="260" y="76" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="320" y="76" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="380" y="76" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="440" y="76" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="140" y="112" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="200" y="112" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="260" y="112" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="320" y="112" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="380" y="112" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="440" y="112" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="140" y="148" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="200" y="148" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="260" y="148" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="320" y="148" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="380" y="148" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="440" y="148" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="140" y="184" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="200" y="184" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="260" y="184" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="320" y="184" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="380" y="184" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="440" y="184" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="140" y="220" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="200" y="220" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="260" y="220" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="320" y="220" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="380" y="220" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="440" y="220" width="60" height="36" style="fill:var(--panel);stroke:var(--surface);stroke-width:2"/><rect x="116" y="40" width="20" height="216" style="fill:var(--bg);stroke:var(--metal);stroke-width:1.5"/><line x1="119" y1="48" x2="133" y2="52" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="56" x2="133" y2="60" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="64" x2="133" y2="68" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="72" x2="133" y2="76" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="80" x2="133" y2="84" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="88" x2="133" y2="92" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="96" x2="133" y2="100" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="104" x2="133" y2="108" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="112" x2="133" y2="116" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="120" x2="133" y2="124" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="128" x2="133" y2="132" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="136" x2="133" y2="140" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="144" x2="133" y2="148" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="152" x2="133" y2="156" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="160" x2="133" y2="164" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="168" x2="133" y2="172" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="176" x2="133" y2="180" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="184" x2="133" y2="188" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="192" x2="133" y2="196" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="200" x2="133" y2="204" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="208" x2="133" y2="212" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="216" x2="133" y2="220" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="224" x2="133" y2="228" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="232" x2="133" y2="236" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="240" x2="133" y2="244" stroke="var(--metal)" stroke-width="1"/><line x1="119" y1="248" x2="133" y2="252" stroke="var(--metal)" stroke-width="1"/><rect x="504" y="40" width="20" height="216" style="fill:var(--bg);stroke:var(--metal);stroke-width:1.5"/><line x1="507" y1="48" x2="521" y2="52" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="56" x2="521" y2="60" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="64" x2="521" y2="68" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="72" x2="521" y2="76" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="80" x2="521" y2="84" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="88" x2="521" y2="92" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="96" x2="521" y2="100" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="104" x2="521" y2="108" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="112" x2="521" y2="116" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="120" x2="521" y2="124" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="128" x2="521" y2="132" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="136" x2="521" y2="140" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="144" x2="521" y2="148" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="152" x2="521" y2="156" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="160" x2="521" y2="164" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="168" x2="521" y2="172" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="176" x2="521" y2="180" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="184" x2="521" y2="188" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="192" x2="521" y2="196" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="200" x2="521" y2="204" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="208" x2="521" y2="212" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="216" x2="521" y2="220" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="224" x2="521" y2="228" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="232" x2="521" y2="236" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="240" x2="521" y2="244" stroke="var(--metal)" stroke-width="1"/><line x1="507" y1="248" x2="521" y2="252" stroke="var(--metal)" stroke-width="1"/><path d="M140 98 L320 112 L500 98" fill="none" stroke="var(--heat)" stroke-width="2.5" stroke-dasharray="6 4"/><path d="M140 170 L320 184 L500 170" fill="none" stroke="var(--heat)" stroke-width="2.5" stroke-dasharray="6 4"/><path d="M140 242 L320 256 L500 242" fill="none" stroke="var(--heat)" stroke-width="2.5" stroke-dasharray="6 4"/><g fill="none" stroke="var(--fg)" stroke-width="1.5" opacity="0.7"><path d="M320 166 V134"/><path d="M315 140 L320 132 L325 140"/><path d="M300 132 Q230 126 150 118"/><path d="M156 113 L148 118 L156 123"/><path d="M340 132 Q410 126 490 118"/><path d="M484 113 L492 118 L484 123"/></g><path d="M118 52 H92" stroke="var(--heat)" stroke-width="2" fill="none"/><path d="M98 47 L90 52 L98 57" stroke="var(--heat)" stroke-width="2" fill="none"/><path d="M522 52 H548" stroke="var(--heat)" stroke-width="2" fill="none"/><path d="M542 47 L550 52 L542 57" stroke="var(--heat)" stroke-width="2" fill="none"/><path d="M92 100 H118" stroke="var(--cool)" stroke-width="2" fill="none"/><path d="M112 95 L120 100 L112 105" stroke="var(--cool)" stroke-width="2" fill="none"/><path d="M548 100 H522" stroke="var(--cool)" stroke-width="2" fill="none"/><path d="M528 95 L520 100 L528 105" stroke="var(--cool)" stroke-width="2" fill="none"/><path d="M118 124 H92" stroke="var(--heat)" stroke-width="2" fill="none"/><path d="M98 119 L90 124 L98 129" stroke="var(--heat)" stroke-width="2" fill="none"/><path d="M522 124 H548" stroke="var(--heat)" stroke-width="2" fill="none"/><path d="M542 119 L550 124 L542 129" stroke="var(--heat)" stroke-width="2" fill="none"/><path d="M92 172 H118" stroke="var(--cool)" stroke-width="2" fill="none"/><path d="M112 167 L120 172 L112 177" stroke="var(--cool)" stroke-width="2" fill="none"/><path d="M548 172 H522" stroke="var(--cool)" stroke-width="2" fill="none"/><path d="M528 167 L520 172 L528 177" stroke="var(--cool)" stroke-width="2" fill="none"/><path d="M118 196 H92" stroke="var(--heat)" stroke-width="2" fill="none"/><path d="M98 191 L90 196 L98 201" stroke="var(--heat)" stroke-width="2" fill="none"/><path d="M522 196 H548" stroke="var(--heat)" stroke-width="2" fill="none"/><path d="M542 191 L550 196 L542 201" stroke="var(--heat)" stroke-width="2" fill="none"/><path d="M92 244 H118" stroke="var(--cool)" stroke-width="2" fill="none"/><path d="M112 239 L120 244 L112 249" stroke="var(--cool)" stroke-width="2" fill="none"/><path d="M548 244 H522" stroke="var(--cool)" stroke-width="2" fill="none"/><path d="M528 239 L520 244 L528 249" stroke="var(--cool)" stroke-width="2" fill="none"/>
+      <g font-size="10">
+        <text x="320" y="276" text-anchor="middle">LED 화면 (패널 500×1000 배열, 화면 안에는 개구 없음)</text>
+        <text x="126" y="292" text-anchor="middle" class="m">끝단 루버</text><text x="514" y="292" text-anchor="middle" class="m">끝단 루버</text>
+        <text x="560" y="56" style="fill:var(--heat)">배기 (위)</text><text x="560" y="104" style="fill:var(--cool)">흡기 (아래)</text>
+        <text x="16" y="56" style="fill:var(--heat)">배기</text><text x="16" y="104" style="fill:var(--cool)">흡기</text>
+        <text x="560" y="186" style="fill:var(--heat)">경사 차단판</text><text x="560" y="198" class="m">2장마다, 패널 뒤</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>그림 8. 권장 개념(A안) 입면도. 벽 쪽 공간에 2장 높이마다 가운데가 낮은 경사 차단판을 두면, 올라온 더운 공기가 차단판 아래를 타고 배열 양 끝으로 이동해 끝단 루버 위쪽으로 나갑니다. 신선한 공기는 각 구간 아래쪽 루버로 들어옵니다. 개구가 LED 화면 안에 생기지 않고 배열 양 끝(폭 100~200mm 띠)에만 생깁니다.</figcaption>
+  </figure>
+
+  <div class="tbl wide"><table>
+    <thead><tr><th></th><th>A 경사 차단판 + 끝단 루버</th><th>B 슬래브 라인 수평 덕트</th><th>C 이음부 횡류팬</th><th>D 수평 이음 배기 틈</th><th>E 한쪽 흡기·반대쪽 배기</th></tr></thead>
+    <tbody>
+      <tr><td class="loc">방식</td><td>2~3장마다 V형 차단판(경사 10~20°), 배열 양 끝 세로 루버로 배출</td><td>층 슬래브 높이에 150~300mm 덕트 띠, 건물 모서리나 루버 띠로 배출</td><td>수평 이음에 크로스플로우 팬</td><td>2~3행마다 이음을 10~20mm로 넓혀 후드 달린 배기 틈으로</td><td>구간마다 한쪽 끝 흡기, 반대쪽 끝 배기</td></tr>
+      <tr><td class="loc">LED 화면 영향</td><td><b>없음</b> (끝단만)</td><td>층마다 LED 없는 가로 띠</td><td>이음 확대 (중)</td><td>2~3행마다 가로 줄</td><td>없음 (끝단만)</td></tr>
+      <tr><td class="loc">빗물·바람</td><td>끝단 방우 루버 + 메시로 관리 쉬움. 측풍 시 한쪽이 흡기로 바뀜</td><td>밴드 루버로 관리 쉬움</td><td>이음으로 빗물 유입, 모터 침수</td><td>정면 비바람에 직접 노출, 역류 가능</td><td>측풍에 크게 좌우됨</td></tr>
+      <tr><td class="loc">화재 확산</td><td>차단판이 세로 공간을 끊음 (양호)</td><td>슬래브 라인 차단 (최상)</td><td>별도 차단 필요</td><td>차단판 있으면 양호</td><td>양호</td></tr>
+      <tr><td class="loc">정비</td><td>루버는 끝단에서 접근, 차단판은 거의 무정비</td><td>밴드 점검구 (양호)</td><td>옥외 회전체 교체 (불리)</td><td>전 폭 후드·메시 청소</td><td>A와 같음</td></tr>
+      <tr><td class="loc">비용·복잡도</td><td>중</td><td>중~상</td><td>상 (전원·제어)</td><td>중</td><td>중</td></tr>
+      <tr><td class="loc">판정</td><td><b>1순위</b></td><td><b>2순위</b> (띠 허용 시)</td><td>보조용</td><td>이음 확대 허용 시</td><td>배열 폭이 좁을 때</td></tr>
+    </tbody></table></div>
+  <p class="ref">실내나 천장으로 배기하는 방법은 제외했습니다. 열·습기·연기가 실내로 들어오고, 방화구획 관통과 냉방 부하 증가, 인허가 문제가 있기 때문입니다. 배열 끝단에 세로 굴뚝을 따로 두고 옥상으로 빼는 방법은 층마다 방화댐퍼가 필요해 비용과 정비 부담이 큽니다.</p>
+
+  <figure class="fig">
+    <div class="svgbox">
+    <svg viewBox="0 0 640 330" width="640" role="img" aria-label="수평 배출 방식별 최상단 패널 SMPS 케이스 온도">
+      <g stroke="var(--line)" stroke-width="1"><line x1="250" y1="22" x2="250" y2="302"/><line x1="340" y1="22" x2="340" y2="302"/><line x1="430" y1="22" x2="430" y2="302"/><line x1="520" y1="22" x2="520" y2="302"/><line x1="610" y1="22" x2="610" y2="302"/></g>
+      <g font-size="11" class="mono" text-anchor="middle"><text x="250" y="318" class="m mono">0</text><text x="340" y="318" class="m mono">30</text><text x="430" y="318" class="m mono">60</text><text x="520" y="318" class="m mono">90</text><text x="610" y="318" class="m mono">120°C</text></g>
+      <line x1="460" y1="16" x2="460" y2="302" stroke="var(--heat)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="464" y="14" font-size="11" style="fill:var(--heat)">70°C 고장 임계</text>
+      <line x1="430" y1="16" x2="430" y2="302" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="2 3"/><text x="426" y="14" font-size="11" text-anchor="end" style="fill:var(--ok)">60°C 목표</text>
+      <text x="242" y="43" font-size="12" text-anchor="end">연속, 벽 간격 150 · B</text><rect x="250" y="30" width="281.7" height="18" style="fill:var(--heat)"/><text x="527.7" y="43" font-size="11" text-anchor="end" class="mono inbar">93.9</text><text x="242" y="77" font-size="12" text-anchor="end">연속, 벽 간격 200 · B</text><rect x="250" y="64" width="255.6" height="18" style="fill:var(--heat)"/><text x="501.6" y="77" font-size="11" text-anchor="end" class="mono inbar">85.2</text><text x="242" y="111" font-size="12" text-anchor="end">2장마다 자연 배출 · B</text><rect x="250" y="98" width="220.5" height="18" style="fill:var(--heat)"/><text x="466.5" y="111" font-size="11" text-anchor="end" class="mono inbar">73.5</text><text x="242" y="145" font-size="12" text-anchor="end">매 장 자연 배출 · B</text><rect x="250" y="132" width="197.4" height="18" style="fill:var(--warn)"/><text x="443.4" y="145" font-size="11" text-anchor="end" class="mono inbar">65.8</text><text x="242" y="179" font-size="12" text-anchor="end">2장마다 + 팬(10K) · B</text><rect x="250" y="166" width="193.8" height="18" style="fill:var(--warn)"/><text x="439.8" y="179" font-size="11" text-anchor="end" class="mono inbar">64.6</text><text x="242" y="213" font-size="12" text-anchor="end">매 장 + 팬(5K) · B</text><rect x="250" y="200" width="179.1" height="18" style="fill:var(--ok)"/><text x="425.1" y="213" font-size="11" text-anchor="end" class="mono inbar">59.7</text><text x="242" y="247" font-size="12" text-anchor="end">매 장 자연 배출 · D</text><rect x="250" y="234" width="181.2" height="18" style="fill:var(--warn)"/><text x="427.2" y="247" font-size="11" text-anchor="end" class="mono inbar">60.4</text><text x="242" y="281" font-size="12" text-anchor="end">2장마다 + 팬(10K) · D</text><rect x="250" y="268" width="177.6" height="18" style="fill:var(--ok)"/><text x="423.6" y="281" font-size="11" text-anchor="end" class="mono inbar">59.2</text>
+    </svg>
+    </div>
+    <figcaption>그림 9. 수평 배기 방식별 최상단 패널의 SMPS 케이스 온도(7월 설계, 16장 적층, B·D는 핀 함체 크기). 자연 배출은 몇 장마다 끊어도 60°C까지 내려가지 않습니다. 매 장 차단하고 핀 함체를 D로 키우거나 소형 팬을 쓰면 목표 근처에 들어옵니다. 배기구 순면적은 공간 단면의 50%로 계산했습니다.</figcaption>
+  </figure>
+
+  <div class="cols">
+    <div class="tbl"><table>
+      <thead><tr><th>벽 간격 200mm, 자연 배출</th><th class="num">뒤 공기 상승</th><th class="num">최상단 SMPS B (7월 / 8월)</th><th class="num">최상단 SMPS D (7월 / 8월)</th></tr></thead>
+      <tbody>
+        <tr><td>매 장마다 차단</td><td class="num">17.5 K</td><td class="num">65.8 / 62.0</td><td class="num">60.4 / 56.6</td></tr>
+        <tr><td>2장마다</td><td class="num">22.2 K</td><td class="num">73.5 / 70.0</td><td class="num">68.1 / 64.7</td></tr>
+        <tr><td>3장마다</td><td class="num">25.6 K</td><td class="num">78.0 / 74.8</td><td class="num">72.7 / 69.5</td></tr>
+        <tr><td>4장마다</td><td class="num">28.3 K</td><td class="num">81.4 / 78.3</td><td class="num">76.2 / 73.0</td></tr>
+      </tbody></table></div>
+    <div class="tbl"><table>
+      <thead><tr><th>소형 수평 팬 (패널당)</th><th class="num">필요 풍량</th><th class="num">팬 전력</th><th class="num">최상단 SMPS B / D (7월, 2장마다)</th></tr></thead>
+      <tbody>
+        <tr><td>뒤 공기 상승 ≤10K</td><td class="num">71 m³/h</td><td class="num">0.8~3.9 W</td><td class="num">64.6 / 59.2</td></tr>
+        <tr><td>뒤 공기 상승 ≤5K</td><td class="num">142 m³/h</td><td class="num">1.6~7.9 W</td><td class="num">61.0 / 55.5</td></tr>
+      </tbody></table></div>
+  </div>
+  <div class="cols">
+    <div class="tbl"><table>
+      <thead><tr><th>배기구 순면적 (200mm, 매 장)</th><th class="num">100</th><th class="num">250</th><th class="num">500</th><th class="num">1,000</th><th class="num">2,000 cm²</th></tr></thead>
+      <tbody>
+        <tr><td>뒤 공기 상승</td><td class="num">47.5</td><td class="num">26.1</td><td class="num">17.5</td><td class="num">13.2</td><td class="num">11.5 K</td></tr>
+      </tbody></table></div>
+    <div class="tbl"><table>
+      <thead><tr><th>옆으로 보내는 거리 (2장마다, 200mm)</th><th class="num">0.5 m</th><th class="num">1 m</th><th class="num">2 m</th><th class="num">4 m</th></tr></thead>
+      <tbody>
+        <tr><td>뒤 공기 상승</td><td class="num">22 K</td><td class="num">26 K</td><td class="num">37 K</td><td class="num">57 K</td></tr>
+        <tr><td>최상단 SMPS B</td><td class="num">74°C</td><td class="num">77°C</td><td class="num">84°C</td><td class="num">99°C</td></tr>
+      </tbody></table></div>
+  </div>
+  <p class="ref">배기구 순면적은 열 1개(폭 500mm)당 공간 단면의 50~100%(벽 간격 200mm면 500~1,000cm²)까지 의미가 있고, 그 이상은 효과가 거의 없습니다. 팬 전력은 패널 열부하(약 600W)의 0.3~1.3%입니다. 아래 구간에서 나온 더운 공기를 위 구간이 다시 빨아들이는 효과는 0으로 계산했으므로, 실제로는 배기와 흡기 위치를 엇갈리게 해야 합니다.</p>
+
+  <div class="cols">
+    <div class="card"><h3>권장 구성</h3><ul>
+      <li><b>방식:</b> A안(경사 차단판 + 배열 끝단 루버). 입면에서 층별 띠를 받아들일 수 있으면 슬래브 라인은 B안 덕트, 층 중간은 A안 차단판으로 혼합</li>
+      <li><b>벽 쪽 공간:</b> 200mm 이상(핀 함체 D는 100mm 공간에 들어가지 않음)</li>
+      <li><b>차단 간격:</b> 1~2장마다. 차단판은 패널이 아니라 건물 서브프레임에 고정해서 패널 교체와 분리</li>
+      <li><b>배기구:</b> 배열 양 끝에 방우 루버 + 메시, 열당 순면적 500~1,000cm². 위는 배기, 아래는 흡기로 나누고 사이에 분리 립</li>
+      <li><b>팬:</b> 목표를 확실히 맞추려면 구간마다 소형 수평 팬(패널당 1~8W) + 고장 감시. 팬이 멈추면 자연 배출 + 휘도 감축으로 버팀</li></ul></div>
+    <div class="card"><h3>먼저 확인할 것</h3><ul>
+      <li>벽 쪽 공간의 실제 깊이와, 패널 열 사이가 가로로 이어져 있는지(브래킷·SMPS 함체가 막는 비율)</li>
+      <li>배열 폭과 끝단까지의 거리. 1m를 넘으면 가운데를 나눠야 함</li>
+      <li>배열 양 끝에 루버 띠(폭 100~200mm)를 둘 수 있는지 입면 협의</li>
+      <li>차단판을 고정할 서브프레임 위치, 차단판을 지나는 배선의 그로밋</li>
+      <li>건물 모서리 풍압 자료(역류·풍력 이용 검토용)</li></ul></div>
+  </div>
+  <p class="note"><b>중재 의견:</b> 수평 배기는 효과가 분명합니다. 최상단 SMPS가 85~94°C에서 60~66°C로 내려갑니다. 다만 자연 배출만으로는 무풍 한낮에 목표를 넘으므로, <b>A안 + 벽 쪽 공간 200mm + 1~2장마다 차단 + 핀 함체 D</b>를 기본으로 하고, 소형 수평 팬을 추가 옵션으로 두는 것을 권합니다. 또 이번 계산은 핀 함체가 벽 쪽 공간을 일부 막는 효과를 넣어서, 앞(00·05장)에 쓴 적층 상승폭(14~27K)보다 크게 나왔습니다(150mm 기준 39K). 앞 장 수치를 이번 결과로 맞출지는 확인 후 반영하겠습니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">12</span>검토 항목 (위치 · 문제점 · 예상 현상 · 개선 검토 사항)</h2>
   <p class="ref"><span class="pill new">추가</span> v1 요청서에 없던 항목 · <span class="pill chg">수정</span> 새 조건으로 바뀐 항목</p>
   <div class="tbl wide"><table>
     <thead><tr><th>#</th><th>검토 위치</th><th>문제점</th><th>예상 현상</th><th>개선 검토 사항</th></tr></thead>
@@ -641,7 +742,7 @@ ol.src a{color:var(--ink)}
       <tr><td class="num">1-4</td><td class="loc">공기층 윗부분 (FPCB 관통 구간) <span class="pill new">추가</span></td><td>윗면이 막혀 덥고 습한 공기가 모임</td><td>야간 결로가 FPCB와 패널 커넥터로 떨어짐 → 부식</td><td>2안으로 공기층을 150mm로 줄이거나 1안으로 없앰. 관통부 직전 U자 drip loop. 위쪽 50~80mm 구간 피복·코팅. Hub 함체를 윗면 프레임 바로 아래에 붙여 FPCB 외부 노출을 없앰</td></tr>
       <tr><td class="num">2-1</td><td class="loc">Hub·SMPS 밀폐 함체 <span class="pill chg">수정</span></td><td>SMPS 손실 약 55W가 밀폐 함체 안에 갇힘. 함체가 패널 열을 받는 Al판에 붙어 있음</td><td>케이스 약 87°C(70~117) → 디레이팅, 오동작, 수명 단축</td><td>2안: SMPS를 세로 핀 함체로 분리(B 59°C / D 54°C). 1안이면 써멀패드와 세로 핀 필수(약 62°C). 장기적으로 3안</td></tr>
       <tr><td class="num">2-2</td><td class="loc">하단 개방 공기층 (500×20×300) <span class="pill chg">수정</span></td><td>출구가 없는 막힌 공간. 윗면·옆면·뒷면 모두 개구 불가</td><td>공기층 약 84°C, PV 약 95°C</td><td>2안으로 공기층 높이를 150mm로 줄여 뜨거운 면적을 절반으로. 1안이면 공기층 자체가 없어짐</td></tr>
-      <tr><td class="num">2-3</td><td class="loc">벽 쪽 공간 (세로 연속 배치) <span class="pill new">추가</span></td><td>패널마다 뒤로 150~245W를 내보냄</td><td>막혀 있으면 위층 뒤 공기가 14~27K 상승</td><td>2~3장마다 수평 차단 + 옆으로 배기. 1안은 벽 간격 250mm 이상, 2안은 100mm 이상</td></tr>
+      <tr><td class="num">2-3</td><td class="loc">벽 쪽 공간 (세로 연속 배치)</td><td>패널마다 뒤로 230~250W를 내보내고, 핀 함체가 공간 일부를 막음</td><td>막힌 채 16장이 이어지면 최상단 뒤 공기 +30~40K, SMPS 85~94°C(벽 간격 100mm면 120°C)</td><td>A안: 1~2장마다 경사 차단판 + 배열 양 끝 루버(열당 순면적 500~1,000cm²)로 수평 배기. 벽 간격 200mm 이상, 핀 함체 D. 필요 시 소형 수평 팬(11장)</td></tr>
       <tr><td class="num">2-4</td><td class="loc">LED 유리층 <span class="pill new">추가</span></td><td>공기층 구간 전면 유리층이 계산상 90°C 안팎</td><td>LED 필름, OCA 접착층, 커넥터 허용 온도 초과 가능</td><td>업체에 각 소재 허용 온도 확인. 온도 연동 휘도 제한(예: 패널 65°C부터 단계적으로)</td></tr>
       <tr><td class="num">2-5</td><td class="loc">밀폐 함체 결로</td><td>주야 온도차로 함체가 호흡함</td><td>습기 유입 → 결로, 부식</td><td>ePTFE 압력평형 벤트, 최저점 배수공, 컨포멀 코팅, IP65 이상, 커넥터 하향 배치</td></tr>
       <tr><td class="num">3-1</td><td class="loc">SMPS·5V 연결 (XT90 ×4 + 실리콘 10AWG)</td><td>SMPS당 40A를 XT90 2개로 나눠 커넥터당 20A. 방수·잠금 없음</td><td>정상 운전은 여유(75°C에서 하우징 94~99°C). 커넥터 1개가 풀리면 같은 SMPS의 나머지 1개에 40A → 146°C 이상, 용융 위험</td><td>XT90H 4개(SMPS당 2개), 실리콘 10AWG 0.5m, 두 SMPS 5V를 묶지 않음. 결합부 브래킷·P-클램프 고정, 회로별 30A 퓨즈나 NTC 온도 감시, SMPS당 40A 휘도 상한. 출하 시 mΩ 측정과 열화상 검사(10장)</td></tr>
@@ -651,7 +752,7 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">12</span>우리 요청사항 수정 제안</h2>
+  <h2><span class="no">13</span>우리 요청사항 수정 제안</h2>
   <div class="tbl wide"><table>
     <thead><tr><th>기존 요청</th><th>수정 제안</th><th>근거 (계산)</th></tr></thead>
     <tbody>
@@ -669,7 +770,7 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">13</span>유지보수 문의 보강</h2>
+  <h2><span class="no">14</span>유지보수 문의 보강</h2>
   <div class="tbl wide"><table>
     <thead><tr><th></th><th>① 패널 단위 교체</th><th>② N개 모듈 통째 교체</th><th>③ SMPS 함체만 원터치 교체 (2안)</th><th>④ 실내 정류기 교체 (3안)</th></tr></thead>
     <tbody>
@@ -693,13 +794,14 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">14</span>업체 질의·검증 요청</h2>
+  <h2><span class="no">15</span>업체 질의·검증 요청</h2>
   <div class="tbl mid"><table>
     <thead><tr><th>순위</th><th>항목</th><th>요청 내용</th></tr></thead>
     <tbody>
       <tr><td><span class="pill p1">P1</span></td><td>유지보수 개념</td><td>교체 단위, 교체 방향, 접근 방식(곤돌라·실내·캣워크), 1건당 소요시간. 함체 2분할 수용 여부</td></tr>
       <tr><td><span class="pill p1">P1</span></td><td>SMPS 데이터</td><td>HWA805V0J-SS 공식 데이터시트: 외형 치수, 효율 곡선, 동작온도, 디레이팅 곡선, 케이스 측정점(Tc), 전해콘덴서 사양, remote sense 지원 여부</td></tr>
-      <tr><td><span class="pill p1">P1</span></td><td>벽 쪽 공간</td><td>패널과 벽 사이 간격, 옆면 개방 여부, 층간 차단 계획. 1안 적용 가능 여부 판단용</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>벽 쪽 공간</td><td>패널과 벽 사이 간격(200mm 이상 가능 여부), 패널 열 사이가 가로로 이어져 있는지, 층간 차단 계획. 1안 적용 가능 여부 판단용</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>수평 배기</td><td>배열 양 끝 루버 띠(폭 100~200mm) 설치 가능 여부, 경사 차단판 고정용 서브프레임, 배열 폭과 끝단까지 거리, 슬래브 라인 덕트 띠 허용 여부, 건물 모서리 풍압 자료</td></tr>
       <tr><td><span class="pill p1">P1</span></td><td>2안 상세</td><td>SMPS 핀 함체 위치·고정 방식, Hub 함체 축소 후 공기층 치수, 5V 연결 구성(XT90H 4개, 실리콘 10AWG 0.5m, 결합부 고정, 회로별 30A 퓨즈나 온도 감시), Amass XT90 사양서와 온도상승 데이터, 63°C 20A 2시간 열시험 결과</td></tr>
       <tr><td><span class="pill p1">P1</span></td><td>열해석</td><td>세로 3장 이상 + 벽 쪽 공간 포함 CFD. 외기 35/38°C, 일사 375/650W/m², 무풍~2m/s, 400W/200W. 팬 정지와 SMPS 1대 고장 케이스</td></tr>
       <tr><td><span class="pill p2">P2</span></td><td>1안 검토 시</td><td>Hub 위치(판 뿌리, 패널과 평행), FPCB 경로 단면, 외벽 돌출 깊이, 판 단면·뿌리 체결·진동 검토서, 교체 접근 경로</td></tr>
@@ -711,13 +813,13 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">15</span>업체 전달용 문안 (구어체 초안)</h2>
+  <h2><span class="no">16</span>업체 전달용 문안 (구어체 초안)</h2>
   <div class="script" id="script">
     <p><b>1. FPCB</b><br>패널이랑 Hub board 잇는 FPCB 11개(30×100mm)가 윗면 프레임을 지나면서 90도로 꺾이는데, 그 모서리가 날카로워 보여요. 바람이나 열팽창으로 조금씩 흔들리면 피복이 닳아서 단락이나 단선이 날 수 있으니까 슬롯 모서리 R0.5 이상이나 면취, 디버링하고 엣지 트림 넣어주세요. 실리콘은 초산형 쓰면 구리가 부식되니까 중성(알콕시)형으로 해주시고, 굴곡 부위는 비워주세요. 다음 도면에 실리콘 위치랑 재질, 두께, 굴곡 R, FPCB 경로 단면도까지 같이 부탁드려요. 공기층 윗부분이 막혀 있어서 결로가 생길 수 있으니 FPCB에 물이 타고 내려가지 않게 루프를 주고, 패널 쪽 커넥터는 보호해주셨으면 해요.</p>
     <p><b>2. 방열</b><br>저희가 7월 한낮 조건으로 계산해보니까 지금 구조에서는 SMPS 케이스가 87도 정도까지 올라가요. 원인이 햇빛보다 SMPS 자체 열 55W 정도가 밀폐 함체 안에 갇히는 게 더 커요. 그래서 SMPS 열을 핀으로 바깥 공기에 내보내는 구조가 필요해요.</p>
     <p>저희는 SMPS만 별도 알루미늄 함체로 빼서 바깥에 세로 방향 핀을 다는 방식을 우선 제안드려요. 베이스 300×250 이상, 핀 높이 40~50mm, 두께 2mm, 간격 10.5mm 정도면 54~59도 정도가 나와요. SMPS가 빠지면 Hub 함체가 작아져서 공기층도 150mm 정도로 줄어드니까 패널 쪽에도 도움이 돼요. 함체는 벽 쪽 그늘에 두고, 방수는 IP65 이상에 벤트랑 배수공 넣어주세요. Hub 함체와 연결하는 5V는 XT90 4개(SMPS 한 대당 2개)에 실리콘 케이블 0.5m로 가려고 해요. SMPS 한 대가 40A를 내니까 커넥터 하나에 20A씩 흐르고, 케이블은 10AWG면 충분해요. Hub 쪽에서도 두 SMPS 5V는 서로 묶지 말아주세요. XT90은 방수랑 잠금이 없으니까 함체 안에만 두고, 결합부는 브래킷이랑 클램프로 고정해주세요. 커넥터 하나가 빠지면 같은 SMPS의 나머지 하나에 40A가 몰려서 녹을 수 있으니까, 회로마다 30A 퓨즈나 온도 센서도 넣어주세요.</p>
     <p>뒷판을 패널과 수직으로 세워서 빼는 방법도 검토해봤는데, 함체를 그대로 세우면 3도 정도밖에 안 내려가고, 패드랑 세로 핀을 달아야 62도 정도가 나와요. 다만 벽이랑 간격이 250mm 이상 필요하고 앞에서는 교체가 어려워서, 캣워크나 실내 점검구가 있을 때만 의미가 있을 것 같아요.</p>
-    <p>팬은 달아주시되, 팬이 멈춰도 60도 이하는 유지되게 핀으로 설계해주시고, 팬 고장은 감지되게 해주세요. 팬이 돌 때는 50도 이하가 목표예요. 조건은 외기 38도, 일사 650W/m², 무풍, 400W로 잡고 싶어요. 그리고 패널을 세로로 쭉 붙이면 벽 쪽 공기가 위로 갈수록 뜨거워지니까 2~3장마다 끊어서 옆으로 빼는 것도 같이 검토해주세요.</p>
+    <p>팬은 달아주시되, 팬이 멈춰도 60도 이하는 유지되게 핀으로 설계해주시고, 팬 고장은 감지되게 해주세요. 팬이 돌 때는 50도 이하가 목표예요. 조건은 외기 38도, 일사 650W/m², 무풍, 400W로 잡고 싶어요. 그리고 패널을 세로로 쭉 붙이면 벽 쪽 공기가 위로 갈수록 뜨거워져서, 막혀 있으면 맨 위 SMPS가 90도 가까이 올라가요. 그래서 패널 뒤 벽 쪽 공간에 1~2장마다 가운데가 낮은 경사 차단판을 넣고, 배열 양 끝에 루버를 달아서 더운 공기를 옆으로 빼는 방식을 제안드려요. 이렇게 하면 화면 안에는 구멍이 안 생기고 양 끝 띠만 필요해요. 벽이랑 패널 사이는 200mm 이상 확보해주시고, 끝까지 거리가 1m를 넘으면 가운데를 나눠야 해서 배열 폭도 알려주세요. 무풍일 때 확실히 하려면 구간마다 작은 팬을 다는 것도 옵션으로 검토해주세요.</p>
     <p><b>3. 장기 사용</b><br>장기적으로는 SMPS를 48V로 올리고 AC-DC는 실내 분전반으로 가져가서, 패널에는 48V를 5V로 바꾸는 DC-DC만 두는 방식이 좋겠어요. 패널 쪽 발열이 3분의 1로 줄고, 고장이 잦은 정류기를 실내에서 바꿀 수 있어요. 지금 당장은 아니더라도, SMPS 함체를 나중에 DC-DC 함체로 바꿔 끼울 수 있게 장착 구조랑 커넥터 위치를 맞춰주셨으면 해요.</p>
     <p><b>4. 문의</b><br>유지보수는 어떻게 생각하고 계세요? 한 패널씩 바꾸는 건지, 몇 장을 묶어 통째로 바꾸는 건지 궁금해요. 저희는 FPCB랑 Hub는 고정 함체로 두고 SMPS 함체만 커넥터로 빼는 방식이 좋을 것 같아요. 캣워크나 실내 점검구가 있는지, 벽이랑 패널 사이 간격이 얼마나 되는지도 알려주세요. HWA805V0J-SS 데이터시트랑 LED층 허용 온도도 받아볼 수 있을까요?</p>
   </div>
@@ -725,7 +827,7 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">16</span>가정·확인 필요 사항과 출처</h2>
+  <h2><span class="no">17</span>가정·확인 필요 사항과 출처</h2>
   <div class="cols">
     <div class="card"><h3>계산 가정 (결과에 영향 큼)</h3><ul>
       <li>SMPS 치수·효율은 형제 모델 값, 디레이팅은 HWA504V6-SS 데이터시트(−40~+70°C, 50°C부터 선형 감소) 참고</li>
