@@ -41,6 +41,7 @@ section{display:flex;flex-direction:column;gap:14px}
 .keys li{background:var(--surface);border-left:3px solid var(--ink);padding:10px 14px;border-radius:0 6px 6px 0}
 .keys li.hot{border-left-color:var(--heat)}
 .keys li.good{border-left-color:var(--ok)}
+.keys li.long{border-left-color:var(--cool)}
 .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;font-size:13.5px}
 th,td{padding:9px 11px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
@@ -50,6 +51,7 @@ td.loc{font-weight:600;min-width:120px}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono);font-size:12.5px;white-space:nowrap}
 tr.hl td{background:var(--ok-soft)}
 tr.bad td{background:var(--heat-soft)}
+tr.lt td{background:var(--cool-soft)}
 .wide table{min-width:860px}
 .mid table{min-width:640px}
 .pill{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:10px;white-space:nowrap;font-family:var(--f-mono)}
@@ -65,33 +67,36 @@ tr.bad td{background:var(--heat-soft)}
 .fig svg{display:block;max-width:100%;height:auto}
 svg text{font-family:var(--f-body);fill:var(--fg)}
 svg .m{fill:var(--muted)} svg .mono{font-family:var(--f-mono)}
+svg .inbar{fill:var(--surface);font-weight:600}
 .note{background:var(--warn-soft);border-radius:6px;padding:12px 14px;font-size:14px}
 .note b{color:var(--warn)}
 .answer{background:var(--cool-soft);border-radius:6px;padding:12px 14px;font-size:14px;display:flex;flex-direction:column;gap:6px}
 .answer b{color:var(--cool)}
 .cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .card ul{margin:0;padding-left:18px;font-size:14px}
+.card .tag{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
 .script{background:var(--surface);border:1px dashed var(--ink);border-radius:6px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;font-size:14.5px}
 .script p{max-width:none}
 .copy{align-self:flex-start;font:inherit;font-size:13px;padding:6px 14px;border-radius:5px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
 .copy:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 ol.src{font-size:12.5px;color:var(--muted);margin:0;padding-left:20px;word-break:break-all}
 ol.src a{color:var(--ink)}
-@media (max-width:720px){.roles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.roles{grid-template-columns:repeat(2,minmax(0,1fr))} .cols3{grid-template-columns:1fr}}
 @media (max-width:640px){.roles,.cols{grid-template-columns:1fr} h1{font-size:24px}}
 </style>
 
 <div class="wrap">
 
 <header>
-  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-28</span><span>내부 검토안 v2 (열계산 재검증 반영)</span></div>
+  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-28</span><span>내부 검토안 v3 (개선안 1·2·3안 재구성)</span></div>
   <h1>유리 LED + PV 합지 패널 기구 설계 검토</h1>
-  <p class="lede">업체 기구 설계를 내부에서 검토한 결과입니다. v2에서는 현 구조(하단만 열린 500×20×300mm 공기층, Hub·SMPS 밀폐 함체), SMPS 모델(HWA805V0J-SS ×2), 운전 조건(한낮 400W, 야간 200W)을 반영했고, 일사와 온도를 Python 계산으로 다시 검증했습니다.</p>
+  <p class="lede">업체 기구 설계를 내부에서 검토한 결과입니다. 현 구조(하단만 열린 500×20×300mm 공기층, Hub·SMPS 밀폐 함체), SMPS HWA805V0J-SS ×2, 한낮 400W·야간 200W 운전을 기준으로, 일사와 온도를 Python 계산으로 검증했습니다. v3에서는 개선안을 세 가지로 정리했습니다. 1안은 뒷판을 수직으로 빼는 방법, 2안은 SMPS 핀형 방열 함체 분리, 3안은 장기안으로 48V 배전과 분전반 실내 이전입니다.</p>
   <div class="roles">
-    <div class="role"><b>열관리·전원 검토</b><span>SMPS 수명·디레이팅, 5V 배선, 운용</span></div>
-    <div class="role"><b>열계산 검증</b><span>청천 일사 모델, 열저항망, 통기·히트싱크 계산</span></div>
-    <div class="role"><b>기구·유지보수 검토</b><span>FPCB, 통풍구 기구성, 방수·구조, 교체</span></div>
+    <div class="role"><b>열관리·전원 검토</b><span>SMPS 수명·디레이팅, 5V·48V 배선</span></div>
+    <div class="role"><b>열계산 검증</b><span>청천 일사, 열저항망, 개선안·히트싱크 계산</span></div>
+    <div class="role"><b>기구·유지보수 검토</b><span>FPCB, 개선안 기구성, 방수, 교체</span></div>
     <div class="role"><b>중재 정리</b><span>상충 의견 조정, 수정 요청안, 업체 문안</span></div>
   </div>
 </header>
@@ -99,12 +104,12 @@ ol.src a{color:var(--ink)}
 <section>
   <h2><span class="no">00</span>핵심 결론</h2>
   <ul class="keys">
-    <li class="hot"><b>현 구조에서 SMPS 케이스는 7월 한낮 약 87°C</b>(범위 70~117°C), 함체 내부공기는 약 80°C로 계산됐습니다. 70°C 고장 임계를 넘으므로 방열 개선 요청은 타당합니다.</li>
-    <li class="hot"><b>원인의 대부분은 햇빛이 아니라 밀폐 함체 안에 갇힌 SMPS 자체 손실(약 55W)입니다.</b> 햇빛과 LED 열이 없어도 SMPS 손실만으로 케이스가 74.5°C가 됩니다.</li>
-    <li><b>프레임을 두껍게 하고 구멍을 내는 안은 패널과 FPCB 구간에는 효과가 있지만 SMPS에는 부족합니다.</b> 공기층은 84°C에서 43~56°C로 크게 내려가지만, SMPS 케이스는 5~11K만 내려갑니다. 깊이를 30mm보다 키워도 추가 이득은 1K 이하입니다.</li>
-    <li class="good"><b>SMPS를 핀형 알루미늄 방열 함체로 분리하면 케이스가 약 57°C(52~64°C)까지 내려갑니다.</b> 핀은 세로 방향, 간격 약 10.5mm, 높이 40~50mm, 두께 2mm가 적정합니다. 50°C 목표는 팬을 같이 쓸 때만 도달합니다(약 46°C).</li>
-    <li><b>일사 추정을 다시 계산했습니다.</b> 여름과 봄·가을 값은 이전 추정이 맞았고, 겨울은 이전 추정보다 8~15% 높았습니다. 태양고도가 낮으면 대기를 지나는 거리가 길어져 직달 일사가 약해진다는 지적도 맞습니다(동지가 하지보다 약 23% 약함). 하지만 수직면에서는 빛이 들어오는 각도의 효과가 더 커서 겨울에 가장 많이 받습니다.</li>
-    <li><b>세로로 여러 층 이어 붙일 때 벽 쪽 공기가 위로 갈수록 데워집니다.</b> 벽 쪽 공간이 막혀 있으면 위층 SMPS가 하단보다 15~45K 더 뜨거워집니다. 2~3장마다 끊어서 옆으로 빼줘야 합니다.</li>
+    <li class="hot"><b>현 구조에서 SMPS 케이스는 7월 한낮 약 87°C</b>(범위 70~117°C)입니다. 70°C 고장 임계를 넘으므로 방열 개선 요청은 타당합니다.</li>
+    <li class="hot"><b>원인의 대부분은 밀폐 함체에 갇힌 SMPS 자체 손실(약 55W)입니다.</b> 햇빛과 LED 열이 없어도 SMPS 손실만으로 케이스가 74.5°C가 됩니다. 그래서 SMPS 열을 바깥 공기로 내보내는 경로(핀)가 있어야 온도가 내려갑니다.</li>
+    <li><b>1안(뒷판을 수직으로 빼기)은 함체를 그대로 쓰면 −3K뿐입니다.</b> 써멀패드와 세로 핀을 더하면 약 62°C(55~73)까지 내려갑니다. 다만 벽과 패널 사이가 250mm 이상 필요하고, 캣워크가 없으면 교체 접근이 어렵습니다.</li>
+    <li class="good"><b>2안(SMPS 핀형 방열 함체 분리)이 가장 확실합니다.</b> 핀 B안은 약 59°C, D안은 약 54°C입니다. SMPS가 빠지면서 공기층이 150mm로 줄어 뜨거운 구간 면적이 절반이 되고, 공기층과 Hub 쪽 온도도 1~2K 내려갑니다.</li>
+    <li class="long"><b>3안(48V 배전, 분전반 실내)은 장기 사용에 가장 유리합니다.</b> 패널 쪽 발열이 55W에서 19W로 약 1/3이 됩니다. 2안과 합치면 DC-DC 약 56°C이고, 고장이 잦은 AC-DC 정류기를 실내에서 정비할 수 있습니다. 단기에는 2안으로 가고, 3안으로 바꿀 수 있게 장착 구조를 맞춰 두는 것을 권장합니다.</li>
+    <li><b>세로로 이어 붙이면 벽 쪽 공기가 위로 갈수록 데워집니다.</b> 어느 안이든 위층 패널 뒤 공기가 14~27K 올라가므로, 2~3장마다 끊어서 옆으로 빼줘야 합니다.</li>
   </ul>
 </section>
 
@@ -116,18 +121,18 @@ ol.src a{color:var(--ink)}
       <tr><td class="loc">설치</td><td>서울, 남향 수직 외벽, 지상 4~8층, 패널 500×1000mm</td><td></td></tr>
       <tr><td class="loc">SMPS</td><td>HWAWAN HWA805V0J-SS ×2 (5V 80A급, 정격 합 800W)</td><td>치수 250×53×26mm, 효율 89%는 형제 모델 값을 쓴 <b>가정</b></td></tr>
       <tr><td class="loc">운전</td><td>한낮 full white 400W, 야간 휘도 절반(약 200W)</td><td>SMPS 1대당 부하 50%</td></tr>
-      <tr><td class="loc">현 공기층</td><td>폭 500 × 깊이 20 × 높이 300mm 상자, <b>하단만 개방</b></td><td>윗면은 FPCB 11개가 지나가서 구멍을 낼 수 없음</td></tr>
+      <tr><td class="loc">현 공기층</td><td>폭 500 × 깊이 20 × 높이 300mm 상자, <b>하단만 개방</b></td><td>윗면은 FPCB 11개가 지나가서 구멍을 낼 수 없음. 옆면 슬롯과 Al판 뒷면 배기도 불가</td></tr>
       <tr><td class="loc">함체</td><td>Hub board + SMPS 밀폐 함체, Al판에 볼트 체결</td><td>340×200×50mm로 <b>가정</b></td></tr>
       <tr><td class="loc">FPCB</td><td>30×100mm 11개, 발열 무시</td><td>피복·단락·단선만 검토</td></tr>
-      <tr><td class="loc">열부하 집계</td><td>흡수 일사 + LED 발열 + SMPS 손실</td><td>K5+ 제외</td></tr>
+      <tr><td class="loc">열부하 집계</td><td>흡수 일사 + LED 발열 + SMPS(또는 DC-DC) 손실</td><td>K5+ 제외</td></tr>
     </tbody></table></div>
-  <p class="ref">나머지 700mm 구간의 패널 뒷면은 벽 쪽 공기에 열려 있다고 가정했습니다. 패널 뒤 공기는 외기 +3K로 가정했습니다. 모든 온도는 정오 순간의 정상상태 값입니다.</p>
+  <p class="ref">공기층 밖의 패널 뒷면은 벽 쪽 공기에 열려 있다고 가정했습니다. 패널 뒤 공기는 외기 +3K로 가정했습니다. 모든 온도는 정오 순간의 정상상태 값입니다.</p>
 </section>
 
 <section>
   <h2><span class="no">02</span>일사 재계산</h2>
   <div class="answer">
-    <p><b>Q. 수직면 피크 일사는 계산값인가?</b> v1 값은 간이 추정이었습니다. v2에서는 태양위치(NOAA), 대기질량(Kasten-Young), 청천 일사 모델(Ineichen-Perez, Hottel 교차확인), 수직면 변환(Hay-Davies, 지면반사 0.2)으로 월별·시간별 값을 계산했습니다.</p>
+    <p><b>Q. 수직면 피크 일사는 계산값인가?</b> v1 값은 간이 추정이었습니다. v2부터는 태양위치(NOAA), 대기질량(Kasten-Young), 청천 일사 모델(Ineichen-Perez, Hottel 교차확인), 수직면 변환(Hay-Davies, 지면반사 0.2)으로 월별·시간별 값을 계산했습니다.</p>
     <p><b>Q. 남중고도가 낮으면 햇볕 세기가 줄지 않나?</b> 맞습니다. 대기 탁도를 같게 두면 남중 직달 일사(DNI)는 동지 611, 하지 789W/m²로 동지가 23% 약합니다. 하지만 남향 수직면에 닿는 직달 성분은 입사각 때문에 하지 175, 동지 630W/m²로 뒤집힙니다. 여름에는 유리에 비스듬히 들어오는 빛이 더 많이 반사되어 실제 흡수 가능한 양이 12~14% 더 줄어듭니다.</p>
   </div>
 
@@ -152,7 +157,7 @@ ol.src a{color:var(--ink)}
         <rect x="454" y="91.1" width="52" height="24.5"/><rect x="547.3" y="66.7" width="52" height="24.4"/>
       </g>
       <g font-size="11" class="mono" text-anchor="middle">
-        <text x="106.7" y="88">645</text><text x="200" y="158">339</text><text x="293.3" y="147">374</text><text x="386.7" y="115">478</text><text x="480" y="77">621</text><text x="573.3" y="33">806</text>
+        <text x="134" y="88">645</text><text x="200" y="158">339</text><text x="293.3" y="147">374</text><text x="386.7" y="115">478</text><text x="507" y="77">621</text><text x="573.3" y="33">806</text>
       </g>
       <g font-size="12" text-anchor="middle"><text x="106.7" y="268">3월</text><text x="200" y="268">6월</text><text x="293.3" y="268">7월</text><text x="386.7" y="268">8월</text><text x="480" y="268">9월</text><text x="573.3" y="268">12월</text></g>
       <g font-size="11"><rect x="60" y="282" width="10" height="10" style="fill:var(--sun)"/><text x="75" y="291">청천 피크 (서울 탁도 가정)</text>
@@ -173,7 +178,7 @@ ol.src a{color:var(--ink)}
       <tr><td>9월</td><td class="num">53.4°</td><td class="num">1.24</td><td class="num">734</td><td class="num">621~689</td><td class="num">600</td><td class="num">15.5 MJ/m²</td><td>맞음 (상단 초과)</td></tr>
       <tr><td>12월</td><td class="num">29.0°</td><td class="num">2.06</td><td class="num">721</td><td class="num">806~868</td><td class="num">800</td><td class="num">18.0 MJ/m²</td><td style="color:var(--heat)">v1 과소 (+8~15%)</td></tr>
     </tbody></table></div>
-  <p class="ref">단위 W/m². 수직면 피크의 앞 값은 서울 월별 탁도 가정, 뒤 값은 매우 맑은 날 상한입니다. 겨울은 공기가 맑아(탁도가 낮아) 대기질량 손실이 일부 상쇄됩니다.</p>
+  <p class="ref">단위 W/m². 수직면 피크의 앞 값은 서울 월별 탁도 가정, 뒤 값은 매우 맑은 날 상한입니다.</p>
 </section>
 
 <section>
@@ -193,185 +198,255 @@ ol.src a{color:var(--ink)}
       <rect x="400" y="222" width="10" height="10" style="fill:var(--heat)"/><text x="415" y="231">SMPS 손실</text></g>
     </svg>
     </div>
-    <figcaption>그림 2. 패널 1장(0.5m²)의 열부하 구성. 낮에는 LED 발열(400W의 85%, 340W)이 가장 큽니다. 일사는 계절에 따라 130~320W이고, SMPS 손실은 약 55W입니다.</figcaption>
+    <figcaption>그림 2. 패널 1장(0.5m²)의 열부하 구성(현 SMPS 기준). 낮에는 LED 발열(400W의 85%, 340W)이 가장 큽니다. 일사는 계절에 따라 130~320W, SMPS 손실은 약 55W입니다.</figcaption>
   </figure>
   <div class="tbl wide"><table>
-    <thead><tr><th>시나리오</th><th class="num">수직면 일사</th><th class="num">흡수 일사</th><th class="num">PV 발전 차감</th><th class="num">LED 발열</th><th class="num">SMPS 손실</th><th class="num">합계 (범위)</th></tr></thead>
+    <thead><tr><th>시나리오</th><th class="num">수직면 일사</th><th class="num">흡수 일사</th><th class="num">PV 발전 차감</th><th class="num">LED 발열</th><th class="num">SMPS 손실</th><th class="num">합계 (범위)</th><th class="num">3안 합계 (DC-DC)</th></tr></thead>
     <tbody>
-      <tr><td>7월 21일 정오, 외기 35°C</td><td class="num">374</td><td class="num">149</td><td class="num">−17</td><td class="num">340</td><td class="num">54.5</td><td class="num"><b>527</b> (472~623)</td></tr>
-      <tr><td>8월 15일 정오, 외기 33°C</td><td class="num">456</td><td class="num">189</td><td class="num">−21</td><td class="num">340</td><td class="num">54.5</td><td class="num"><b>562</b> (506~672)</td></tr>
-      <tr><td>9월 5일 정오, 외기 30°C</td><td class="num">558</td><td class="num">238</td><td class="num">−26</td><td class="num">340</td><td class="num">54.5</td><td class="num"><b>606</b> (548~725)</td></tr>
-      <tr><td>동지 정오, 외기 0°C</td><td class="num">806</td><td class="num">360</td><td class="num">−40</td><td class="num">340</td><td class="num">54.5</td><td class="num"><b>714</b> (652~853)</td></tr>
-      <tr><td>야간 LED 200W, 외기 28°C</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">170</td><td class="num">35.3</td><td class="num"><b>205</b> (180~244)</td></tr>
+      <tr><td>7월 21일 정오, 외기 35°C</td><td class="num">374</td><td class="num">149</td><td class="num">−17</td><td class="num">340</td><td class="num">54.5</td><td class="num"><b>527</b> (472~623)</td><td class="num">491 (DC-DC 18.8)</td></tr>
+      <tr><td>8월 15일 정오, 외기 33°C</td><td class="num">456</td><td class="num">189</td><td class="num">−21</td><td class="num">340</td><td class="num">54.5</td><td class="num"><b>562</b> (506~672)</td><td class="num">526</td></tr>
+      <tr><td>9월 5일 정오, 외기 30°C</td><td class="num">558</td><td class="num">238</td><td class="num">−26</td><td class="num">340</td><td class="num">54.5</td><td class="num"><b>606</b> (548~725)</td><td class="num">571</td></tr>
+      <tr><td>동지 정오, 외기 0°C</td><td class="num">806</td><td class="num">360</td><td class="num">−40</td><td class="num">340</td><td class="num">54.5</td><td class="num"><b>714</b> (652~853)</td><td class="num">679</td></tr>
+      <tr><td>야간 LED 200W, 외기 28°C</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">170</td><td class="num">35.3</td><td class="num"><b>205</b> (180~244)</td><td class="num">181 (DC-DC 10.5)</td></tr>
     </tbody></table></div>
-  <p class="ref">가정: 흡수율 LED층 0.10 + PV 0.80, PV 효율 10%(PV가 부하에 연결되지 않으면 0%로 보수 계산), LED 발열 비율 0.85(범위 0.75~1.0), SMPS 효율 50% 부하에서 88%, 25% 부하에서 85%. 단위 W.</p>
+  <p class="ref">가정: 흡수율 LED층 0.10 + PV 0.80, PV 효율 10%(부하 미연결 시 0%로 보수 계산), LED 발열 비율 0.85(범위 0.75~1.0), SMPS 효율 50% 부하 88%·25% 부하 85%, DC-DC 효율 95.5%. 단위 W.</p>
 </section>
 
 <section>
-  <h2><span class="no">04</span>온도 계산 결과</h2>
-  <p>패널을 전면유리, PV, 공기층, Al판, 함체, SMPS로 나눈 열저항망으로 계산했습니다. 아래는 7월 한낮(외기 35°C, 400W) 설계값이며, 막대 끝 선은 낙관~보수 범위입니다.</p>
+  <h2><span class="no">04</span>개선안 구성</h2>
   <figure class="fig">
     <div class="svgbox">
-    <svg viewBox="0 0 640 268" width="640" role="img" aria-label="구성안별 SMPS 케이스 온도">
-      <g stroke="var(--line)" stroke-width="1"><line x1="230" y1="22" x2="230" y2="232"/><line x1="325" y1="22" x2="325" y2="232"/><line x1="420" y1="22" x2="420" y2="232"/><line x1="515" y1="22" x2="515" y2="232"/><line x1="610" y1="22" x2="610" y2="232"/></g>
-      <g font-size="11" class="mono" text-anchor="middle"><text x="230" y="248" class="m mono">0</text><text x="325" y="248" class="m mono">30</text><text x="420" y="248" class="m mono">60</text><text x="515" y="248" class="m mono">90</text><text x="610" y="248" class="m mono">120°C</text></g>
-      <g font-size="12" text-anchor="end">
-        <text x="222" y="43">G0 현 구조</text><text x="222" y="79">G1 옆면 슬롯 추가</text><text x="222" y="115">G2 깊이40 + 옆·뒷면 배기</text>
-        <text x="222" y="151">G3 G2 + 함체만 띄움</text><text x="222" y="187">G5 현 공기층 + 핀형 함체</text><text x="222" y="223">G4 G2 + 핀형 함체</text>
+    <svg viewBox="0 0 690 330" width="690" role="img" aria-label="현 구조, 1안, 2안의 측단면 개념도">
+      <g font-size="13" font-weight="600"><text x="10" y="20">현 구조</text><text x="240" y="20">1안 뒷판 수직</text><text x="470" y="20">2안 SMPS 핀 함체 분리</text></g>
+      <!-- 현 구조 -->
+      <g>
+        <rect x="20" y="40" width="10" height="240" style="fill:var(--cool-soft);stroke:var(--cool)"/>
+        <rect x="30" y="40" width="8" height="240" style="fill:var(--ink)"/>
+        <rect x="38" y="62" width="16" height="72" style="fill:var(--heat-soft)"/>
+        <rect x="38" y="58" width="16" height="4" style="fill:var(--metal)"/>
+        <rect x="54" y="58" width="3" height="76" style="fill:var(--metal)"/>
+        <rect x="57" y="66" width="44" height="62" rx="2" style="fill:var(--metal)"/>
+        <rect x="62" y="72" width="34" height="22" rx="2" style="fill:var(--heat)"/><rect x="62" y="99" width="34" height="22" rx="2" style="fill:var(--heat)"/>
+        <path d="M42 58 V48 H64" stroke="var(--warn)" stroke-width="2" fill="none"/>
+        <g fill="none" stroke="var(--cool)" stroke-width="1.5"><path d="M46 150 V136"/><path d="M42 142 L46 134 L50 142"/></g>
+        <rect x="200" y="30" width="12" height="270" style="fill:var(--line)"/>
+        <g font-size="10"><text x="46" y="164" text-anchor="middle">300×20 하단만 개방</text><text x="104" y="80">SMPS</text><text x="104" y="92">밀폐 함체</text><text x="68" y="46" style="fill:var(--warn)">FPCB</text>
+        <text x="79" y="146" text-anchor="middle" style="fill:var(--heat)">케이스 87°C</text><text x="206" y="316" text-anchor="middle" class="m">벽체</text><text x="20" y="298" class="m">유리LED·PV</text></g>
       </g>
-      <g style="fill:var(--heat)"><rect x="230" y="30" width="274.5" height="18"/><rect x="230" y="66" width="253.3" height="18"/><rect x="230" y="102" width="248.6" height="18"/><rect x="230" y="138" width="263.2" height="18"/></g>
-      <g style="fill:var(--ok)"><rect x="230" y="174" width="186.5" height="18"/><rect x="230" y="210" width="181.8" height="18"/></g>
-      <g stroke="var(--fg)" stroke-width="1.5">
-        <line x1="451.7" y1="39" x2="600.5" y2="39"/><line x1="435.8" y1="75" x2="568.8" y2="75"/><line x1="432.7" y1="111" x2="562.5" y2="111"/>
-        <line x1="397.8" y1="183" x2="439" y2="183"/><line x1="394.7" y1="219" x2="432.7" y2="219"/>
+      <!-- 1안 -->
+      <g>
+        <rect x="250" y="40" width="10" height="240" style="fill:var(--cool-soft);stroke:var(--cool)"/>
+        <rect x="260" y="40" width="8" height="240" style="fill:var(--ink)"/>
+        <rect x="268" y="58" width="12" height="40" style="fill:var(--metal)"/>
+        <path d="M272 58 V48 H290" stroke="var(--warn)" stroke-width="2" fill="none"/>
+        <rect x="280" y="60" width="96" height="120" style="fill:var(--bg);stroke:var(--metal);stroke-width:2"/>
+        <rect x="300" y="80" width="56" height="74" rx="2" style="fill:var(--metal)"/>
+        <rect x="306" y="86" width="44" height="28" rx="2" style="fill:var(--ok)"/><rect x="306" y="120" width="44" height="28" rx="2" style="fill:var(--ok)"/>
+        <g fill="none" stroke="var(--cool)" stroke-width="1.5" stroke-dasharray="3 3"><path d="M290 196 V66"/><path d="M286 74 L290 64 L294 74"/><path d="M366 196 V66"/><path d="M362 74 L366 64 L370 74"/></g>
+        <rect x="430" y="30" width="12" height="270" style="fill:var(--line)"/>
+        <g font-size="10"><text x="274" y="112" class="m" transform="rotate(-90 274 112)">Hub</text>
+        <text x="328" y="196" text-anchor="middle">판을 벽 쪽으로 세움</text><text x="328" y="208" text-anchor="middle" class="m">깊이 약 220mm</text>
+        <text x="328" y="226" text-anchor="middle" style="fill:var(--ok)">패드+핀: 약 62°C</text><text x="328" y="238" text-anchor="middle" style="fill:var(--heat)">함체 그대로: 84°C</text>
+        <text x="294" y="46" style="fill:var(--warn)">FPCB</text>
+        <text x="404" y="262" text-anchor="middle" class="m">벽 간격 ≥250</text>
+        <text x="436" y="316" text-anchor="middle" class="m">벽체</text></g>
+        <path d="M376 250 H430" stroke="var(--muted)" stroke-width="1"/><path d="M376 246 V254 M430 246 V254" stroke="var(--muted)" stroke-width="1"/>
       </g>
-      <line x1="451.7" y1="16" x2="451.7" y2="232" stroke="var(--heat)" stroke-width="1.5" stroke-dasharray="5 4"/>
-      <text x="455" y="14" font-size="11" style="fill:var(--heat)">70°C 고장 임계</text>
-      <line x1="388.3" y1="16" x2="388.3" y2="232" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="2 3"/>
-      <text x="384" y="14" font-size="11" text-anchor="end" style="fill:var(--ok)">50°C 목표</text>
-      <g font-size="11" class="mono"><text x="606" y="44" text-anchor="end">86.7</text><text x="574" y="80">80.0</text><text x="568" y="116">78.5</text><text x="499" y="152">83.1</text><text x="444" y="188">58.9</text><text x="438" y="224">57.4</text></g>
+      <!-- 2안 -->
+      <g>
+        <rect x="480" y="40" width="10" height="240" style="fill:var(--cool-soft);stroke:var(--cool)"/>
+        <rect x="490" y="40" width="8" height="240" style="fill:var(--ink)"/>
+        <rect x="498" y="62" width="16" height="36" style="fill:var(--heat-soft)"/>
+        <rect x="498" y="58" width="16" height="4" style="fill:var(--metal)"/>
+        <rect x="514" y="58" width="3" height="40" style="fill:var(--metal)"/>
+        <rect x="517" y="62" width="22" height="32" rx="2" style="fill:var(--metal)"/>
+        <path d="M502 58 V48 H524" stroke="var(--warn)" stroke-width="2" fill="none"/>
+        <g fill="none" stroke="var(--cool)" stroke-width="1.5"><path d="M506 112 V100"/><path d="M502 106 L506 98 L510 106"/></g>
+        <path d="M539 78 C560 78 560 140 572 140" stroke="var(--ink)" stroke-width="1.5" fill="none" stroke-dasharray="4 2"/>
+        <rect x="560" y="120" width="8" height="5" style="fill:var(--metal)"/><rect x="560" y="200" width="8" height="5" style="fill:var(--metal)"/>
+        <rect x="568" y="110" width="28" height="104" rx="2" style="fill:var(--metal)"/>
+        <rect x="573" y="118" width="18" height="40" rx="2" style="fill:var(--ok)"/><rect x="573" y="166" width="18" height="40" rx="2" style="fill:var(--ok)"/>
+        <g style="fill:var(--metal)"><rect x="596" y="114" width="20" height="3"/><rect x="596" y="126" width="20" height="3"/><rect x="596" y="138" width="20" height="3"/><rect x="596" y="150" width="20" height="3"/><rect x="596" y="162" width="20" height="3"/><rect x="596" y="174" width="20" height="3"/><rect x="596" y="186" width="20" height="3"/><rect x="596" y="198" width="20" height="3"/><rect x="596" y="210" width="20" height="3"/></g>
+        <g fill="none" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="3 3"><path d="M626 222 V112"/><path d="M622 120 L626 110 L630 120"/></g>
+        <rect x="660" y="30" width="12" height="270" style="fill:var(--line)"/>
+        <g font-size="10"><text x="506" y="126" text-anchor="middle">150×20</text><text x="542" y="58">Hub 함체</text><text x="528" y="46" style="fill:var(--warn)">FPCB</text>
+        <text x="592" y="236" text-anchor="middle">SMPS 핀 함체</text><text x="592" y="248" text-anchor="middle" style="fill:var(--ok)">약 54~59°C</text>
+        <text x="560" y="104" class="m" font-size="9">5V 케이블 ≤0.5m</text>
+        <text x="666" y="316" text-anchor="middle" class="m">벽체</text></g>
+      </g>
     </svg>
     </div>
-    <figcaption>그림 3. 구성안별 SMPS 케이스 온도(7월 정오 설계값). 통기만 개선한 G1~G3는 70°C 아래로 내려가지 않습니다. SMPS를 핀형 방열 함체로 분리한 G4·G5만 목표 범위에 들어옵니다. G3는 함체를 Al판에서 띄우기만 해서 오히려 나빠졌습니다. Al판이 방열판 역할을 하던 경로가 끊겼기 때문입니다.</figcaption>
+    <figcaption>그림 3. 측단면 개념도(비율은 실제와 다름, 7월 한낮 SMPS 케이스 설계값). 1안은 SMPS가 붙은 뒷판을 패널과 수직으로 세워 벽 쪽으로 빼고, Hub는 FPCB 길이 때문에 판 뿌리에 패널과 평행하게 둡니다. 2안은 SMPS만 핀 함체로 빼고 Hub 함체는 작아져 공기층이 150mm로 줄어듭니다.</figcaption>
+  </figure>
+
+  <div class="cols3">
+    <div class="card"><span class="tag">1안</span><h3>뒷판을 수직으로 빼기</h3><ul>
+      <li>Hub+SMPS 함체가 붙은 Al판을 패널에 수직으로 세움(깊이 약 220mm)</li>
+      <li>20mm 막힌 공기층이 사라져 패널 뒷면 전체가 벽 쪽 공기에 노출됨</li>
+      <li>판 양면을 따라 공기가 올라가는 굴뚝 흐름</li>
+      <li>Hub는 판 뿌리에 패널과 평행하게 둬야 FPCB 100mm로 연결 가능</li></ul></div>
+    <div class="card"><span class="tag">2안</span><h3>SMPS 핀형 방열 함체 분리</h3><ul>
+      <li>SMPS 2대만 세로 핀 달린 Al 함체로 빼서 그늘 쪽에 배치</li>
+      <li>Hub·FPCB는 작은 고정 함체에 남김 → 공기층 300→150mm</li>
+      <li>두 함체는 5V 대전류 방수 커넥터로 연결(케이블 0.5m 이하)</li>
+      <li>SMPS 교체 시 FPCB를 건드리지 않음</li></ul></div>
+    <div class="card"><span class="tag">3안 · 장기</span><h3>48V 배전 + 분전반 실내</h3><ul>
+      <li>AC-DC를 48V로 바꿔 실내 분전반에 모음</li>
+      <li>패널에는 48→5V DC-DC만 남김(포팅형, 세라믹 콘덴서 위주)</li>
+      <li>패널 쪽 발열 55W → 19W, 전해콘덴서·AC 입력부가 외벽에서 빠짐</li>
+      <li>단독 적용 또는 2안·1안과 조합 가능</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">05</span>온도 계산 결과</h2>
+  <p>패널을 전면유리, PV, 공기층, Al판, 함체, SMPS로 나눈 열저항망으로 계산했습니다. 7월 한낮(외기 35°C, 400W) 설계값이고, 가는 선은 낙관~보수 범위입니다.</p>
+  <figure class="fig">
+    <div class="svgbox">
+    <svg viewBox="0 0 640 304" width="640" role="img" aria-label="개선안별 SMPS 또는 DC-DC 케이스 온도">
+      <g stroke="var(--line)" stroke-width="1"><line x1="230" y1="22" x2="230" y2="268"/><line x1="325" y1="22" x2="325" y2="268"/><line x1="420" y1="22" x2="420" y2="268"/><line x1="515" y1="22" x2="515" y2="268"/><line x1="610" y1="22" x2="610" y2="268"/></g>
+      <g font-size="11" class="mono" text-anchor="middle"><text x="230" y="284" class="m mono">0</text><text x="325" y="284" class="m mono">30</text><text x="420" y="284" class="m mono">60</text><text x="515" y="284" class="m mono">90</text><text x="610" y="284" class="m mono">120°C</text></g>
+      <g font-size="12" text-anchor="end">
+        <text x="222" y="43">현 구조</text><text x="222" y="79">1안 함체 그대로</text><text x="222" y="115">1안 + 패드·세로 핀</text>
+        <text x="222" y="151">2안 핀 함체 B</text><text x="222" y="187">2안 핀 함체 D</text>
+        <text x="222" y="223">3안 DC-DC, 현 함체</text><text x="222" y="259">3안 + 2안 소형 핀 함체</text>
+      </g>
+      <g style="fill:var(--heat)"><rect x="230" y="30" width="274.5" height="18"/><rect x="230" y="66" width="266" height="18"/></g>
+      <g style="fill:var(--ok)"><rect x="230" y="102" width="196" height="18"/><rect x="230" y="138" width="187.8" height="18"/><rect x="230" y="174" width="170.4" height="18"/></g>
+      <g style="fill:var(--cool)"><rect x="230" y="210" width="202.7" height="18"/><rect x="230" y="246" width="178.6" height="18"/></g>
+      <g stroke="var(--fg)" stroke-width="1.5">
+        <line x1="451.7" y1="39" x2="600.5" y2="39"/><line x1="445.3" y1="75" x2="578.3" y2="75"/><line x1="404.2" y1="111" x2="461.2" y2="111"/>
+        <line x1="401" y1="147" x2="439" y2="147"/><line x1="385.2" y1="183" x2="420" y2="183"/><line x1="413.7" y1="219" x2="470.7" y2="219"/><line x1="394.7" y1="255" x2="426.3" y2="255"/>
+      </g>
+      <line x1="451.7" y1="16" x2="451.7" y2="268" stroke="var(--heat)" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="455" y="14" font-size="11" style="fill:var(--heat)">70°C 고장 임계 (SMPS)</text>
+      <line x1="388.3" y1="16" x2="388.3" y2="268" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="2 3"/>
+      <text x="384" y="14" font-size="11" text-anchor="end" style="fill:var(--ok)">50°C 목표</text>
+      <g font-size="11" class="mono inbar" text-anchor="end"><text x="500" y="43" class="mono inbar">86.7</text><text x="492" y="79" class="mono inbar">84.0</text><text x="422" y="115" class="mono inbar">61.9</text><text x="414" y="151" class="mono inbar">59.3</text><text x="396" y="187" class="mono inbar">53.8</text><text x="429" y="223" class="mono inbar">64.0</text><text x="405" y="259" class="mono inbar">56.4</text></g>
+      <g font-size="11"><rect x="230" y="290" width="10" height="10" style="fill:var(--heat)"/><text x="245" y="299">SMPS 케이스 (목표 미달)</text>
+      <rect x="400" y="290" width="10" height="10" style="fill:var(--ok)"/><text x="415" y="299">SMPS 케이스</text>
+      <rect x="500" y="290" width="10" height="10" style="fill:var(--cool)"/><text x="515" y="299">DC-DC 케이스</text></g>
+    </svg>
+    </div>
+    <figcaption>그림 4. 개선안별 케이스 온도(7월 정오 설계값, 하단 패널 기준). 1안은 핀을 달아야 효과가 납니다. 2안은 핀 크기에 따라 54~59°C입니다. 3안의 DC-DC는 포팅형이라 허용 온도가 SMPS보다 높을 가능성이 커서(약 100°C급, 데이터시트 확인 필요) 현 함체 그대로도 여유가 있습니다.</figcaption>
   </figure>
 
   <div class="tbl wide"><table>
-    <thead><tr><th>구성</th><th class="num">전면유리</th><th class="num">PV</th><th class="num">공기층</th><th class="num">Al판</th><th class="num">함체 내부공기</th><th class="num">SMPS 케이스</th><th class="num">공기 유량</th></tr></thead>
+    <thead><tr><th>구성</th><th class="num">7월: 함체 내부 / 케이스</th><th class="num">9월 초 케이스</th><th class="num">여름 야간 케이스</th><th>비고</th></tr></thead>
     <tbody>
-      <tr class="bad"><td>G0 현 구조 (하단만 개방)</td><td class="num">93.6</td><td class="num">95.3</td><td class="num">83.6</td><td class="num">75.0</td><td class="num">79.8</td><td class="num"><b>86.7</b></td><td class="num">0</td></tr>
-      <tr><td>G1 + 양 옆면 위쪽 슬롯 (깊이 20)</td><td class="num">86.3</td><td class="num">86.4</td><td class="num">56~65</td><td class="num">67.7</td><td class="num">73.1</td><td class="num">80.0</td><td class="num">3.0 m³/h</td></tr>
-      <tr><td>G2 깊이 40 + 옆면 슬롯 + Al판 위쪽 뒷면 배기</td><td class="num">85.9</td><td class="num">86.0</td><td class="num">43~46</td><td class="num">66.2</td><td class="num">71.6</td><td class="num">78.5</td><td class="num">12.6 m³/h</td></tr>
-      <tr><td>G3 G2 + 함체를 Al판에서 띄움</td><td class="num">84.0</td><td class="num">83.6</td><td class="num">42.8</td><td class="num">55.4</td><td class="num">76.2</td><td class="num">83.1</td><td class="num">12.1 m³/h</td></tr>
-      <tr class="hl"><td><b>G4 G2 + SMPS 핀형 방열 함체 분리</b></td><td class="num">83.4</td><td class="num">82.9</td><td class="num">42.6</td><td class="num">51.8</td><td class="num">56.7</td><td class="num"><b>57.4</b></td><td class="num">11.9 m³/h</td></tr>
-      <tr class="hl"><td>G5 현 공기층 유지 + SMPS 핀형 방열 함체 분리</td><td class="num">90.9</td><td class="num">92.1</td><td class="num">76.3</td><td class="num">63.4</td><td class="num">58.2</td><td class="num"><b>58.9</b></td><td class="num">0</td></tr>
+      <tr class="bad"><td>현 구조</td><td class="num">79.8 / <b>86.7</b> (70~117)</td><td class="num">84.4</td><td class="num">58.8</td><td>SMPS 손실만으로 74.5°C</td></tr>
+      <tr><td>1안 (a) 판 수직, 함체 그대로</td><td class="num">77.1 / <b>84.0</b> (68~110)</td><td class="num">81.3</td><td class="num">57.4</td><td>패널 유리 93→76°C로는 개선</td></tr>
+      <tr class="hl"><td>1안 (b) + 써멀패드 + 세로 핀</td><td class="num">60.7 / <b>61.9</b> (55~73)</td><td class="num">58.4</td><td class="num">43.6</td><td>뿌리 단열 가스켓 추가 시 60.0°C</td></tr>
+      <tr class="hl"><td>2안 핀 함체 B (300×250, 핀 40)</td><td class="num">58.7 / <b>59.3</b> (54~66)</td><td class="num">54.7</td><td class="num">42.2</td><td>공기층 150mm, Hub 함체 62.9°C</td></tr>
+      <tr class="hl"><td>2안 핀 함체 D (400×300, 핀 50)</td><td class="num">53.2 / <b>53.8</b> (49~60)</td><td class="num">49.1</td><td class="num">38.8</td><td>보수 조건까지 60°C 이하</td></tr>
+      <tr class="lt"><td>3안 (i) DC-DC를 현 함체에</td><td class="num">62.9 / <b>64.0</b> (58~76)</td><td class="num">61.9</td><td class="num">41.4</td><td>바닥 온도는 패널 열로 데워진 Al판(62.7°C)</td></tr>
+      <tr class="lt"><td>3안 (ii) 1안 + 핀</td><td class="num">55.0 / <b>56.1</b> (49~68)</td><td class="num">53.0</td><td class="num">38.4</td><td></td></tr>
+      <tr class="lt"><td>3안 (iii) 2안 + 소형 핀 함체</td><td class="num">55.8 / <b>56.4</b> (52~62)</td><td class="num">52.2</td><td class="num">38.5</td><td>핀 함체 200×150, 핀 30mm, 약 0.9kg</td></tr>
     </tbody></table></div>
 
   <div class="cols">
-    <div class="tbl"><table>
-      <thead><tr><th>열원별 기여 (G0, 7월)</th><th class="num">SMPS 케이스</th></tr></thead>
-      <tbody>
-        <tr><td>전체</td><td class="num">86.6°C</td></tr>
-        <tr><td>SMPS 손실만 (LED·일사 없음)</td><td class="num"><b>74.5°C</b></td></tr>
-        <tr><td>LED·일사만 (SMPS 없음)</td><td class="num">54.6°C</td></tr>
-      </tbody></table></div>
-    <div class="tbl"><table>
-      <thead><tr><th>다른 시기 SMPS 케이스</th><th class="num">G0</th><th class="num">G2</th><th class="num">G4</th></tr></thead>
-      <tbody>
-        <tr><td>8월 중순 정오</td><td class="num">85.9</td><td class="num">77.0</td><td class="num">–</td></tr>
-        <tr><td>9월 초 정오</td><td class="num">84.4</td><td class="num">74.5</td><td class="num">52.6</td></tr>
-        <tr><td>동지 정오</td><td class="num">60.3</td><td class="num">46.0</td><td class="num">22.6</td></tr>
-        <tr><td>여름 야간 (200W)</td><td class="num">58.8</td><td class="num">55.4</td><td class="num">41.4</td></tr>
-      </tbody></table></div>
-  </div>
-
-  <div class="cols">
-    <div class="card"><h3>그 밖의 민감도 (G0 기준)</h3><ul>
-      <li>함체를 400×250×80mm로 키움: −7K</li>
-      <li>SMPS와 함체 사이 써멀패드: 케이스 −8K, 내부공기는 −2.5K</li>
-      <li>함체 외면 고방사 도장(ε 0.9): −3K</li>
-      <li>Al판 패널 쪽 면에 저방사 처리(복사 차단): −2K 내외</li>
-      <li>실제 영상 평균 120W로 운전: 케이스 60.8°C</li></ul></div>
-    <div class="card"><h3>세로로 이어 붙일 때 (16장, 벽 쪽 공간이 막힌 경우)</h3>
+    <div class="card"><h3>2안 공기층 축소 효과 (300 → 150mm)</h3>
       <div class="tbl"><table>
-        <thead><tr><th>벽 쪽 공간 깊이</th><th class="num">G0 하단→상단</th><th class="num">G4 하단→상단</th></tr></thead>
+        <thead><tr><th>7월, 핀 함체 B</th><th class="num">공기층 300</th><th class="num">공기층 150</th></tr></thead>
         <tbody>
-          <tr><td>50 mm</td><td class="num">85 → 117°C</td><td class="num">55 → 100°C</td></tr>
-          <tr><td>100 mm</td><td class="num">85 → 104°C</td><td class="num">55 → 82°C</td></tr>
-          <tr><td>200 mm</td><td class="num">85 → 96°C</td><td class="num">55 → 71°C</td></tr>
+          <tr><td>공기층 공기</td><td class="num">76.3</td><td class="num">74.6</td></tr>
+          <tr><td>FPCB 구간 유리 / PV</td><td class="num">90.9 / 92.1</td><td class="num">90.0 / 91.0</td></tr>
+          <tr><td>Hub 함체 (Al판)</td><td class="num">63.4</td><td class="num">62.9</td></tr>
+          <tr><td>SMPS 케이스</td><td class="num">58.9</td><td class="num">59.3</td></tr>
         </tbody></table></div>
-      <p class="ref">패널마다 뒤로 150~210W를 내보내서 벽 쪽 공기가 위로 갈수록 데워집니다. 2~3장마다 수평으로 끊고 옆으로 빼줘야 합니다.</p></div>
+      <p class="ref">뜨거운 구간(유리 90°C대) 면적이 패널의 30%에서 15%로 절반이 됩니다. SMPS는 핀 함체로 직접 방열하므로 공기층 영향을 거의 받지 않습니다. FPCB 구간은 LED 열이 지배해 크게 내려가지 않습니다.</p></div>
+    <div class="card"><h3>세로로 이어 붙일 때 (16장, 벽 쪽 측면이 막힌 경우)</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>벽 간격</th><th class="num">최상단 뒤 공기 상승</th><th class="num">1안 최상단 SMPS (a) / (b)</th></tr></thead>
+        <tbody>
+          <tr><td>250 mm</td><td class="num">+26.5 K</td><td class="num">90.6 / 80.0</td></tr>
+          <tr><td>300 mm</td><td class="num">+23.0 K</td><td class="num">88.5 / 77.3</td></tr>
+          <tr><td>400 mm</td><td class="num">+18.6 K</td><td class="num">85.7 / 73.9</td></tr>
+          <tr><td>600 mm</td><td class="num">+13.9 K</td><td class="num">82.7 / 70.3</td></tr>
+        </tbody></table></div>
+      <p class="ref">패널마다 뒤로 150~245W를 내보내 위로 갈수록 데워집니다. 2안도 같은 이유로 상부 패널이 오릅니다(벽 간격 100mm에서 하단 55°C → 상단 82°C). 2~3장마다 수평으로 끊고 옆으로 빼줘야 합니다.</p></div>
   </div>
-  <p class="note"><b>추가로 볼 점:</b> 계산상 전면 LED 유리층이 76~97°C까지 올라갑니다. SMPS와 별개로 LED 필름, OCA 접착층, FPCB 커넥터의 허용 온도를 업체에 확인해야 합니다.</p>
+  <p class="note"><b>추가로 볼 점:</b> 공기층 구간의 전면 LED 유리층이 계산상 90°C 안팎까지 올라갑니다(1안은 공기층이 없어져 약 76°C). LED 필름, OCA 접착층, FPCB 커넥터의 허용 온도를 업체에 확인해야 합니다.</p>
 </section>
 
 <section>
-  <h2><span class="no">05</span>프레임을 두껍게 하고 통풍구를 내는 안</h2>
-  <p>윗면은 FPCB가 지나가서 막아야 하므로, 아래로 들어온 공기를 빼는 출구는 옆면이나 뒷면에 둘 수밖에 없습니다.</p>
+  <h2><span class="no">06</span>개선안 비교</h2>
   <div class="tbl wide"><table>
-    <thead><tr><th>깊이</th><th>하단만 개방 (현재)</th><th>옆면 1개</th><th>옆면 2개</th><th>옆면 2개 (슬롯 높이 150)</th><th>뒷면 슬롯만</th><th>옆면 2 + 뒷면</th></tr></thead>
+    <thead><tr><th></th><th>1안 뒷판 수직</th><th>2안 SMPS 핀 함체 분리</th><th>3안 48V + 분전반 실내 (장기)</th></tr></thead>
     <tbody>
-      <tr><td class="num">20 mm</td><td class="num">84 / 86.7</td><td class="num">62 / 81.8</td><td class="num">56 / 80.0</td><td class="num">53 / 79.5</td><td class="num">47 / 77.4</td><td class="num">47 / 77.2</td></tr>
-      <tr class="hl"><td class="num">30 mm</td><td class="num">84 / 86.7</td><td class="num">56 / 81.2</td><td class="num">51 / 80.0</td><td class="num">48 / 79.7</td><td class="num">45 / 78.6</td><td class="num">44 / 78.2</td></tr>
-      <tr><td class="num">40 mm</td><td class="num">84 / 86.8</td><td class="num">54 / 80.6</td><td class="num">49 / 79.4</td><td class="num">47 / 79.2</td><td class="num">45 / 78.9</td><td class="num">43 / 78.5</td></tr>
-      <tr><td class="num">50 mm</td><td class="num">84 / 86.8</td><td class="num">52 / 80.1</td><td class="num">48 / 79.0</td><td class="num">46 / 78.9</td><td class="num">44 / 78.7</td><td class="num">43 / 78.3</td></tr>
+      <tr><td class="loc">7월 케이스</td><td>함체 그대로 84°C, 패드+핀 약 62°C</td><td><b>B 59°C / D 54°C</b></td><td>DC-DC 56~64°C (허용 온도 높음)</td></tr>
+      <tr><td class="loc">패널·FPCB 쪽</td><td>공기층이 없어져 유리 약 76°C로 가장 유리</td><td>공기층 150mm로 뜨거운 면적 절반</td><td>조합한 안을 따름</td></tr>
+      <tr><td class="loc">FPCB 경로</td><td>Hub를 판 뿌리에 패널과 평행하게 둬야 100mm로 가능. 아니면 150mm 이상 재설계</td><td>현 경로 유지</td><td>변경 없음</td></tr>
+      <tr><td class="loc">벽 쪽 공간</td><td><b>250mm 이상 필요</b>, 외벽 돌출 약 250~350mm</td><td>핀 함체 깊이만큼(약 100mm) 필요</td><td>배선 경로와 슬래브 관통 필요</td></tr>
+      <tr><td class="loc">구조</td><td>판 끝에 함체 3~5kg이 달린 캔틸레버. 패널 프레임에 장당 5~7N·m 추가 모멘트, 진동·볼트 풀림 검토</td><td>SMPS 함체를 건물 쪽 서브프레임에 독립 고정 가능</td><td>패널 쪽 부품이 가벼워짐</td></tr>
+      <tr><td class="loc">교체 접근</td><td>판이 패널 뒤에 숨어 앞(곤돌라)에서 접근 불가. <b>캣워크나 실내 점검구가 있어야 유효</b></td><td>원터치 교체, FPCB 건드리지 않음</td><td>정류기는 실내 분전반에서 정비. 패널에는 DC-DC만</td></tr>
+      <tr><td class="loc">핵심 리스크</td><td>벽 간격, 교체성, 위층 누적 열</td><td>5V 최대 160A 커넥터 접촉저항, 케이블 0.5m 이하 유지</td><td>초기 개발비, 48V 배선·보호 설계, DC-DC 데이터 확보</td></tr>
+      <tr><td class="loc">판정</td><td>캣워크가 있고 벽 간격이 충분할 때만</td><td><b>단기 기본안</b></td><td><b>장기안</b>. 2안을 3안으로 바꿀 수 있게 설계</td></tr>
     </tbody></table></div>
-  <p class="ref">각 칸은 공기층 온도 / SMPS 케이스 온도(°C), 7월 설계값입니다. 함체는 지금처럼 Al판에 붙어 있다고 놓고 계산했습니다.</p>
-  <div class="cols">
-    <div class="card"><h3>열 관점 판정</h3><ul>
-      <li><b>옆면 슬롯은 면적이 너무 작습니다.</b> 옆벽이 20×300mm라서 위쪽 100mm에 슬롯을 내도 방충망을 포함한 순개구가 한쪽 약 1,100mm²입니다. 아래 입구 10,000mm²의 1/9 수준입니다.</li>
-      <li><b>가장 효과적인 출구는 Al판 위쪽의 뒷면 슬롯입니다.</b> 440×50mm, 개구율 50%로 순개구가 약 11,000mm²입니다.</li>
-      <li><b>깊이는 30mm면 충분합니다.</b> 그 이상은 1K 이하로 거의 차이가 없습니다.</li>
-      <li>공기층과 패널 유리에는 효과가 크지만(공기층 −30~40K, 유리 −8~10K), SMPS는 5~11K만 내려갑니다. 그래서 <b>함체 분리와 함께 써야 합니다.</b></li>
-      <li>옆면 슬롯만 두면 위쪽 50~75mm에 공기가 머무르고, 이 구간은 주변보다 약 10K 높습니다. FPCB가 지나가는 자리이므로 뒷면 슬롯으로 이 구간을 줄여야 합니다(약 25mm, +3K).</li></ul></div>
-    <div class="card"><h3>기구 관점 판정</h3><ul>
-      <li>프레임을 두껍게 하면 강성은 오히려 좋아집니다. 슬롯은 웹 중앙에 높이 50% 이하로, 모서리는 R 처리하고, 표면처리는 가공 후에 합니다.</li>
-      <li>깊이를 늘리면 <b>FPCB 100mm가 부족해집니다.</b> 지금도 굴곡과 커넥터를 빼면 여유가 40~60mm뿐이라 120~150mm로 재설계해야 할 수 있습니다.</li>
-      <li>옆면 슬롯은 이웃 패널과 마주 봐서 서로 배기를 빨아들입니다. 이음부 폭 10~15mm와 분리 핀이 필요하고, 화면 이음이 넓어집니다.</li>
-      <li>뒷면 슬롯을 쓰려면 벽 쪽에 공간이 있고 그 공간이 옆이나 위로 빠져야 합니다. 함체·FPCB와 겹치지 않게 배치하고, 아래로 향한 후드와 방충망을 둡니다.</li>
-      <li>앵커 편심이 늘어나므로 브래킷을 재계산해야 합니다(+10~30mm).</li></ul></div>
-  </div>
-  <p class="note"><b>중재 의견:</b> 프레임을 두껍게 하는 안은 <b>깊이 30mm + Al판 위쪽 뒷면 슬롯</b>으로 하는 것을 권합니다. 패널, FPCB, 결로 대책으로 의미가 있습니다. 다만 SMPS 온도 대책은 아니므로 05장 안과 06장 핀형 함체 분리를 같이 요청합니다. 벽 쪽 공간이 없으면 뒷면 슬롯은 쓸 수 없으니, 이때는 함체 분리만으로 가도 G5(약 59°C)가 나옵니다.</p>
+  <p class="note"><b>중재 의견:</b> 열 쪽 검토와 기구 쪽 검토 모두 2안을 단기 기본안으로 봤습니다. 1안은 열 성능은 비슷하지만 벽 간격과 교체 접근 조건이 까다롭습니다. 3안은 장기 신뢰성이 가장 좋으므로, <b>2안의 SMPS 함체를 나중에 DC-DC 함체로 바꿔 끼울 수 있도록 볼트 패턴과 커넥터 위치를 지금부터 표준화</b>할 것을 요청합니다.</p>
 </section>
 
 <section>
-  <h2><span class="no">06</span>SMPS 방열 함체와 히트싱크</h2>
+  <h2><span class="no">07</span>3안 장기안: 48V 배전과 분전반 실내 이전</h2>
+  <p>v1에서 제안한 내용을 다시 넣었습니다. 외벽에 AC 입력 SMPS를 두지 않고 48V로 배전하면, 고장이 잦은 부품을 실내로 옮겨 장기 사용과 유지보수에 유리합니다.</p>
+  <div class="cols">
+    <div class="card"><h3>구성과 효과</h3><ul>
+      <li>실내 분전반에 48V AC-DC 정류기를 모으고 N+1로 이중화합니다(핫스왑).</li>
+      <li>패널에는 48→5V DC-DC(효율 95~96%, 포팅형)만 둡니다. 발열은 55W에서 19W로 줄어듭니다.</li>
+      <li>PFC, 고압 전해콘덴서, AC 입력부가 외벽에서 빠져서 옥외 고장원과 감전 위험이 줄어듭니다.</li>
+      <li>정류기 정비는 곤돌라 없이 실내에서 합니다.</li>
+      <li>전체 손실(패널 19W + 선로 16W + 실내 23~33W)은 현행과 비슷합니다. 효율 이득이 아니라 <b>외벽의 열원과 정비 위치를 옮기는 것</b>이 목적입니다.</li></ul></div>
+    <div class="card"><h3>48V 배선 (패널당 400W)</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>편도 30m</th><th class="num">전압강하</th><th class="num">선로손실</th></tr></thead>
+        <tbody>
+          <tr><td>4 mm²</td><td class="num">2.70 V (5.6%)</td><td class="num">23.6 W</td></tr>
+          <tr class="hl"><td>6 mm²</td><td class="num">1.80 V (3.8%)</td><td class="num">15.7 W</td></tr>
+          <tr><td>10 mm²</td><td class="num">1.08 V (2.3%)</td><td class="num">9.4 W</td></tr>
+        </tbody></table></div>
+      <p class="ref">패널당 약 8.7A(야간 4.4A). 여러 장이 간선을 공유하면 전류가 합산되므로 단면적을 다시 산정합니다(예: 6장 묶음 54A면 10~35mm²).</p></div>
+  </div>
+  <div class="tbl wide"><table>
+    <thead><tr><th>검토 항목</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td class="loc">안전 전압 (SELV)</td><td>정류기 최대 출력과 과전압 보호가 60V DC 이하이고, 1·2차가 강화절연되고, PV 회로와 분리되어 있으면 SELV 범위입니다. 옥외 습윤 장소는 허용 접촉전압이 더 낮을 수 있어 KEC 확인이 필요합니다. IP67 커넥터와 절연으로 직접 접촉을 막는 것을 전제로 합니다.</td></tr>
+      <tr><td class="loc">보호</td><td>분전반에 피더별 DC 정격 차단기나 퓨즈, 외부 인입부에 DC SPD, 프레임 등전위 접지</td></tr>
+      <tr><td class="loc">배선 경로</td><td>외벽·슬래브 관통부에 슬리브와 내화충전, 외부 인입은 아래로 처진 drip loop, 패널 분기는 IP67 분기함</td></tr>
+      <tr><td class="loc">패널 커넥터</td><td>48V 약 9A, IP67 2극 + PE, 키잉</td></tr>
+      <tr><td class="loc">현 설계에 미리 반영할 것</td><td>① 2안 SMPS 함체와 DC-DC 함체의 장착 호환(볼트 패턴, 커넥터 위치) ② AC 입력 커넥터 자리에 48V 커넥터가 들어갈 공간 ③ DC-DC→Hub 5V 경로를 짧게 유지 ④ 건축 단계에서 외벽 내측 배선 경로와 슬래브 관통 위치 확보</td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <h2><span class="no">08</span>SMPS 핀 함체 히트싱크 (2안)</h2>
   <figure class="fig">
     <div class="svgbox">
-    <svg viewBox="0 0 680 300" width="680" role="img" aria-label="권장 구조 단면과 핀 치수">
-      <text x="16" y="20" font-size="13" font-weight="600">권장 구조 측단면 (개념)</text>
-      <text x="16" y="40" font-size="10" class="m">외기·일사 →</text>
-      <rect x="30" y="50" width="12" height="220" style="fill:var(--cool-soft);stroke:var(--cool)"/>
-      <rect x="42" y="50" width="8" height="220" style="fill:var(--panel)"/>
-      <rect x="50" y="50" width="10" height="220" style="fill:var(--cool-soft);stroke:var(--cool)"/>
-      <rect x="60" y="50" width="8" height="220" style="fill:var(--ink)"/>
-      <rect x="68" y="60" width="30" height="120" style="fill:var(--cool-soft)"/>
-      <rect x="68" y="56" width="30" height="4" style="fill:var(--metal)"/>
-      <rect x="98" y="56" width="3" height="124" style="fill:var(--metal)"/>
-      <rect x="101" y="62" width="12" height="16" style="fill:var(--metal)"/>
-      <path d="M113 62 L122 70 M113 78 L122 70" stroke="var(--cool)" stroke-width="1.5" fill="none"/>
-      <g fill="none" stroke="var(--cool)" stroke-width="1.5"><path d="M83 176 V72"/><path d="M78 80 L83 70 L88 80"/></g>
-      <path d="M70 50 V40 H110" stroke="var(--warn)" stroke-width="2" fill="none"/>
-      <text x="114" y="44" font-size="10" style="fill:var(--warn)">FPCB 11개 (윗면 관통)</text>
-      <rect x="120" y="120" width="14" height="5" style="fill:var(--metal)"/><rect x="120" y="200" width="14" height="5" style="fill:var(--metal)"/>
-      <rect x="134" y="100" width="34" height="130" rx="3" style="fill:var(--metal)"/>
-      <rect x="140" y="110" width="22" height="50" rx="2" style="fill:var(--ok)"/><rect x="140" y="170" width="22" height="50" rx="2" style="fill:var(--ok)"/>
-      <g style="fill:var(--metal)"><rect x="168" y="104" width="24" height="3"/><rect x="168" y="118" width="24" height="3"/><rect x="168" y="132" width="24" height="3"/><rect x="168" y="146" width="24" height="3"/><rect x="168" y="160" width="24" height="3"/><rect x="168" y="174" width="24" height="3"/><rect x="168" y="188" width="24" height="3"/><rect x="168" y="202" width="24" height="3"/><rect x="168" y="216" width="24" height="3"/></g>
-      <g fill="none" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="3 3"><path d="M204 236 V100"/><path d="M199 108 L204 98 L209 108"/></g>
-      <rect x="236" y="30" width="14" height="250" style="fill:var(--line)"/>
-      <g font-size="10">
-        <text x="83" y="196" text-anchor="middle">30mm</text><text x="83" y="208" text-anchor="middle" class="m">하단 흡기</text>
-        <text x="128" y="86" font-size="9">뒷면 배기</text>
-        <text x="151" y="250" text-anchor="middle">핀형 함체</text><text x="151" y="262" text-anchor="middle" style="fill:var(--ok)">케이스 약 57°C</text>
-        <text x="243" y="294" text-anchor="middle" class="m">벽체</text>
-        <text x="40" y="284" class="m">유리LED / PV</text>
-      </g>
-      <text x="300" y="20" font-size="13" font-weight="600">핀 단면 (위에서 본 모습, 권장안 B)</text>
-      <rect x="300" y="210" width="360" height="16" style="fill:var(--metal)"/>
+    <svg viewBox="0 0 420 240" width="420" role="img" aria-label="권장 핀 단면 치수">
+      <rect x="40" y="150" width="360" height="16" style="fill:var(--metal)"/>
       <g style="fill:var(--metal)">
-        <rect x="306" y="110" width="4" height="100"/><rect x="331" y="110" width="4" height="100"/><rect x="356" y="110" width="4" height="100"/><rect x="381" y="110" width="4" height="100"/><rect x="406" y="110" width="4" height="100"/><rect x="431" y="110" width="4" height="100"/><rect x="456" y="110" width="4" height="100"/><rect x="481" y="110" width="4" height="100"/><rect x="506" y="110" width="4" height="100"/><rect x="531" y="110" width="4" height="100"/><rect x="556" y="110" width="4" height="100"/><rect x="581" y="110" width="4" height="100"/><rect x="606" y="110" width="4" height="100"/><rect x="631" y="110" width="4" height="100"/><rect x="654" y="110" width="4" height="100"/>
+        <rect x="46" y="50" width="4" height="100"/><rect x="71" y="50" width="4" height="100"/><rect x="96" y="50" width="4" height="100"/><rect x="121" y="50" width="4" height="100"/><rect x="146" y="50" width="4" height="100"/><rect x="171" y="50" width="4" height="100"/><rect x="196" y="50" width="4" height="100"/><rect x="221" y="50" width="4" height="100"/><rect x="246" y="50" width="4" height="100"/><rect x="271" y="50" width="4" height="100"/><rect x="296" y="50" width="4" height="100"/><rect x="321" y="50" width="4" height="100"/><rect x="346" y="50" width="4" height="100"/><rect x="371" y="50" width="4" height="100"/><rect x="394" y="50" width="4" height="100"/>
       </g>
-      <rect x="380" y="232" width="130" height="34" rx="2" style="fill:var(--ok)"/>
-      <text x="445" y="253" font-size="10" text-anchor="middle" style="fill:var(--surface)">SMPS (써멀패드)</text>
+      <rect x="120" y="172" width="130" height="34" rx="2" style="fill:var(--ok)"/>
+      <text x="185" y="193" font-size="10" text-anchor="middle" class="inbar">SMPS (써멀패드)</text>
       <g stroke="var(--fg)" stroke-width="1" fill="none">
-        <path d="M335 90 H356"/><path d="M335 85 V95"/><path d="M356 85 V95"/>
-        <path d="M290 110 V210"/><path d="M285 110 H295"/><path d="M285 210 H295"/>
-        <path d="M406 70 H410"/><path d="M406 65 V75"/><path d="M410 65 V75"/>
-        <path d="M670 210 V226"/><path d="M665 210 H675"/><path d="M665 226 H675"/>
+        <path d="M75 30 H96"/><path d="M75 25 V35"/><path d="M96 25 V35"/>
+        <path d="M30 50 V150"/><path d="M25 50 H35"/><path d="M25 150 H35"/>
+        <path d="M146 18 H150"/><path d="M146 13 V23"/><path d="M150 13 V23"/>
+        <path d="M410 150 V166"/><path d="M405 150 H415"/><path d="M405 166 H415"/>
       </g>
       <g font-size="11" class="mono">
-        <text x="345" y="80" text-anchor="middle">간격 10.5</text>
-        <text x="286" y="164" text-anchor="end">높이 40</text>
-        <text x="408" y="58" text-anchor="middle">두께 2</text>
-        <text x="663" y="246" text-anchor="end">베이스 8</text>
+        <text x="100" y="22" text-anchor="middle">간격 10.5</text>
+        <text x="26" y="104" text-anchor="end">핀</text><text x="26" y="118" text-anchor="end">40</text>
+        <text x="160" y="12">두께 2</text>
+        <text x="404" y="186" text-anchor="end">베이스 8</text>
       </g>
-      <text x="300" y="290" font-size="10" class="m">핀은 세로(지면에 수직) 방향, 베이스 300(세로)×250mm, 20개, 압출 6063, 단위 mm</text>
+      <text x="40" y="230" font-size="10" class="m">위에서 본 단면. 핀은 세로 방향, 베이스 300(세로)×250mm, 20개, 압출 6063, 단위 mm</text>
     </svg>
     </div>
-    <figcaption>그림 4. 왼쪽: 공기층 깊이 30mm에 하단 흡기와 Al판 위쪽 뒷면 배기를 두고, SMPS는 스탠드오프로 띄운 핀형 함체로 분리한 구조입니다. 오른쪽: 권장 핀 단면입니다. 비율은 실제와 다릅니다.</figcaption>
+    <figcaption>그림 5. 권장 핀 단면(B안). 비율은 실제와 다릅니다.</figcaption>
   </figure>
-
   <div class="tbl wide"><table>
-    <thead><tr><th>안</th><th>베이스 (세로×가로)</th><th>핀 높이 / 두께 / 간격 / 개수</th><th>공법</th><th class="num">열저항 R<sub>sa</sub></th><th class="num">케이스 (뒤 공기 41 / 38°C)</th><th class="num">무게</th></tr></thead>
+    <thead><tr><th>안</th><th>베이스 (세로×가로)</th><th>핀 높이 / 두께 / 간격 / 개수</th><th>공법</th><th class="num">열저항 R<sub>sa</sub></th><th class="num">단독 케이스 (뒤 공기 41 / 38°C)</th><th class="num">무게</th></tr></thead>
     <tbody>
       <tr><td>A</td><td>250×200</td><td>40 / 2 / 10 / 17</td><td>압출 6063</td><td class="num">0.49 K/W</td><td class="num">69.8 / 66.8</td><td class="num">2.0 kg</td></tr>
       <tr class="hl"><td><b>B (권장 1)</b></td><td>300×250</td><td>40 / 2 / 10.5 / 20</td><td>압출 6063</td><td class="num">0.39 K/W</td><td class="num">64.9 / 61.9</td><td class="num">2.9 kg</td></tr>
@@ -379,129 +454,131 @@ ol.src a{color:var(--ink)}
       <tr class="hl"><td><b>D (권장 2)</b></td><td>400×300</td><td>50 / 2 / 11 / 23</td><td>압출 6063</td><td class="num">0.27 K/W</td><td class="num">59.4 / 56.3</td><td class="num">5.1 kg</td></tr>
       <tr><td>팬 (1.5 m/s)</td><td>250×200</td><td>30 / 1.5 / 4 / 37</td><td>압출</td><td class="num">0.06 K/W</td><td class="num">46.4</td><td class="num">–</td></tr>
     </tbody></table></div>
-  <p class="ref">위 케이스 온도는 히트싱크만 단독으로 계산한 값입니다(SMPS 2대 손실 54.5W). 패널 전체 망에서는 함체 옆면으로도 열이 빠져서 B안이 약 57°C가 됩니다.</p>
+  <p class="ref">위 온도는 히트싱크만 단독 계산한 값입니다(SMPS 2대 손실 54.5W). 패널 전체 망에서는 함체 옆면으로도 열이 빠져서 B안 약 59°C, D안 약 54°C입니다.</p>
   <div class="cols">
     <div class="card"><h3>핀 설계 요점</h3><ul>
-      <li><b>간격:</b> 세로 길이 250~300mm에서 자연대류 최적 간격은 약 10~11.5mm입니다. 더 촘촘하면 공기가 못 빠져서 오히려 나빠집니다.</li>
-      <li><b>두께:</b> 1.5~3mm 사이에서는 차이가 거의 없습니다(핀 효율 0.98 이상). 압출 2mm면 충분하고, 다이캐스트는 열전도가 낮아 조금 불리합니다.</li>
+      <li><b>간격:</b> 세로 길이 250~300mm에서 자연대류 최적 간격은 약 10~11.5mm입니다. 더 촘촘하면 공기가 못 빠져서 나빠집니다.</li>
+      <li><b>두께:</b> 1.5~3mm 사이는 차이가 거의 없습니다(핀 효율 0.98 이상). 압출 2mm면 충분합니다.</li>
       <li><b>높이:</b> 20mm에서 50mm로 키우면 열저항이 0.69에서 0.43K/W로 줄어듭니다. 40~50mm를 권장합니다.</li>
       <li><b>방향:</b> 반드시 세로입니다. 가로 핀은 자연대류 성능이 크게 떨어집니다.</li></ul></div>
     <div class="card"><h3>설치·표면</h3><ul>
-      <li>벽 쪽 그늘에 둡니다. 9월 직사광(600W/m²)을 받으면 흑색 아노다이징은 +8~11K, 투명 아노다이징은 +3~6K입니다.</li>
+      <li>벽 쪽 그늘에 둡니다. 9월 직사광을 받으면 흑색 아노다이징은 +8~11K, 투명 아노다이징은 +3~6K입니다.</li>
       <li>표면은 투명 아노다이징이나 백색 고방사 도장으로 합니다.</li>
-      <li>SMPS와 베이스 사이에 써멀패드를 넣고, 핀은 함체 바깥에 둡니다. 함체는 IP65 이상에 ePTFE 벤트를 답니다.</li>
-      <li>팬을 쓰면 46°C까지 내려가지만, 팬이 멈춰도 B·D안 수준(57~65°C)을 유지하도록 설계합니다.</li></ul></div>
+      <li>SMPS와 베이스 사이 써멀패드, 핀은 함체 바깥. 함체는 IP65 이상에 ePTFE 벤트.</li>
+      <li>팬을 쓰면 46°C까지 내려가지만, 팬이 멈춰도 B·D안 수준을 유지하도록 설계합니다.</li></ul></div>
   </div>
 </section>
 
 <section>
-  <h2><span class="no">07</span>검토 항목 (위치 · 문제점 · 예상 현상 · 개선 검토 사항)</h2>
-  <p class="ref"><span class="pill new">추가</span> v1 요청서에 없던 항목 · <span class="pill chg">v2 수정</span> 새 조건으로 바뀐 항목</p>
+  <h2><span class="no">09</span>검토 항목 (위치 · 문제점 · 예상 현상 · 개선 검토 사항)</h2>
+  <p class="ref"><span class="pill new">추가</span> v1 요청서에 없던 항목 · <span class="pill chg">수정</span> 새 조건으로 바뀐 항목</p>
   <div class="tbl wide"><table>
     <thead><tr><th>#</th><th>검토 위치</th><th>문제점</th><th>예상 현상</th><th>개선 검토 사항</th></tr></thead>
     <tbody>
-      <tr><td class="num">1-1</td><td class="loc">FPCB 90° 굴곡부 / 프레임·슬롯 모서리 <span class="pill chg">v2 수정</span></td><td>30×100mm FPCB 11개가 윗면 프레임을 지나며 꺾임. 절단면 버와 날카로운 모서리</td><td>풍진동·열팽창으로 커버레이 마모 → 도체 노출, 단락·단선</td><td>슬롯 모서리 R0.5 이상 또는 C0.5, 디버링 검사. EPDM U형 엣지 트림. 개별 슬롯 또는 2~3개 단위 슬롯으로 나눔. 굴곡 R은 두께 10배 이상. 굴곡 지그로 R을 일정하게</td></tr>
-      <tr><td class="num">1-2</td><td class="loc">FPCB 실리콘 피복 <span class="pill chg">v2 수정</span></td><td>피복 범위·재질 미정</td><td>초산형이면 구리 부식. 굴곡부를 덮으면 경계에서 크랙</td><td>중성(알콕시)형, 저분자 실록산. 굴곡 R 구간 ±3mm는 비우거나 저경도. 슬롯 접촉부는 피복이나 PI 테이프. 패널 쪽 커넥터는 포팅이나 개스킷 커버</td></tr>
-      <tr><td class="num">1-3</td><td class="loc">FPCB 길이·배열 <span class="pill new">추가</span></td><td>100mm 안에서 굴곡·관통 후 여유 40~60mm. 11개 × 30mm = 330mm 폭</td><td>탈착 여유가 없어 함체 교체 시 FPCB를 분리해야 함. 공차 누적으로 비틀림, 오삽입</td><td>FPCB 경로 단면도 요청. 깊이를 키우면 120~150mm로 재설계. 피치 확정(예: 40mm), 번호 실크와 커넥터 키잉, 위치결정 핀</td></tr>
-      <tr><td class="num">1-4</td><td class="loc">공기층 윗부분 (FPCB 관통 구간) <span class="pill new">추가</span></td><td>윗면이 막혀 덥고 습한 공기가 모임</td><td>야간 결로가 FPCB와 패널 커넥터로 떨어짐 → 부식</td><td>뒷면 슬롯으로 공기가 머무는 구간을 줄임. 관통부 직전에 U자 drip loop. 위쪽 50~80mm 구간 피복·코팅. 함체를 윗면 프레임 바로 위에 붙여 FPCB 외부 노출을 없앰</td></tr>
-      <tr><td class="num">2-1</td><td class="loc">Hub·SMPS 밀폐 함체 <span class="pill chg">v2 수정</span></td><td>SMPS 손실 약 55W가 밀폐 함체 안에 갇힘. 함체가 패널 열을 받는 Al판에 붙어 있음</td><td>케이스 약 87°C(70~117), 내부공기 약 80°C → 디레이팅, 오동작, 수명 단축</td><td>SMPS를 핀형 방열 함체로 분리(06장). 핀은 세로, 간격 10.5mm, 높이 40~50mm. 그늘 쪽 배치. Hub board는 고정 인터페이스 함체로 분리</td></tr>
-      <tr><td class="num">2-2</td><td class="loc">하단 개방 공기층 (500×20×300) <span class="pill chg">v2 수정</span></td><td>출구가 없는 막힌 공간</td><td>공기층 약 84°C, PV 약 95°C. 패널 유리 76~97°C</td><td>깊이 30mm + Al판 위쪽 뒷면 슬롯(440×50mm급). 옆면 슬롯은 보조. 윗면은 막은 채 유지</td></tr>
-      <tr><td class="num">2-3</td><td class="loc">하단 개구부 <span class="pill new">추가</span></td><td>방충·배수 대책이 없음. 하단 유리 엣지 지지가 없음</td><td>말벌·새 둥지, 먼지 퇴적. 유리 전면을 타고 온 빗물이 뒤로 말려 들어감</td><td>SUS316 또는 흑색 Al 방충망(1~1.5mm, 탈착형). 하단 물끊기(전면보다 5~10mm 돌출 립). 엣지 보호 캡. 통풍 개선 여부와 관계없이 필요</td></tr>
-      <tr><td class="num">2-4</td><td class="loc">벽 쪽 공간 (세로 연속 배치) <span class="pill new">추가</span></td><td>패널마다 뒤로 150~210W를 내보냄</td><td>막혀 있으면 위층 SMPS가 15~45K 더 뜨거움</td><td>2~3장마다 수평 차단 + 옆으로 배기. 벽 쪽 공간 깊이 100mm 이상. 패널 열 사이 간격 확보</td></tr>
-      <tr><td class="num">2-5</td><td class="loc">LED 유리층 <span class="pill new">추가</span></td><td>전면 유리층이 계산상 76~97°C</td><td>LED 필름, OCA 접착층, 커넥터 허용 온도 초과 가능</td><td>업체에 각 소재 허용 온도 확인. 온도 연동 휘도 제한(예: 패널 65°C부터 단계적으로)</td></tr>
-      <tr><td class="num">2-6</td><td class="loc">밀폐 함체 결로</td><td>주야 온도차로 함체가 호흡함</td><td>습기 유입 → 결로, 부식</td><td>ePTFE 압력평형 벤트, 최저점 배수공, 컨포멀 코팅, IP65 이상</td></tr>
-      <tr><td class="num">3-1</td><td class="loc">SMPS 이중화·5V 배선</td><td>1대 고장 시 나머지 1대가 100% 부하. 1대당 40A</td><td>고온에서 보호동작으로 꺼짐. 함체를 분리하면 배선이 길어져 전압강하 증가</td><td>1대 고장 시 자동 휘도 감축. 5V 케이블 0.5m 이하, 16mm²급 또는 버스바. 커넥터는 정격 1.5배 이상</td></tr>
-      <tr><td class="num">3-2</td><td class="loc">PV 직류와 LED 저전압</td><td>PV 수백 V 이상과 5V가 같은 공간</td><td>절연 파괴, DC 아크, 화재</td><td>PV 전용 케이블·커넥터, 격벽, 등전위 접지. 합지 후 PV 인증 유효성 확인</td></tr>
-      <tr><td class="num">4-1</td><td class="loc">단열재·실리콘·개스킷 소재</td><td>재질 미지정</td><td>외벽 화재 확산, 법규 위반</td><td>3층 이상 또는 9m 이상 건축물은 외벽 마감재·단열재 준불연 이상(건축법 시행령 제61조, 현행 조문 확인 필요). 무기질 계열 + 시험성적서</td></tr>
-      <tr><td class="num">4-2</td><td class="loc">패널·함체 체결</td><td>4~8층 높이</td><td>낙하 시 인명 사고</td><td>1차 브래킷 + 2차 걸림 이중화. 함체에 SUS 테더와 캡티브 스크류. 깊이 증가 시 앵커 편심 재계산</td></tr>
+      <tr><td class="num">1-1</td><td class="loc">FPCB 90° 굴곡부 / 프레임·슬롯 모서리 <span class="pill chg">수정</span></td><td>30×100mm FPCB 11개가 윗면 프레임을 지나며 꺾임. 절단면 버와 날카로운 모서리</td><td>풍진동·열팽창으로 커버레이 마모 → 도체 노출, 단락·단선</td><td>슬롯 모서리 R0.5 이상 또는 C0.5, 디버링 검사. EPDM U형 엣지 트림. 개별 또는 2~3개 단위 슬롯. 굴곡 R은 두께 10배 이상. 굴곡 지그로 R을 일정하게</td></tr>
+      <tr><td class="num">1-2</td><td class="loc">FPCB 실리콘 피복 <span class="pill chg">수정</span></td><td>피복 범위·재질 미정</td><td>초산형이면 구리 부식. 굴곡부를 덮으면 경계에서 크랙</td><td>중성(알콕시)형, 저분자 실록산. 굴곡 R 구간 ±3mm는 비우거나 저경도. 슬롯 접촉부는 피복이나 PI 테이프. 패널 쪽 커넥터는 포팅이나 개스킷 커버</td></tr>
+      <tr><td class="num">1-3</td><td class="loc">FPCB 길이·배열 <span class="pill new">추가</span></td><td>100mm 안에서 굴곡·관통 후 여유 40~60mm. 11개 × 30mm = 330mm 폭</td><td>탈착 여유가 없어 현 구조에서는 SMPS 교체 시 FPCB 분리 필요. 1안에서는 Hub 위치에 따라 길이 부족</td><td>FPCB 경로 단면도 요청. 1안이면 Hub를 판 뿌리에 패널과 평행하게, 아니면 150mm 이상 재설계. 피치 확정, 번호 실크와 커넥터 키잉, 위치결정 핀</td></tr>
+      <tr><td class="num">1-4</td><td class="loc">공기층 윗부분 (FPCB 관통 구간) <span class="pill new">추가</span></td><td>윗면이 막혀 덥고 습한 공기가 모임</td><td>야간 결로가 FPCB와 패널 커넥터로 떨어짐 → 부식</td><td>2안으로 공기층을 150mm로 줄이거나 1안으로 없앰. 관통부 직전 U자 drip loop. 위쪽 50~80mm 구간 피복·코팅. Hub 함체를 윗면 프레임 바로 아래에 붙여 FPCB 외부 노출을 없앰</td></tr>
+      <tr><td class="num">2-1</td><td class="loc">Hub·SMPS 밀폐 함체 <span class="pill chg">수정</span></td><td>SMPS 손실 약 55W가 밀폐 함체 안에 갇힘. 함체가 패널 열을 받는 Al판에 붙어 있음</td><td>케이스 약 87°C(70~117) → 디레이팅, 오동작, 수명 단축</td><td>2안: SMPS를 세로 핀 함체로 분리(B 59°C / D 54°C). 1안이면 써멀패드와 세로 핀 필수(약 62°C). 장기적으로 3안</td></tr>
+      <tr><td class="num">2-2</td><td class="loc">하단 개방 공기층 (500×20×300) <span class="pill chg">수정</span></td><td>출구가 없는 막힌 공간. 윗면·옆면·뒷면 모두 개구 불가</td><td>공기층 약 84°C, PV 약 95°C</td><td>2안으로 공기층 높이를 150mm로 줄여 뜨거운 면적을 절반으로. 1안이면 공기층 자체가 없어짐</td></tr>
+      <tr><td class="num">2-3</td><td class="loc">벽 쪽 공간 (세로 연속 배치) <span class="pill new">추가</span></td><td>패널마다 뒤로 150~245W를 내보냄</td><td>막혀 있으면 위층 뒤 공기가 14~27K 상승</td><td>2~3장마다 수평 차단 + 옆으로 배기. 1안은 벽 간격 250mm 이상, 2안은 100mm 이상</td></tr>
+      <tr><td class="num">2-4</td><td class="loc">LED 유리층 <span class="pill new">추가</span></td><td>공기층 구간 전면 유리층이 계산상 90°C 안팎</td><td>LED 필름, OCA 접착층, 커넥터 허용 온도 초과 가능</td><td>업체에 각 소재 허용 온도 확인. 온도 연동 휘도 제한(예: 패널 65°C부터 단계적으로)</td></tr>
+      <tr><td class="num">2-5</td><td class="loc">밀폐 함체 결로</td><td>주야 온도차로 함체가 호흡함</td><td>습기 유입 → 결로, 부식</td><td>ePTFE 압력평형 벤트, 최저점 배수공, 컨포멀 코팅, IP65 이상, 커넥터 하향 배치</td></tr>
+      <tr><td class="num">3-1</td><td class="loc">SMPS 이중화·5V 배선</td><td>1대 고장 시 나머지 1대가 100% 부하. 2안이면 함체 간 5V 최대 160A</td><td>고온에서 보호동작으로 꺼짐. 커넥터 접촉저항 1mΩ이면 0.16V(3%) 강하·발열</td><td>1대 고장 시 자동 휘도 감축. 5V 케이블 0.5m 이하, SMPS별 독립 80A 이상 IP67 커넥터나 대전류 단자, remote sense 지원 여부 확인</td></tr>
+      <tr><td class="num">3-2</td><td class="loc">PV 직류와 LED 저전압</td><td>PV 수백 V 이상과 5V(3안이면 48V)가 같은 공간</td><td>절연 파괴, DC 아크, 화재</td><td>PV 전용 케이블·커넥터, 격벽, 등전위 접지. 합지 후 PV 인증 유효성 확인</td></tr>
+      <tr><td class="num">3-3</td><td class="loc">외벽 AC 입력 SMPS (장기) <span class="pill new">추가</span></td><td>AC 입력, PFC, 고압 전해콘덴서가 외벽에 있음</td><td>옥외 고장원, 고소 정비, 감전 위험</td><td>3안: 48V 배전 + 분전반 실내, 패널에는 DC-DC만. 지금은 2안 함체와 DC-DC 함체 장착 호환만 확보</td></tr>
     </tbody></table></div>
 </section>
 
 <section>
-  <h2><span class="no">08</span>우리 요청사항 수정 제안</h2>
+  <h2><span class="no">10</span>우리 요청사항 수정 제안</h2>
   <div class="tbl wide"><table>
-    <thead><tr><th>기존 요청</th><th>수정 제안</th><th>근거 (v2 계산)</th></tr></thead>
+    <thead><tr><th>기존 요청</th><th>수정 제안</th><th>근거 (계산)</th></tr></thead>
     <tbody>
-      <tr><td>한여름에도 50°C 내외 유지</td><td><b>외기 38°C, 일사 650W/m², 무풍, 400W, 2시간 열평형에서:</b> 팬 정지 상태에서도 SMPS 케이스 ≤60°C, 팬 동작 시 ≤50°C, 전해콘덴서 ≤75°C</td><td>자연대류만으로는 최선(D안)도 약 56~59°C. 50°C는 팬을 써야 46°C로 도달</td></tr>
-      <tr><td>단열재로 복사열 차단</td><td>보조 수단으로 둡니다. 핵심은 SMPS를 밀폐 함체에서 핀형 방열 함체로 분리하는 것</td><td>복사 차단 효과는 −2K 내외. SMPS 자체 손실만으로 74.5°C</td></tr>
-      <tr><td>SMPS를 패널과 이격 (커버 수직 배치)</td><td>이격과 <b>핀형 히트싱크를 반드시 함께</b> 적용. 핀은 세로, 간격 10.5mm, 높이 40~50mm, 두께 2mm, 베이스 300×250mm 이상</td><td>띄우기만 하면 Al판 방열 경로가 끊겨 오히려 +5K(G3)</td></tr>
-      <tr><td>통기 구조 검토</td><td>공기층 깊이 30mm + Al판 위쪽 뒷면 배기 슬롯. 윗면은 FPCB 때문에 막은 채 유지. 벽 쪽 공간은 2~3장마다 수평 차단</td><td>공기층 84→44°C, 유리 −8~10K. 30mm보다 깊게 해도 1K 이하 차이</td></tr>
-      <tr><td>히트싱크에 방수 fan</td><td>팬은 50°C 목표를 위한 보조로 사용(IP68, 회전수 감시). 팬이 멈춰도 60°C 이하가 되도록 핀 설계</td><td>팬 사용 시 46°C, 미사용 시 57~65°C</td></tr>
-      <tr><td>SMPS 2년 내 교체 가능</td><td>목표 교체 주기 5년 이상(장수명 콘덴서 + 케이스 60°C 이하). 교체 단위는 SMPS 함체 원터치</td><td>케이스 87°C와 57°C는 콘덴서 수명이 약 8배 차이(10°C마다 2배)</td></tr>
+      <tr><td>한여름에도 50°C 내외 유지</td><td><b>외기 38°C, 일사 650W/m², 무풍, 400W, 2시간 열평형에서:</b> 팬 정지 상태에서도 SMPS 케이스 ≤60°C, 팬 동작 시 ≤50°C, 전해콘덴서 ≤75°C</td><td>자연대류만으로는 최선(D안)도 약 54°C(보수 60°C). 50°C 이하는 팬을 써야 안정적으로 도달</td></tr>
+      <tr><td>단열재로 복사열 차단</td><td>보조 수단으로 둡니다. 핵심은 SMPS 열을 핀으로 바깥 공기에 내보내는 것</td><td>복사 차단 효과는 −2K 내외. SMPS 자체 손실만으로 74.5°C</td></tr>
+      <tr><td>SMPS를 패널과 이격 (커버 수직 배치)</td><td>1안(뒷판 수직)은 <b>써멀패드와 세로 핀을 반드시 함께</b> 적용. 벽 간격 250mm 이상과 교체 접근 경로가 있을 때만. 그렇지 않으면 2안</td><td>함체 그대로 세우면 −3K(84°C). 핀을 달면 약 62°C</td></tr>
+      <tr><td>통기 구조 검토</td><td>공기층 윗면·옆면·뒷면은 개구 불가. 2안으로 공기층 높이를 150mm로 줄이고, 벽 쪽 공간은 2~3장마다 수평 차단</td><td>공기층 −2K, 뜨거운 면적 절반. 위층 누적 14~27K</td></tr>
+      <tr><td>SMPS 별도 커버, 방수·방열 알루미늄, 히트싱크</td><td>2안: 세로 핀 일체형 Al 함체. 베이스 300×250 이상, 핀 높이 40~50, 두께 2, 간격 10.5mm. IP65 이상 + ePTFE 벤트</td><td>B안 59°C, D안 54°C</td></tr>
+      <tr><td>히트싱크에 방수 fan</td><td>팬은 50°C 목표를 위한 보조로 사용(IP68, 회전수 감시). 팬이 멈춰도 60°C 이하가 되도록 핀 설계</td><td>팬 사용 시 46°C, 미사용 시 54~59°C</td></tr>
+      <tr><td>SMPS 2년 내 교체 가능</td><td>목표 교체 주기 5년 이상(장수명 콘덴서 + 케이스 60°C 이하). 교체 단위는 SMPS 함체 원터치. 장기적으로는 3안으로 정류기를 실내로</td><td>케이스 87°C와 57°C는 콘덴서 수명이 약 8배 차이(10°C마다 2배)</td></tr>
+      <tr><td>(v1 장기안 재추가)</td><td>3안: 48V 배전 + 분전반 실내 이전. 지금은 2안 함체를 DC-DC 함체로 바꿀 수 있게 장착 인터페이스 표준화</td><td>패널 쪽 발열 55→19W, 정류기 실내 정비</td></tr>
       <tr><td>FPCB 실리콘 위치 공유</td><td>위치, 재질(중성 알콕시), 두께, 굴곡 R, 보강판, 관통부 실링 방식, 경로 단면도까지 표기</td><td>FPCB 여유 길이 40~60mm, 윗부분 결로 구간</td></tr>
     </tbody></table></div>
-  <p class="note"><b>중재 의견:</b> 열계산 에이전트는 자연대류를 우선하라고 했고, 우리 요청서는 팬 부착을 요구합니다. 계산으로 보면 50°C 목표는 팬 없이는 도달할 수 없습니다. 그래서 <b>팬은 유지하되, 팬이 고장 나도 60°C 이하로 버티는 자연대류 설계를 합격 조건</b>으로 두는 것으로 합쳤습니다.</p>
+  <p class="note"><b>중재 의견:</b> 열계산 쪽은 자연대류를 우선하라고 했고, 우리 요청서는 팬 부착을 요구합니다. 계산으로 보면 50°C 이하는 팬 없이 안정적으로 도달하기 어렵습니다. 그래서 <b>팬은 유지하되, 팬이 고장 나도 60°C 이하로 버티는 자연대류 설계를 합격 조건</b>으로 두는 것으로 합쳤습니다.</p>
 </section>
 
 <section>
-  <h2><span class="no">09</span>유지보수 문의 보강</h2>
+  <h2><span class="no">11</span>유지보수 문의 보강</h2>
   <div class="tbl wide"><table>
-    <thead><tr><th></th><th>① 패널 단위 교체</th><th>② N개 모듈 통째 교체</th><th>③ SMPS 함체만 원터치 교체</th></tr></thead>
+    <thead><tr><th></th><th>① 패널 단위 교체</th><th>② N개 모듈 통째 교체</th><th>③ SMPS 함체만 원터치 교체 (2안)</th><th>④ 실내 정류기 교체 (3안)</th></tr></thead>
     <tbody>
-      <tr><td class="loc">교체 중량</td><td class="num">15~20 kg/장 (추정)</td><td class="num">수십~100 kg+</td><td class="num">3~5 kg</td></tr>
-      <tr><td class="loc">접근</td><td>외부 곤돌라·로프</td><td>곤돌라 + 크레인</td><td>캣워크나 실내 점검구에서 가능하게 설계 가능</td></tr>
-      <tr><td class="loc">1건 작업시간 (추정)</td><td class="num">1~2 h + 장비 설치</td><td class="num">반나절~1일</td><td class="num">15~30 min</td></tr>
-      <tr><td class="loc">FPCB 분리</td><td>필요</td><td>필요</td><td>불필요 (함체 2분할 시)</td></tr>
-      <tr><td class="loc">적합 용도</td><td>LED·유리 파손</td><td>대규모 리뉴얼</td><td>SMPS·팬 일상 정비</td></tr>
+      <tr><td class="loc">교체 중량</td><td class="num">15~20 kg/장 (추정)</td><td class="num">수십~100 kg+</td><td class="num">3~5 kg</td><td>분전반 모듈</td></tr>
+      <tr><td class="loc">접근</td><td>외부 곤돌라·로프</td><td>곤돌라 + 크레인</td><td>캣워크나 실내 점검구에서 가능하게 설계 가능</td><td>실내</td></tr>
+      <tr><td class="loc">1건 작업시간 (추정)</td><td class="num">1~2 h + 장비 설치</td><td class="num">반나절~1일</td><td class="num">15~30 min</td><td class="num">수 분 (핫스왑)</td></tr>
+      <tr><td class="loc">FPCB 분리</td><td>필요</td><td>필요</td><td>불필요</td><td>불필요</td></tr>
+      <tr><td class="loc">적합 용도</td><td>LED·유리 파손</td><td>대규모 리뉴얼</td><td>SMPS·팬 일상 정비</td><td>장기 운영</td></tr>
     </tbody></table></div>
   <div class="cols">
     <div class="card"><h3>함체 2분할 권장</h3><ul>
-      <li><b>고정부:</b> FPCB 11개 + Hub board를 넣은 인터페이스 함체. 공장에서 포팅·실링하고 현장에서는 열지 않습니다.</li>
-      <li><b>교체부:</b> SMPS 2대를 넣은 핀형 방열 함체. 열 대책과 교체 단위가 같아집니다.</li>
-      <li>두 함체는 IP67 방수 커넥터(키잉)로 연결합니다. 5V 대전류 커넥터의 접촉저항 관리가 핵심입니다.</li>
-      <li>SMPS 교체 때 FPCB 11개를 고소에서 뺐다 꽂을 일이 없어집니다.</li></ul></div>
+      <li><b>고정부:</b> FPCB 11개 + Hub board를 넣은 작은 인터페이스 함체. 공장에서 포팅·실링하고 현장에서는 열지 않습니다.</li>
+      <li><b>교체부:</b> SMPS 2대를 넣은 핀형 방열 함체. 열 대책과 교체 단위가 같아집니다. 3안 전환 시 DC-DC 함체로 바꿔 끼웁니다.</li>
+      <li>두 함체는 IP67 방수 커넥터(키잉)로 연결합니다. 5V 대전류 커넥터의 접촉저항 관리가 핵심입니다.</li></ul></div>
     <div class="card"><h3>캣워크 유무</h3><ul>
-      <li><b>있음:</b> 배면 탈착형 함체로 상시 접근할 수 있습니다. 초기비는 늘고 운영비는 줄어듭니다.</li>
-      <li><b>없음:</b> 곤돌라·로프 고소작업(풍속 10m/s 이상이면 중지)이나 실내 점검구가 필요합니다.</li>
+      <li><b>있음:</b> 배면 탈착형 함체로 상시 접근할 수 있고 1안도 선택지가 됩니다.</li>
+      <li><b>없음:</b> 1안은 교체 접근이 어려워 2안이 유리합니다. 곤돌라·로프 고소작업(풍속 10m/s 이상이면 중지)이나 실내 점검구가 필요합니다.</li>
       <li>함체를 앞에서 뺄지 뒤에서 뺄지가 이것으로 정해지므로 빨리 확정해야 합니다.</li>
       <li>함체 온도, SMPS DC-OK, 팬 회전수를 원격 감시하면 교체를 묶어서 처리할 수 있습니다.</li></ul></div>
   </div>
 </section>
 
 <section>
-  <h2><span class="no">10</span>업체 질의·검증 요청</h2>
+  <h2><span class="no">12</span>업체 질의·검증 요청</h2>
   <div class="tbl mid"><table>
     <thead><tr><th>순위</th><th>항목</th><th>요청 내용</th></tr></thead>
     <tbody>
       <tr><td><span class="pill p1">P1</span></td><td>유지보수 개념</td><td>교체 단위, 교체 방향, 접근 방식(곤돌라·실내·캣워크), 1건당 소요시간. 함체 2분할 수용 여부</td></tr>
-      <tr><td><span class="pill p1">P1</span></td><td>SMPS 데이터</td><td>HWA805V0J-SS 공식 데이터시트: 외형 치수, 효율 곡선, 동작온도, 디레이팅 곡선, 케이스 측정점(Tc), 전해콘덴서 사양</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>SMPS 데이터</td><td>HWA805V0J-SS 공식 데이터시트: 외형 치수, 효율 곡선, 동작온도, 디레이팅 곡선, 케이스 측정점(Tc), 전해콘덴서 사양, remote sense 지원 여부</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>벽 쪽 공간</td><td>패널과 벽 사이 간격, 옆면 개방 여부, 층간 차단 계획. 1안 적용 가능 여부 판단용</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>2안 상세</td><td>SMPS 핀 함체 위치·고정 방식, 5V 대전류 커넥터 정격·접촉저항·케이블 길이, Hub 함체 축소 후 공기층 치수</td></tr>
       <tr><td><span class="pill p1">P1</span></td><td>열해석</td><td>세로 3장 이상 + 벽 쪽 공간 포함 CFD. 외기 35/38°C, 일사 375/650W/m², 무풍~2m/s, 400W/200W. 팬 정지와 SMPS 1대 고장 케이스</td></tr>
-      <tr><td><span class="pill p1">P1</span></td><td>벽 쪽 공간</td><td>패널과 벽 사이 공간의 깊이, 옆면 개방 여부, 층간 차단 계획</td></tr>
-      <tr><td><span class="pill p1">P1</span></td><td>낙하·구조</td><td>1·2차 체결 상세, 테더, 구조계산서(깊이 증가 시 앵커 편심 포함)</td></tr>
-      <tr><td><span class="pill p2">P2</span></td><td>FPCB</td><td>경로 단면도(커넥터 위치, 오프셋, R, 관통부), 실리콘 사양, 깊이 변경 시 길이 변경 가능 여부</td></tr>
+      <tr><td><span class="pill p2">P2</span></td><td>1안 검토 시</td><td>Hub 위치(판 뿌리, 패널과 평행), FPCB 경로 단면, 외벽 돌출 깊이, 판 단면·뿌리 체결·진동 검토서, 교체 접근 경로</td></tr>
+      <tr><td><span class="pill p2">P2</span></td><td>3안 전환 대비</td><td>SMPS 함체와 DC-DC 함체 장착 호환, 48V 커넥터 사양, 분전반 정류기·보호 구성, 배선 경로</td></tr>
+      <tr><td><span class="pill p2">P2</span></td><td>FPCB</td><td>경로 단면도(커넥터 위치, 오프셋, R, 관통부), 실리콘 사양</td></tr>
       <tr><td><span class="pill p2">P2</span></td><td>LED층 허용 온도</td><td>LED 필름, OCA, 커넥터의 최고 허용 온도와 온도 연동 휘도 제한 가능 여부</td></tr>
-      <tr><td><span class="pill p2">P2</span></td><td>통풍·방수</td><td>하단 방충망과 물끊기, 뒷면 배기 슬롯 상세, IP 등급과 살수 시험 계획</td></tr>
       <tr><td><span class="pill p3">P3</span></td><td>실증 시험</td><td>남향 수직 3×3 이상 목업, 7~8월과 9월 맑은 날 각 7일 이상. SMPS 케이스, 콘덴서, 공기층 위·아래, PV 배면에 열전대</td></tr>
     </tbody></table></div>
 </section>
 
 <section>
-  <h2><span class="no">11</span>업체 전달용 문안 (구어체 초안)</h2>
+  <h2><span class="no">13</span>업체 전달용 문안 (구어체 초안)</h2>
   <div class="script" id="script">
-    <p><b>1. FPCB</b><br>패널이랑 Hub board 잇는 FPCB 11개(30×100mm)가 윗면 프레임을 지나면서 90도로 꺾이는데, 그 모서리가 날카로워 보여요. 바람이나 열팽창으로 조금씩 흔들리면 피복이 닳아서 단락이나 단선이 날 수 있으니까 슬롯 모서리 R0.5 이상이나 면취, 디버링하고 엣지 트림 넣어주세요. 실리콘은 초산형 쓰면 구리가 부식되니까 중성(알콕시)형으로 해주시고, 굴곡 부위는 비워주세요. 다음 도면에 실리콘 위치랑 재질, 두께, 굴곡 R, FPCB 경로 단면도까지 같이 부탁드려요. 그리고 공기층 윗부분이 막혀 있어서 결로가 생길 수 있으니 FPCB에 물이 타고 내려가지 않게 루프를 주고, 패널 쪽 커넥터는 보호해주셨으면 해요.</p>
-    <p><b>2. 방열</b><br>저희가 7월 한낮 조건으로 계산해보니까 지금 구조에서는 SMPS 케이스가 87도 정도까지 올라가요. 원인이 햇빛보다 SMPS 자체 열 55W 정도가 밀폐 함체 안에 갇히는 게 더 커서, 단열이나 통풍만으로는 10도 정도밖에 안 내려가요. 그래서 SMPS는 별도 알루미늄 함체로 빼서 바깥에 세로 방향 핀을 달아주세요. 저희 계산으로는 베이스 300×250 이상, 핀 높이 40~50mm, 두께 2mm, 간격 10.5mm 정도면 57도 정도가 나와요. 함체는 벽 쪽 그늘에 두고, 방수는 IP65 이상에 벤트랑 배수공 넣어주세요.</p>
-    <p>팬은 달아주시되, 팬이 멈춰도 60도 이하는 유지되게 핀으로 설계해주시고, 팬 고장은 감지되게 해주세요. 팬이 돌 때는 50도 이하가 목표예요. 조건은 외기 38도, 일사 650W/m², 무풍, 400W로 잡고 싶어요.</p>
-    <p>프레임 쪽은 공기층 깊이를 30mm 정도로 키우고, 윗면은 FPCB 때문에 못 뚫으니까 Al판 위쪽에 뒤로 빠지는 배기 슬롯을 내주시면 패널이랑 FPCB 쪽 온도가 많이 내려가요. 아래쪽 입구에는 방충망이랑 물끊기도 부탁드려요. 그리고 패널을 세로로 쭉 붙이면 벽 쪽 공기가 위로 갈수록 뜨거워지니까 2~3장마다 끊어서 옆으로 빼는 것도 같이 검토해주세요.</p>
-    <p><b>3. 문의</b><br>유지보수는 어떻게 생각하고 계세요? 한 패널씩 바꾸는 건지, 몇 장을 묶어 통째로 바꾸는 건지 궁금해요. 저희는 FPCB랑 Hub는 고정 함체로 두고 SMPS 함체만 커넥터로 빼는 방식이 좋을 것 같아요. 캣워크나 실내 점검구가 있는지, 벽이랑 패널 사이 공간이 얼마나 되는지도 알려주세요. 높이가 4~8층이라 2차 체결이나 안전와이어도 꼭 들어갔으면 하고요. HWA805V0J-SS 데이터시트랑 LED층 허용 온도도 받아볼 수 있을까요?</p>
+    <p><b>1. FPCB</b><br>패널이랑 Hub board 잇는 FPCB 11개(30×100mm)가 윗면 프레임을 지나면서 90도로 꺾이는데, 그 모서리가 날카로워 보여요. 바람이나 열팽창으로 조금씩 흔들리면 피복이 닳아서 단락이나 단선이 날 수 있으니까 슬롯 모서리 R0.5 이상이나 면취, 디버링하고 엣지 트림 넣어주세요. 실리콘은 초산형 쓰면 구리가 부식되니까 중성(알콕시)형으로 해주시고, 굴곡 부위는 비워주세요. 다음 도면에 실리콘 위치랑 재질, 두께, 굴곡 R, FPCB 경로 단면도까지 같이 부탁드려요. 공기층 윗부분이 막혀 있어서 결로가 생길 수 있으니 FPCB에 물이 타고 내려가지 않게 루프를 주고, 패널 쪽 커넥터는 보호해주셨으면 해요.</p>
+    <p><b>2. 방열</b><br>저희가 7월 한낮 조건으로 계산해보니까 지금 구조에서는 SMPS 케이스가 87도 정도까지 올라가요. 원인이 햇빛보다 SMPS 자체 열 55W 정도가 밀폐 함체 안에 갇히는 게 더 커요. 그래서 SMPS 열을 핀으로 바깥 공기에 내보내는 구조가 필요해요.</p>
+    <p>저희는 SMPS만 별도 알루미늄 함체로 빼서 바깥에 세로 방향 핀을 다는 방식을 우선 제안드려요. 베이스 300×250 이상, 핀 높이 40~50mm, 두께 2mm, 간격 10.5mm 정도면 54~59도 정도가 나와요. SMPS가 빠지면 Hub 함체가 작아져서 공기층도 150mm 정도로 줄어드니까 패널 쪽에도 도움이 돼요. 함체는 벽 쪽 그늘에 두고, 방수는 IP65 이상에 벤트랑 배수공 넣어주세요. Hub 함체와는 방수 커넥터로 연결하되 5V 전류가 커서 케이블은 0.5m 이내로 짧게 부탁드려요.</p>
+    <p>뒷판을 패널과 수직으로 세워서 빼는 방법도 검토해봤는데, 함체를 그대로 세우면 3도 정도밖에 안 내려가고, 패드랑 세로 핀을 달아야 62도 정도가 나와요. 다만 벽이랑 간격이 250mm 이상 필요하고 앞에서는 교체가 어려워서, 캣워크나 실내 점검구가 있을 때만 의미가 있을 것 같아요.</p>
+    <p>팬은 달아주시되, 팬이 멈춰도 60도 이하는 유지되게 핀으로 설계해주시고, 팬 고장은 감지되게 해주세요. 팬이 돌 때는 50도 이하가 목표예요. 조건은 외기 38도, 일사 650W/m², 무풍, 400W로 잡고 싶어요. 그리고 패널을 세로로 쭉 붙이면 벽 쪽 공기가 위로 갈수록 뜨거워지니까 2~3장마다 끊어서 옆으로 빼는 것도 같이 검토해주세요.</p>
+    <p><b>3. 장기 사용</b><br>장기적으로는 SMPS를 48V로 올리고 AC-DC는 실내 분전반으로 가져가서, 패널에는 48V를 5V로 바꾸는 DC-DC만 두는 방식이 좋겠어요. 패널 쪽 발열이 3분의 1로 줄고, 고장이 잦은 정류기를 실내에서 바꿀 수 있어요. 지금 당장은 아니더라도, SMPS 함체를 나중에 DC-DC 함체로 바꿔 끼울 수 있게 장착 구조랑 커넥터 위치를 맞춰주셨으면 해요.</p>
+    <p><b>4. 문의</b><br>유지보수는 어떻게 생각하고 계세요? 한 패널씩 바꾸는 건지, 몇 장을 묶어 통째로 바꾸는 건지 궁금해요. 저희는 FPCB랑 Hub는 고정 함체로 두고 SMPS 함체만 커넥터로 빼는 방식이 좋을 것 같아요. 캣워크나 실내 점검구가 있는지, 벽이랑 패널 사이 간격이 얼마나 되는지도 알려주세요. HWA805V0J-SS 데이터시트랑 LED층 허용 온도도 받아볼 수 있을까요?</p>
   </div>
   <button class="copy" id="copyBtn" type="button">문안 복사</button>
 </section>
 
 <section>
-  <h2><span class="no">12</span>가정·확인 필요 사항과 출처</h2>
+  <h2><span class="no">14</span>가정·확인 필요 사항과 출처</h2>
   <div class="cols">
     <div class="card"><h3>계산 가정 (결과에 영향 큼)</h3><ul>
       <li>SMPS 치수·효율은 형제 모델 값, 디레이팅은 HWA504V6-SS 데이터시트(−40~+70°C, 50°C부터 선형 감소) 참고</li>
-      <li>함체 340×200×50mm, 패널 뒤 공기 외기 +3K</li>
-      <li>나머지 700mm 구간 뒷면은 벽 쪽 공기에 개방</li>
-      <li>흡수율, PV 효율, LED 발열 비율, 서울 월별 대기 탁도</li>
-      <li>정상상태·정오 순간값이라 다소 보수적</li></ul></div>
+      <li>함체 340×200×50mm, 2안 Hub 함체 340×120mm, 패널 뒤 공기 외기 +3K</li>
+      <li>1안 판 220×380×3mm, 패널 뒷면을 보는 비율 0.35, 뿌리 전도 0.7W/K</li>
+      <li>3안 DC-DC 효율 95.5%, 포팅 모듈 2개(100×60×15mm), 허용 온도 약 100°C급</li>
+      <li>흡수율, PV 효율, LED 발열 비율, 서울 월별 대기 탁도. 정상상태·정오 순간값</li></ul></div>
     <div class="card"><h3>확인 필요</h3><ul>
       <li>HWA805V0J-SS 공식 데이터시트</li>
-      <li>벽 쪽 공간 깊이·옆면 개방·층간 차단</li>
+      <li>벽 쪽 간격·옆면 개방·층간 차단, 캣워크 유무</li>
       <li>함체 실측 치수와 위치, PV 부하 연결 여부</li>
       <li>LED층 허용 온도, 실제 영상 평균 전력</li>
-      <li>건축법 시행령 제61조 현행 조문, IPC-2223 원문</li></ul></div>
+      <li>48V 옥외 습윤 장소 허용 전압(KEC), IPC-2223 원문</li></ul></div>
   </div>
   <ol class="src">
     <li><a href="https://www.ledscreenparts.com/product/hwawan-hwa805v0j-ss-switching-power-supply/">HWAWAN HWA805V0J-SS (ledscreenparts)</a></li>
@@ -510,7 +587,6 @@ ol.src a{color:var(--ink)}
     <li><a href="https://koreascience.or.kr/article/CFKO200803977432492.page">KIEE 2008, 비환기 파사드 PV 모듈 온도 비교</a></li>
     <li><a href="https://www.pv-magazine.com/2024/10/25/scientists-unveil-results-of-full-year-analysis-on-bipv-modules/">DTU BIPV 1년 실증 (pv magazine)</a></li>
     <li><a href="https://jlcpcb.com/blog/flexible-pcb-bend-radius">FPCB 굴곡 반경 가이드 (IPC-2223 인용)</a></li>
-    <li><a href="https://www.molit.go.kr/mta/USR/law/m_37141/dtl.jsp?r_id=3998">국토교통부 외벽 마감재료 질의회신</a></li>
     <li>계산 모델: NOAA 태양위치, Kasten-Young 대기질량, Ineichen-Perez·Hottel 청천 모델, Hay-Davies 확산, Fresnel 입사각 손실, ElSherbiny-Hollands 수직공동, Bar-Cohen·Rohsenow 핀 간격, Arrhenius 10°C 법칙</li>
   </ol>
 </section>
