@@ -97,7 +97,7 @@ ol.src a{color:var(--ink)}
 <div class="wrap">
 
 <header>
-  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-28</span><span>내부 검토안 v3.4 (5V 연결 XT90 ×2, 40A)</span></div>
+  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-28</span><span>내부 검토안 v3.4 (5V 연결 XT90 ×4)</span></div>
   <h1>유리 LED + PV 합지 패널 기구 설계 검토</h1>
   <p class="lede">업체 기구 설계를 내부에서 검토한 결과입니다. 현 구조(하단만 열린 500×20×300mm 공기층, Hub·SMPS 밀폐 함체), SMPS HWA805V0J-SS ×2, 한낮 400W·야간 200W 운전을 기준으로, 일사와 온도를 Python 계산으로 검증했습니다. v3에서는 개선안을 세 가지로 정리했습니다. 1안은 뒷판을 수직으로 빼는 방법, 2안은 SMPS 핀형 방열 함체 분리, 3안은 장기안으로 48V 배전과 분전반 실내 이전입니다.</p>
   <div class="roles">
@@ -539,82 +539,94 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">10</span>5V 연결 검토: XT90 ×2 + 실리콘 케이블 (2안)</h2>
-  <p>2안에서 SMPS 핀 함체와 Hub 함체를 잇는 5V 경로를 <b>XT90 2개(SMPS당 1개)와 실리콘 케이블 편도 0.5m</b>로 구성하는 것으로 확정했습니다. 한낮 400W에서 커넥터 1개당 <b>40A</b>가 흐르고, XT90은 판매처 기준 <b>40A 연속 정격</b>으로 보았습니다. 케이블 굵기는 40A에 맞게 전류 계산 에이전트가 선정했습니다. 두 SMPS 출력은 서로 묶지 않습니다. 함체 내부 온도는 SMPS 핀 함체 55~58°C, Hub 함체 63°C(설계), 보수 75°C로 보았습니다.</p>
+  <h2><span class="no">10</span>5V 연결 검토: XT90 ×4 + 실리콘 케이블 (2안)</h2>
+  <p>2안에서 SMPS 핀 함체와 Hub 함체를 잇는 5V 경로는 <b>패널당 XT90 4개(SMPS당 2개)와 실리콘 케이블 편도 0.5m</b>로 구성합니다. SMPS 1대가 한낮 400W에서 <b>40A</b>를 내고, 이를 XT90 2개로 나눠 커넥터 1개당 <b>20A</b>가 흐릅니다. XT90은 판매처 기준 40A 연속 정격으로 보았고, Amass UL 기준(30A)으로도 함께 확인했습니다. 두 SMPS 출력은 서로 묶지 않습니다. 함체 내부 온도는 설계 63°C, 보수 75°C로 보았습니다.</p>
   <ul class="keys">
-    <li class="good"><b>케이블은 실리콘 8AWG입니다.</b> 63°C에서 40A일 때 도체가 88°C로 90°C 기준을 만족합니다. 10AWG는 119°C로 부족하고, 6AWG는 75°C까지 여유가 있지만 XT90 납땜 컵에 들어가지 않습니다.</li>
-    <li><b>전압은 만족합니다.</b> SMPS 5.0V에서 Hub 입력 4.82V, LED 모듈단 4.52~4.62V입니다. 접점이 노후되면 Hub 4.77V로 4.5V 기준 경계에 걸립니다.</li>
-    <li class="hot"><b>XT90은 40A 정격이어도 고온 함체 안에서 40A 연속 운전은 여유가 없습니다.</b> 정격은 주변 25°C 기준이라 63°C에서는 허용치가 29.0A로 줄어듭니다. 40A는 그 138%이고, 하우징이 106~127°C로 설계 상한(105°C)을 넘습니다.</li>
-    <li class="good"><b>쓰려면 조건이 필요합니다.</b> 커넥터를 덜 뜨거운 SMPS 함체 쪽에 두고, 휘도 상한을 SMPS당 32A(패널 약 320W, full white의 80%)로 두고, 회로당 50A 퓨즈와 커넥터 온도 감시를 답니다. 63°C에서 40A 2시간 시험에 합격하면 상한을 풀 수 있습니다.</li>
-    <li><b>SMPS 1대가 고장 나면 화면 절반만 꺼지고 반대쪽은 40A 그대로라 과부하는 없습니다.</b> 반대로 SMPS가 과전류 보호 구간(80A 이상)으로 들어가면 커넥터가 녹을 수 있어 퓨즈가 필수입니다.</li>
+    <li class="good"><b>케이블은 실리콘 10AWG입니다.</b> 커넥터당 20A에서 63°C 함체 안 허용 전류가 27.2A, 75°C에서도 20.2A로 20A를 감당합니다(도체 90°C 기준). 12AWG는 75°C에서 도체 108°C로 부족하고, 8AWG는 여유는 크지만 굵고 뻣뻣해서 0.5m에는 필요 없습니다.</li>
+    <li class="good"><b>XT90은 정상 운전에서 여유가 있습니다.</b> 40A 정격 기준으로 63°C 허용 29.0A, 75°C 허용 24.5A라서 20A는 각각 69%, 82%입니다. 하우징 추정 온도는 63°C에서 81~87°C, 75°C에서 94~99°C로 설계 상한(105°C) 안에 들어옵니다.</li>
+    <li><b>전압도 충분합니다.</b> SMPS 5.0V에서 Hub 입력 4.85~4.88V, LED 모듈단 4.55~4.68V입니다(75°C, 접점 공칭~노후).</li>
+    <li class="hot"><b>커넥터 1개가 빠지면 같은 SMPS의 나머지 1개에 40A가 몰립니다.</b> 하우징이 146~167°C까지 올라 녹을 수 있으므로, 회로별 퓨즈나 온도 감시와 결합부 고정이 필요합니다.</li>
+    <li><b>XT60 + 11AWG보다 나아집니다.</b> 0.5m에서 전압강하 156→121mV, 하우징 107→94°C(75°C)입니다. 다만 방수와 잠금이 없다는 점은 XT60과 같습니다.</li>
   </ul>
 
   <figure class="fig">
     <div class="svgbox">
-    <svg viewBox="0 0 640 268" width="640" role="img" aria-label="XT90 40A 운전 시 케이블 굵기와 위치별 하우징 추정 온도">
+    <svg viewBox="0 0 640 268" width="640" role="img" aria-label="5V 커넥터 구성별 하우징 추정 온도">
       <g stroke="var(--line)" stroke-width="1"><line x1="250" y1="22" x2="250" y2="240"/><line x1="340" y1="22" x2="340" y2="240"/><line x1="430" y1="22" x2="430" y2="240"/><line x1="520" y1="22" x2="520" y2="240"/><line x1="610" y1="22" x2="610" y2="240"/></g>
       <g font-size="11" class="mono" text-anchor="middle"><text x="250" y="256" class="m mono">0</text><text x="340" y="256" class="m mono">50</text><text x="430" y="256" class="m mono">100</text><text x="520" y="256" class="m mono">150</text><text x="610" y="256" class="m mono">200°C</text></g>
       <line x1="439" y1="16" x2="439" y2="240" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="2 3"/><text x="435" y="14" font-size="11" text-anchor="end" style="fill:var(--warn)">설계 상한 105°C</text>
       <line x1="466" y1="16" x2="466" y2="240" stroke="var(--heat)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="470" y="14" font-size="11" style="fill:var(--heat)">나일론 한계 120°C</text>
-      <text x="242" y="43" font-size="12" text-anchor="end">8AWG · SMPS 함체 쪽 (55°C)</text><rect x="250" y="30" width="174.6" height="18" style="fill:var(--ok)"/><line x1="424.6" y1="39" x2="462.4" y2="39" stroke="var(--fg)" stroke-width="1.5"/><text x="420.6" y="43" font-size="11" text-anchor="end" class="mono inbar">97</text><text x="242" y="79" font-size="12" text-anchor="end">8AWG · 63°C</text><rect x="250" y="66" width="190.8" height="18" style="fill:var(--heat)"/><line x1="440.8" y1="75" x2="478.6" y2="75" stroke="var(--fg)" stroke-width="1.5"/><text x="436.8" y="79" font-size="11" text-anchor="end" class="mono inbar">106</text><text x="242" y="115" font-size="12" text-anchor="end">8AWG · 63°C + 방열 브래킷</text><rect x="250" y="102" width="174.6" height="18" style="fill:var(--ok)"/><line x1="424.6" y1="111" x2="444.4" y2="111" stroke="var(--fg)" stroke-width="1.5"/><text x="420.6" y="115" font-size="11" text-anchor="end" class="mono inbar">97</text><text x="242" y="151" font-size="12" text-anchor="end">6AWG · 63°C (장착 가능 시)</text><rect x="250" y="138" width="167.4" height="18" style="fill:var(--ok)"/><line x1="417.4" y1="147" x2="455.2" y2="147" stroke="var(--fg)" stroke-width="1.5"/><text x="413.4" y="151" font-size="11" text-anchor="end" class="mono inbar">93</text><text x="242" y="187" font-size="12" text-anchor="end">8AWG · 75°C</text><rect x="250" y="174" width="214.2" height="18" style="fill:var(--heat)"/><line x1="464.2" y1="183" x2="502.0" y2="183" stroke="var(--fg)" stroke-width="1.5"/><text x="460.2" y="187" font-size="11" text-anchor="end" class="mono inbar">119</text><text x="242" y="223" font-size="12" text-anchor="end">10AWG · 63°C</text><rect x="250" y="210" width="244.8" height="18" style="fill:var(--heat)"/><line x1="494.8" y1="219" x2="532.6" y2="219" stroke="var(--fg)" stroke-width="1.5"/><text x="490.8" y="223" font-size="11" text-anchor="end" class="mono inbar">136</text>
+      <text x="242" y="43" font-size="12" text-anchor="end">XT90 ×4 + 10AWG · 63°C</text><rect x="250" y="30" width="145.8" height="18" style="fill:var(--ok)"/><line x1="395.8" y1="39" x2="406.6" y2="39" stroke="var(--fg)" stroke-width="1.5"/><text x="391.8" y="43" font-size="11" text-anchor="end" class="mono inbar">81</text><text x="242" y="79" font-size="12" text-anchor="end">XT90 ×4 + 10AWG · 75°C</text><rect x="250" y="66" width="169.2" height="18" style="fill:var(--ok)"/><line x1="419.2" y1="75" x2="428.2" y2="75" stroke="var(--fg)" stroke-width="1.5"/><text x="415.2" y="79" font-size="11" text-anchor="end" class="mono inbar">94</text><text x="242" y="115" font-size="12" text-anchor="end">XT90 ×4 + 12AWG · 75°C</text><rect x="250" y="102" width="203.4" height="18" style="fill:var(--heat)"/><line x1="453.4" y1="111" x2="462.4" y2="111" stroke="var(--fg)" stroke-width="1.5"/><text x="449.4" y="115" font-size="11" text-anchor="end" class="mono inbar">113</text><text x="242" y="151" font-size="12" text-anchor="end">XT60 ×4 + 11AWG · 75°C</text><rect x="250" y="138" width="192.6" height="18" style="fill:var(--warn)"/><text x="438.6" y="151" font-size="11" text-anchor="end" class="mono inbar">107</text><text x="242" y="187" font-size="12" text-anchor="end">XT90 ×2 + 8AWG · 63°C</text><rect x="250" y="174" width="190.8" height="18" style="fill:var(--heat)"/><line x1="440.8" y1="183" x2="478.6" y2="183" stroke="var(--fg)" stroke-width="1.5"/><text x="436.8" y="187" font-size="11" text-anchor="end" class="mono inbar">106</text><text x="242" y="223" font-size="12" text-anchor="end">XT90 ×4, 1개 이탈 · 63°C</text><rect x="250" y="210" width="262.8" height="18" style="fill:var(--heat)"/><line x1="512.8" y1="219" x2="550.6" y2="219" stroke="var(--fg)" stroke-width="1.5"/><text x="508.79999999999995" y="223" font-size="11" text-anchor="end" class="mono inbar">146</text>
     </svg>
     </div>
-    <figcaption>그림 7. XT90 1개에 40A가 흐를 때 케이블 굵기와 위치별 하우징 추정 온도(막대는 공칭 접점, 가는 선 끝은 노후 접점). 8AWG를 쓰더라도 Hub 함체(63°C) 안에서는 설계 상한을 넘습니다. SMPS 함체 쪽에 두거나 방열 브래킷을 대면 공칭 접점 기준으로 상한 안에 들어옵니다. 계산 모델 값이므로 시험으로 확인해야 합니다.</figcaption>
+    <figcaption>그림 7. 구성별 커넥터 하우징 추정 온도(정상 운전, 막대는 공칭 접점, 가는 선 끝은 노후 접점). XT90 4개 + 10AWG는 75°C 보수 조건까지 설계 상한 안에 들어옵니다. 같은 SMPS 쪽 커넥터 1개가 빠지면 남은 1개가 40A를 받아 한계를 크게 넘습니다. 계산 모델 값이므로 시험으로 확인해야 합니다.</figcaption>
   </figure>
 
   <div class="cols">
     <div class="tbl"><table>
-      <thead><tr><th>케이블 (40A, 0.5m)</th><th class="num">63°C 도체</th><th class="num">75°C 도체</th><th class="num">왕복 강하</th><th>XT90 장착</th></tr></thead>
+      <thead><tr><th>케이블 (20A/회로, 4회로 근접)</th><th class="num">허용 63°C</th><th class="num">허용 75°C</th><th class="num">75°C 도체</th></tr></thead>
       <tbody>
-        <tr class="bad"><td>10AWG</td><td class="num">119°C</td><td class="num">133°C</td><td class="num">189~197 mV</td><td>가능, 발열 부적합</td></tr>
-        <tr class="hl"><td><b>8AWG (선정)</b></td><td class="num">88°C</td><td class="num">101°C</td><td class="num">109~113 mV</td><td>극세선 실리콘선은 가능(빠듯함)</td></tr>
-        <tr><td>6AWG</td><td class="num">75°C</td><td class="num">88°C</td><td class="num">66~68 mV</td><td>불가(외경 약 8.5mm)</td></tr>
+        <tr class="bad"><td>12AWG</td><td class="num">18.5 A</td><td class="num">13.8 A</td><td class="num">108°C</td></tr>
+        <tr class="hl"><td><b>10AWG (선정)</b></td><td class="num">27.2 A</td><td class="num">20.2 A</td><td class="num">90°C</td></tr>
+        <tr><td>8AWG</td><td class="num">38.4 A</td><td class="num">28.7 A</td><td class="num">82°C</td></tr>
       </tbody></table></div>
     <div class="tbl"><table>
-      <thead><tr><th>XT90 40A 정격 기준</th><th class="num">허용 전류</th><th class="num">40A의 비율</th></tr></thead>
+      <thead><tr><th>XT90 허용 전류</th><th class="num">40A 정격 기준</th><th class="num">30A(UL) 기준</th><th class="num">20A의 비율 (40A / 30A 기준)</th></tr></thead>
       <tbody>
-        <tr><td>25°C (정격 조건)</td><td class="num">40.0 A</td><td class="num">100%</td></tr>
-        <tr><td>55°C (SMPS 함체)</td><td class="num">31.6 A</td><td class="num">126%</td></tr>
-        <tr><td>63°C (Hub 함체)</td><td class="num">29.0 A</td><td class="num">138%</td></tr>
-        <tr><td>75°C (보수)</td><td class="num">24.5 A</td><td class="num">163%</td></tr>
+        <tr><td>25°C</td><td class="num">40.0 A</td><td class="num">30.0 A</td><td class="num">50% / 67%</td></tr>
+        <tr><td>63°C</td><td class="num">29.0 A</td><td class="num">21.7 A</td><td class="num">69% / 92%</td></tr>
+        <tr><td>75°C</td><td class="num">24.5 A</td><td class="num">18.4 A</td><td class="num">82% / 109%</td></tr>
       </tbody></table></div>
   </div>
-  <p class="ref">8AWG는 63°C 설계 기준에서 도체 90°C를 만족하는 가장 가는 굵기입니다. 75°C 보수 조건까지 90°C를 지키려면 6AWG가 필요합니다. 이 경우 XT90 쪽만 8AWG 피그테일(0.1m)로 받고 나머지 0.4m를 6AWG로 압착 연결하면 Hub 4.85V입니다. 허용 전류는 I = 40·√((105−주변온도)/80) 모델로 계산한 가정값입니다.</p>
+  <p class="ref">허용 전류는 도체 90°C 기준이며, 커넥터 허용치는 I = 정격·√((105−주변온도)/80) 모델로 계산한 가정값입니다. 보수적인 UL 30A 기준으로 보면 75°C에서 9% 초과이므로, 75°C까지 가는 환경이면 커넥터를 덜 뜨거운 SMPS 함체 쪽에 두는 것이 좋습니다.</p>
 
-  <div class="tbl wide"><table>
-    <thead><tr><th>상황 (8AWG, 0.5m)</th><th class="num">커넥터 전류</th><th class="num">하우징 63 / 75°C</th><th class="num">Hub 입력</th><th>현상</th></tr></thead>
-    <tbody>
-      <tr><td>야간 200W</td><td class="num">20 A</td><td class="num">73 / 86°C</td><td class="num">4.91 V</td><td>여유 충분</td></tr>
-      <tr class="bad"><td>한낮 400W (full white)</td><td class="num">40 A</td><td class="num">106 / 119°C</td><td class="num">4.82 V</td><td>설계 상한 초과, 조건 필요</td></tr>
-      <tr class="hl"><td>휘도 상한 320W (SMPS당 32A)</td><td class="num">32 A</td><td class="num">≤105°C (노후 포함, 63°C)</td><td class="num">약 4.86 V</td><td>권장 운전 상한</td></tr>
-      <tr class="bad"><td>SMPS 과전류 보호 구간</td><td class="num">60~100 A</td><td class="num">167°C 이상</td><td class="num">4.3~4.7 V</td><td>변색·용융·발화 위험, 퓨즈 필수</td></tr>
-      <tr><td>SMPS 1대 고장 / 커넥터 이탈</td><td class="num">0 A (해당 쪽)</td><td class="num">–</td><td class="num">–</td><td>화면 절반 소등. 반쯤 빠진 상태가 더 위험(국부 발열)</td></tr>
-    </tbody></table></div>
+  <div class="cols">
+    <div class="tbl"><table>
+      <thead><tr><th>10AWG, 편도 길이</th><th class="num">0.3 m</th><th class="num">0.5 m</th><th class="num">1.0 m</th></tr></thead>
+      <tbody>
+        <tr><td>총 전압강하</td><td class="num">86~112 mV</td><td class="num">121~147 mV</td><td class="num">208~234 mV</td></tr>
+        <tr class="hl"><td>Hub 입력</td><td class="num">4.89~4.91 V</td><td class="num">4.85~4.88 V</td><td class="num">4.77~4.79 V</td></tr>
+        <tr><td>LED 모듈단</td><td class="num">4.59~4.71 V</td><td class="num">4.55~4.68 V</td><td class="num">4.47~4.59 V</td></tr>
+        <tr><td>패널 경로 손실</td><td class="num">6.9 W</td><td class="num">9.7 W</td><td class="num">16.6 W</td></tr>
+      </tbody></table></div>
+    <div class="tbl"><table>
+      <thead><tr><th>상황</th><th class="num">커넥터 전류</th><th>결과</th></tr></thead>
+      <tbody>
+        <tr><td>한낮 400W</td><td class="num">20 A ×4</td><td>적합</td></tr>
+        <tr><td>야간 200W</td><td class="num">10 A ×4</td><td>여유</td></tr>
+        <tr><td>접촉저항 편차 ±50%</td><td class="num">최대 21.6 A</td><td>한계 안</td></tr>
+        <tr class="bad"><td>커넥터 1개 이탈</td><td class="num">40 A ×1</td><td>과열, 보호 필요</td></tr>
+        <tr><td>SMPS 1대 고장</td><td class="num">해당 쪽 0 A</td><td>화면 절반 소등, 반대쪽 20 A ×2</td></tr>
+        <tr class="bad"><td>SMPS 과전류 보호 구간 (80A)</td><td class="num">40 A ×2</td><td>과열, 휘도 상한으로 차단</td></tr>
+      </tbody></table></div>
+  </div>
+  <p class="ref">SMPS 출력 5.0V, 원격 센싱 없음, 함체 내부 75°C 보수 조건. LED 모듈단은 Hub 입력에서 FPCB 강하 0.2~0.3V(가정)를 뺀 값이며, 요구 전압 4.5V(가정)로 판정했습니다. 경로 손실은 대부분 Hub 함체 안팎의 열로 남습니다.</p>
 
   <div class="tbl wide"><table>
     <thead><tr><th>위치</th><th>문제점</th><th>예상 현상</th><th>개선</th></tr></thead>
     <tbody>
-      <tr><td class="loc">XT90 정격</td><td>40A는 판매처 표기이고 주변 25°C 기준. Amass UL 사양은 30A</td><td>고온 함체에서 40A 연속이면 하우징 106~140°C</td><td>Amass 사양서와 온도상승 데이터 확인, 63°C 40A 2시간 시험으로 검증</td></tr>
-      <tr><td class="loc">커넥터 위치</td><td>Hub 함체(63°C) 쪽에 두면 5~9K 더 뜨거움</td><td>설계 상한 초과</td><td>SMPS 핀 함체(55~58°C) 쪽에 배치</td></tr>
-      <tr><td class="loc">방수·잠금</td><td>IP 등급과 잠금 장치 없음</td><td>결로로 접점 산화, 진동으로 반쯤 빠지면 국부 발열</td><td>함체 안에만 설치, 결합부를 Al 브래킷과 열패드로 고정(하우징 약 −9~−19K), 양쪽 100mm 안 P-클램프</td></tr>
-      <tr><td class="loc">8AWG 납땜</td><td>굵은 도체라 열용량이 큼, 납땜 컵이 빠듯함</td><td>냉땜·소선 절단 → 접합 저항 상승</td><td>극세선 실리콘 8AWG, 100W 이상 인두와 지그, 단면 검사</td></tr>
-      <tr><td class="loc">케이블 굴곡·관통</td><td>8AWG 외경 약 6.8mm, 최소 굽힘반경 41mm</td><td>작은 함체 안에서 납땜부 응력</td><td>굽힘 여유 확보, M16(4~8mm) IP68 글랜드, 드립 루프</td></tr>
-      <tr><td class="loc">과전류</td><td>SMPS 보호 구간 전류가 80A 이상</td><td>커넥터 용융·발화</td><td>회로당 50A MIDI(볼트 체결) 퓨즈. 고온에서는 블레이드형보다 적합</td></tr>
+      <tr><td class="loc">XT90 방수</td><td>IP 등급 없음(XT90H도 방수 아님)</td><td>결로·누수로 접점 산화, 저항 상승, 과열</td><td>함체 안에만 설치, 함체 IP66 이상 + 벤트, 커넥터는 함체 위쪽에 배치</td></tr>
+      <tr><td class="loc">XT90 체결</td><td>잠금 없음, 마찰로만 유지</td><td>진동·열 사이클로 반쯤 빠짐 → 같은 SMPS의 다른 커넥터에 40A 집중</td><td>결합부를 브래킷에 고정, 양쪽 100mm 안에 P-클램프, 삽입 깊이 마킹</td></tr>
+      <tr><td class="loc">10AWG 납땜</td><td>굵은 도체라 냉땜이 생기기 쉬움</td><td>접합 저항 상승, 진동 시 피로 단선</td><td>100W 이상 인두와 지그, 단면 검사</td></tr>
+      <tr><td class="loc">케이블 굴곡·관통</td><td>10AWG 외경 약 5.4mm, 최소 굽힘반경 32mm. 실리콘 피복은 연하고 외경 편차가 있음</td><td>납땜부 응력, 글랜드 누수나 피복 손상</td><td>굽힘 여유 확보, 납땜부 직후 클램프, M12(3~6.5mm) IP68 단심 글랜드(외경 실측 후 선정)</td></tr>
+      <tr><td class="loc">체결 수명·위조품</td><td>반복 착탈·고온으로 스프링 장력 저하. 비정품은 도금 품질 편차</td><td>특정 커넥터만 과열·변색</td><td>정품 XT90H, 입고 시 mΩ 샘플 측정, 착탈은 정비 시에만</td></tr>
+      <tr><td class="loc">고장 시 집중</td><td>커넥터 1개 이탈 시 40A, SMPS 과전류 보호 구간에서 회로당 40A</td><td>과열·용융</td><td>회로별 30A 퓨즈 또는 NTC 온도 감시, SMPS당 40A 휘도 상한</td></tr>
     </tbody></table></div>
 
   <div class="cols">
-    <div class="card"><h3>권장 구성 (확정 조건)</h3><ul>
-      <li><b>커넥터:</b> 정품 XT90H 2개(SMPS당 1개), SMPS 핀 함체 쪽에 배치. XT90-S(안티스파크)는 5V에서 불필요</li>
-      <li><b>케이블:</b> 극세선 실리콘 8AWG, 편도 0.5m. 75°C 보수 대응이 필요하면 6AWG 본선 + 8AWG 피그테일</li>
-      <li><b>휘도 상한:</b> SMPS당 32A 이하(패널 약 320W, full white의 80%). 시험에서 40A가 합격하면 완화</li>
-      <li><b>보호:</b> 회로당 50A MIDI 퓨즈. XT90에 NTC를 달아 85°C 휘도 감축, 95°C 50% 감축, 105°C 해당 SMPS 차단</li></ul></div>
+    <div class="card"><h3>권장 구성</h3><ul>
+      <li><b>커넥터:</b> 정품 XT90H 4개(SMPS당 2개). Hub 쪽도 SMPS별로 부하를 나누고 두 SMPS 5V를 묶지 않음. XT90-S(안티스파크)는 5V에서 불필요</li>
+      <li><b>케이블:</b> 실리콘 10AWG, 편도 0.5m</li>
+      <li><b>배치:</b> 커넥터는 함체 안, 가능하면 덜 뜨거운 SMPS 핀 함체 쪽</li>
+      <li><b>휘도 상한:</b> Colorlight에서 SMPS당 40A(패널 400W) 이하로 제한, 과전류 보호 구간 운전 금지</li>
+      <li><b>보호(둘 중 하나):</b> 회로별 30A 블레이드 퓨즈(약 50mV 추가 강하, 1W 발열, 1개 이탈 시 수 분 안에 끊어져 해당 쪽 소등). 또는 XT90 옆 NTC로 85°C 휘도 감축, 95°C 차단</li></ul></div>
     <div class="card"><h3>검증 시험</h3><ul>
-      <li><b>열시험:</b> 63°C 항온에서 40A 2시간 통전. 하우징 98°C 이하(ΔT 35K 이하), 납땜부 105°C 이하, 시험 전후 저항 변화 10% 이내</li>
-      <li><b>상한 확인:</b> 같은 시험을 32A로 반복해 상한값 검증</li>
-      <li><b>출하 검사:</b> 회로별 루프 저항 4선식 측정, 8AWG 0.5m 기준 약 4.5mΩ 이하</li>
-      <li><b>설치 후·정기:</b> 열화상 확인, 연 1회 여름 한낮 점검</li></ul></div>
+      <li><b>출하 검사:</b> 회로별 루프 저항 4선식 측정. 0.5m 10AWG 기준 약 5mΩ 이하, 회로 간 편차 ±20% 이내</li>
+      <li><b>통전 검사:</b> 20A 30분 통전 후 열화상 확인. 같은 패널 다른 커넥터보다 10K 이상 높으면 재작업</li>
+      <li><b>열시험:</b> 63°C 항온에서 회로당 20A 2시간. 하우징 105°C 이하, 시험 전후 저항 변화 10% 이내</li>
+      <li><b>정기 점검:</b> 연 1회 여름 한낮에 열화상과 mΩ 재측정</li></ul></div>
   </div>
-  <p class="note"><b>중재 의견:</b> XT90 2개, 40A, 0.5m 조건에서 케이블은 <b>실리콘 8AWG</b>로 정했습니다. 다만 XT90은 40A 정격을 쓰더라도 63°C 함체 안에서는 허용치가 29A로 줄어들기 때문에, full white 40A 연속 운전을 그대로 받아들이기는 어렵습니다. 그래서 <b>커넥터를 SMPS 함체 쪽에 두고, 결합부를 방열 브래킷에 고정하고, 50A 퓨즈와 온도 감시를 달고, 휘도 상한 320W에서 시작해 40A 열시험에 합격하면 상한을 푸는 순서</b>를 제안합니다. 더 확실하게 하려면 커넥터 대신 단자대(M6 스터드, 6AWG 링단자)를 쓰는 방법이 있습니다.</p>
+  <p class="note"><b>중재 의견:</b> 패널당 XT90 4개(SMPS당 2개, 커넥터당 20A)에 실리콘 10AWG 0.5m 구성은 정상 운전에서 커넥터·케이블·전압 모두 여유가 있습니다. 남는 위험은 커넥터 하나가 풀려 같은 SMPS의 나머지 하나에 40A가 몰리는 경우뿐이므로, <b>결합부 고정과 회로별 퓨즈(또는 온도 감시)를 합격 조건</b>으로 요청합니다. XT90 정격 원문(Amass 사양서)은 이 환경에서 열지 못해 판매처 표기와 검색 요약으로 확인했으므로, 업체에 사양서를 요청해 확인합니다.</p>
 </section>
 
 <section>
@@ -632,7 +644,7 @@ ol.src a{color:var(--ink)}
       <tr><td class="num">2-3</td><td class="loc">벽 쪽 공간 (세로 연속 배치) <span class="pill new">추가</span></td><td>패널마다 뒤로 150~245W를 내보냄</td><td>막혀 있으면 위층 뒤 공기가 14~27K 상승</td><td>2~3장마다 수평 차단 + 옆으로 배기. 1안은 벽 간격 250mm 이상, 2안은 100mm 이상</td></tr>
       <tr><td class="num">2-4</td><td class="loc">LED 유리층 <span class="pill new">추가</span></td><td>공기층 구간 전면 유리층이 계산상 90°C 안팎</td><td>LED 필름, OCA 접착층, 커넥터 허용 온도 초과 가능</td><td>업체에 각 소재 허용 온도 확인. 온도 연동 휘도 제한(예: 패널 65°C부터 단계적으로)</td></tr>
       <tr><td class="num">2-5</td><td class="loc">밀폐 함체 결로</td><td>주야 온도차로 함체가 호흡함</td><td>습기 유입 → 결로, 부식</td><td>ePTFE 압력평형 벤트, 최저점 배수공, 컨포멀 코팅, IP65 이상, 커넥터 하향 배치</td></tr>
-      <tr><td class="num">3-1</td><td class="loc">SMPS·5V 연결 (XT90 ×2 + 실리콘 8AWG) <span class="pill chg">수정</span></td><td>XT90 1개당 40A. 40A 정격이어도 63°C 함체에서는 허용치 29A로 감소. 방수·잠금 없음</td><td>full white 연속 운전 시 하우징 106~127°C로 설계 상한(105°C) 초과. 과전류 보호 구간에서는 용융·발화 위험</td><td>실리콘 8AWG 0.5m, 커넥터는 SMPS 함체 쪽 배치, 결합부 방열 브래킷 고정, 회로당 50A MIDI 퓨즈 + NTC 온도 감시, 휘도 상한 SMPS당 32A(패널 약 320W)에서 시작해 63°C 40A 2시간 시험 합격 시 완화(10장)</td></tr>
+      <tr><td class="num">3-1</td><td class="loc">SMPS·5V 연결 (XT90 ×4 + 실리콘 10AWG)</td><td>SMPS당 40A를 XT90 2개로 나눠 커넥터당 20A. 방수·잠금 없음</td><td>정상 운전은 여유(75°C에서 하우징 94~99°C). 커넥터 1개가 풀리면 같은 SMPS의 나머지 1개에 40A → 146°C 이상, 용융 위험</td><td>XT90H 4개(SMPS당 2개), 실리콘 10AWG 0.5m, 두 SMPS 5V를 묶지 않음. 결합부 브래킷·P-클램프 고정, 회로별 30A 퓨즈나 NTC 온도 감시, SMPS당 40A 휘도 상한. 출하 시 mΩ 측정과 열화상 검사(10장)</td></tr>
       <tr><td class="num">3-2</td><td class="loc">PV 직류와 LED 저전압</td><td>PV 수백 V 이상과 5V(3안이면 48V)가 같은 공간</td><td>절연 파괴, DC 아크, 화재</td><td>PV 전용 케이블·커넥터, 격벽, 등전위 접지. 합지 후 PV 인증 유효성 확인</td></tr>
       <tr><td class="num">3-3</td><td class="loc">외벽 AC 입력 SMPS (장기) <span class="pill new">추가</span></td><td>AC 입력, PFC, 고압 전해콘덴서가 외벽에 있음</td><td>옥외 고장원, 고소 정비, 감전 위험</td><td>3안: 48V 배전 + 분전반 실내, 패널에는 DC-DC만. 지금은 2안 함체와 DC-DC 함체 장착 호환만 확보</td></tr>
     </tbody></table></div>
@@ -671,7 +683,7 @@ ol.src a{color:var(--ink)}
     <div class="card"><h3>함체 2분할 권장</h3><ul>
       <li><b>고정부:</b> FPCB 11개 + Hub board를 넣은 작은 인터페이스 함체. 공장에서 포팅·실링하고 현장에서는 열지 않습니다.</li>
       <li><b>교체부:</b> SMPS 2대를 넣은 핀형 방열 함체. 열 대책과 교체 단위가 같아집니다. 3안 전환 시 DC-DC 함체로 바꿔 끼웁니다.</li>
-      <li>두 함체는 XT90H 2개(SMPS당 1개)와 실리콘 8AWG 0.5m로 연결합니다. 커넥터는 SMPS 함체 쪽에 두고 결합부를 고정하며, 교체 때는 XT90만 분리하면 됩니다(10장).</li></ul></div>
+      <li>두 함체는 XT90H 4개(SMPS당 2개)와 실리콘 10AWG 0.5m로 연결합니다. 커넥터는 함체 안에 두고 결합부를 고정하며, 교체 때는 XT90만 분리하면 됩니다(10장).</li></ul></div>
     <div class="card"><h3>캣워크 유무</h3><ul>
       <li><b>있음:</b> 배면 탈착형 함체로 상시 접근할 수 있고 1안도 선택지가 됩니다.</li>
       <li><b>없음:</b> 1안은 교체 접근이 어려워 2안이 유리합니다. 곤돌라·로프 고소작업(풍속 10m/s 이상이면 중지)이나 실내 점검구가 필요합니다.</li>
@@ -688,7 +700,7 @@ ol.src a{color:var(--ink)}
       <tr><td><span class="pill p1">P1</span></td><td>유지보수 개념</td><td>교체 단위, 교체 방향, 접근 방식(곤돌라·실내·캣워크), 1건당 소요시간. 함체 2분할 수용 여부</td></tr>
       <tr><td><span class="pill p1">P1</span></td><td>SMPS 데이터</td><td>HWA805V0J-SS 공식 데이터시트: 외형 치수, 효율 곡선, 동작온도, 디레이팅 곡선, 케이스 측정점(Tc), 전해콘덴서 사양, remote sense 지원 여부</td></tr>
       <tr><td><span class="pill p1">P1</span></td><td>벽 쪽 공간</td><td>패널과 벽 사이 간격, 옆면 개방 여부, 층간 차단 계획. 1안 적용 가능 여부 판단용</td></tr>
-      <tr><td><span class="pill p1">P1</span></td><td>2안 상세</td><td>SMPS 핀 함체 위치·고정 방식, Hub 함체 축소 후 공기층 치수, 5V 연결 구성(XT90H 2개, 실리콘 8AWG 0.5m, SMPS 함체 쪽 배치, 결합부 고정, 50A 퓨즈와 온도 감시), Amass XT90 사양서와 온도상승 데이터, 63°C 40A 2시간 열시험 결과</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>2안 상세</td><td>SMPS 핀 함체 위치·고정 방식, Hub 함체 축소 후 공기층 치수, 5V 연결 구성(XT90H 4개, 실리콘 10AWG 0.5m, 결합부 고정, 회로별 30A 퓨즈나 온도 감시), Amass XT90 사양서와 온도상승 데이터, 63°C 20A 2시간 열시험 결과</td></tr>
       <tr><td><span class="pill p1">P1</span></td><td>열해석</td><td>세로 3장 이상 + 벽 쪽 공간 포함 CFD. 외기 35/38°C, 일사 375/650W/m², 무풍~2m/s, 400W/200W. 팬 정지와 SMPS 1대 고장 케이스</td></tr>
       <tr><td><span class="pill p2">P2</span></td><td>1안 검토 시</td><td>Hub 위치(판 뿌리, 패널과 평행), FPCB 경로 단면, 외벽 돌출 깊이, 판 단면·뿌리 체결·진동 검토서, 교체 접근 경로</td></tr>
       <tr><td><span class="pill p2">P2</span></td><td>3안 전환 대비</td><td>SMPS 함체와 DC-DC 함체 장착 호환, 48V 커넥터 사양, 분전반 정류기·보호 구성, 배선 경로</td></tr>
@@ -703,7 +715,7 @@ ol.src a{color:var(--ink)}
   <div class="script" id="script">
     <p><b>1. FPCB</b><br>패널이랑 Hub board 잇는 FPCB 11개(30×100mm)가 윗면 프레임을 지나면서 90도로 꺾이는데, 그 모서리가 날카로워 보여요. 바람이나 열팽창으로 조금씩 흔들리면 피복이 닳아서 단락이나 단선이 날 수 있으니까 슬롯 모서리 R0.5 이상이나 면취, 디버링하고 엣지 트림 넣어주세요. 실리콘은 초산형 쓰면 구리가 부식되니까 중성(알콕시)형으로 해주시고, 굴곡 부위는 비워주세요. 다음 도면에 실리콘 위치랑 재질, 두께, 굴곡 R, FPCB 경로 단면도까지 같이 부탁드려요. 공기층 윗부분이 막혀 있어서 결로가 생길 수 있으니 FPCB에 물이 타고 내려가지 않게 루프를 주고, 패널 쪽 커넥터는 보호해주셨으면 해요.</p>
     <p><b>2. 방열</b><br>저희가 7월 한낮 조건으로 계산해보니까 지금 구조에서는 SMPS 케이스가 87도 정도까지 올라가요. 원인이 햇빛보다 SMPS 자체 열 55W 정도가 밀폐 함체 안에 갇히는 게 더 커요. 그래서 SMPS 열을 핀으로 바깥 공기에 내보내는 구조가 필요해요.</p>
-    <p>저희는 SMPS만 별도 알루미늄 함체로 빼서 바깥에 세로 방향 핀을 다는 방식을 우선 제안드려요. 베이스 300×250 이상, 핀 높이 40~50mm, 두께 2mm, 간격 10.5mm 정도면 54~59도 정도가 나와요. SMPS가 빠지면 Hub 함체가 작아져서 공기층도 150mm 정도로 줄어드니까 패널 쪽에도 도움이 돼요. 함체는 벽 쪽 그늘에 두고, 방수는 IP65 이상에 벤트랑 배수공 넣어주세요. Hub 함체와 연결하는 5V는 XT90 2개(SMPS 한 대당 1개)에 실리콘 케이블 0.5m로 가려고 해요. 커넥터 하나에 40A가 흐르니까 케이블은 8AWG로 해주세요. 다만 XT90이 40A 정격이어도 그건 상온 기준이라, 함체 안 60도대에서는 30A 정도로 줄어들어요. 그래서 커넥터는 덜 뜨거운 SMPS 함체 쪽에 두고, 결합부는 알루미늄 브래킷에 고정해서 열을 빼주시고, 회로마다 50A 퓨즈랑 커넥터 온도 센서를 넣어주세요. 처음에는 휘도를 80% 정도(패널 320W)로 제한해두고, 63도에서 40A로 2시간 열시험해서 괜찮으면 풀어도 될 것 같아요.</p>
+    <p>저희는 SMPS만 별도 알루미늄 함체로 빼서 바깥에 세로 방향 핀을 다는 방식을 우선 제안드려요. 베이스 300×250 이상, 핀 높이 40~50mm, 두께 2mm, 간격 10.5mm 정도면 54~59도 정도가 나와요. SMPS가 빠지면 Hub 함체가 작아져서 공기층도 150mm 정도로 줄어드니까 패널 쪽에도 도움이 돼요. 함체는 벽 쪽 그늘에 두고, 방수는 IP65 이상에 벤트랑 배수공 넣어주세요. Hub 함체와 연결하는 5V는 XT90 4개(SMPS 한 대당 2개)에 실리콘 케이블 0.5m로 가려고 해요. SMPS 한 대가 40A를 내니까 커넥터 하나에 20A씩 흐르고, 케이블은 10AWG면 충분해요. Hub 쪽에서도 두 SMPS 5V는 서로 묶지 말아주세요. XT90은 방수랑 잠금이 없으니까 함체 안에만 두고, 결합부는 브래킷이랑 클램프로 고정해주세요. 커넥터 하나가 빠지면 같은 SMPS의 나머지 하나에 40A가 몰려서 녹을 수 있으니까, 회로마다 30A 퓨즈나 온도 센서도 넣어주세요.</p>
     <p>뒷판을 패널과 수직으로 세워서 빼는 방법도 검토해봤는데, 함체를 그대로 세우면 3도 정도밖에 안 내려가고, 패드랑 세로 핀을 달아야 62도 정도가 나와요. 다만 벽이랑 간격이 250mm 이상 필요하고 앞에서는 교체가 어려워서, 캣워크나 실내 점검구가 있을 때만 의미가 있을 것 같아요.</p>
     <p>팬은 달아주시되, 팬이 멈춰도 60도 이하는 유지되게 핀으로 설계해주시고, 팬 고장은 감지되게 해주세요. 팬이 돌 때는 50도 이하가 목표예요. 조건은 외기 38도, 일사 650W/m², 무풍, 400W로 잡고 싶어요. 그리고 패널을 세로로 쭉 붙이면 벽 쪽 공기가 위로 갈수록 뜨거워지니까 2~3장마다 끊어서 옆으로 빼는 것도 같이 검토해주세요.</p>
     <p><b>3. 장기 사용</b><br>장기적으로는 SMPS를 48V로 올리고 AC-DC는 실내 분전반으로 가져가서, 패널에는 48V를 5V로 바꾸는 DC-DC만 두는 방식이 좋겠어요. 패널 쪽 발열이 3분의 1로 줄고, 고장이 잦은 정류기를 실내에서 바꿀 수 있어요. 지금 당장은 아니더라도, SMPS 함체를 나중에 DC-DC 함체로 바꿔 끼울 수 있게 장착 구조랑 커넥터 위치를 맞춰주셨으면 해요.</p>
