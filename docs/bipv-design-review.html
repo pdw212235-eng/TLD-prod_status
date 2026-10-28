@@ -90,7 +90,7 @@ ol.src a{color:var(--ink)}
 <div class="wrap">
 
 <header>
-  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-28</span><span>내부 검토안 v3.2 (개선안 1·2·3안 + 5V 연결 검토)</span></div>
+  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-28</span><span>내부 검토안 v3.3 (평균 기온 온도 추가)</span></div>
   <h1>유리 LED + PV 합지 패널 기구 설계 검토</h1>
   <p class="lede">업체 기구 설계를 내부에서 검토한 결과입니다. 현 구조(하단만 열린 500×20×300mm 공기층, Hub·SMPS 밀폐 함체), SMPS HWA805V0J-SS ×2, 한낮 400W·야간 200W 운전을 기준으로, 일사와 온도를 Python 계산으로 검증했습니다. v3에서는 개선안을 세 가지로 정리했습니다. 1안은 뒷판을 수직으로 빼는 방법, 2안은 SMPS 핀형 방열 함체 분리, 3안은 장기안으로 48V 배전과 분전반 실내 이전입니다.</p>
   <div class="roles">
@@ -110,6 +110,7 @@ ol.src a{color:var(--ink)}
     <li><b>1안(뒷판을 수직으로 빼기)은 함체를 그대로 쓰면 −3K뿐입니다.</b> 써멀패드와 세로 핀을 더하면 약 62°C(55~73)까지 내려갑니다. 다만 벽과 패널 사이가 250mm 이상 필요하고, 캣워크가 없으면 교체 접근이 어렵습니다.</li>
     <li class="good"><b>2안(SMPS 핀형 방열 함체 분리)이 가장 확실합니다.</b> 핀 B안은 약 59°C, D안은 약 54°C입니다. SMPS가 빠지면서 공기층이 150mm로 줄어 뜨거운 구간 면적이 절반이 되고, 공기층과 Hub 쪽 온도도 1~2K 내려갑니다.</li>
     <li class="long"><b>3안(48V 배전, 분전반 실내)은 장기 사용에 가장 유리합니다.</b> 패널 쪽 발열이 55W에서 19W로 약 1/3이 됩니다. 2안과 합치면 DC-DC 약 56°C이고, 고장이 잦은 AC-DC 정류기를 실내에서 정비할 수 있습니다. 단기에는 2안으로 가고, 3안으로 바꿀 수 있게 장착 구조를 맞춰 두는 것을 권장합니다.</li>
+    <li class="hot"><b>평소 기온으로 보면 현 구조는 1년에 약 3,500시간 동안 SMPS가 60°C를 넘습니다.</b> 8월 평균 최고기온(30.6°C) 맑은 날에 84°C이고, 4~10월 낮에는 평범한 날에도 70°C를 넘습니다. 2안 B는 같은 날 55°C로, 평년 기온에서는 60°C를 넘는 시간이 없습니다(06장).</li>
     <li><b>세로로 이어 붙이면 벽 쪽 공기가 위로 갈수록 데워집니다.</b> 어느 안이든 위층 패널 뒤 공기가 14~27K 올라가므로, 2~3장마다 끊어서 옆으로 빼줘야 합니다.</li>
   </ul>
 </section>
@@ -289,7 +290,7 @@ ol.src a{color:var(--ink)}
     <div class="card"><span class="tag">2안</span><h3>SMPS 핀형 방열 함체 분리</h3><ul>
       <li>SMPS 2대만 세로 핀 달린 Al 함체로 빼서 그늘 쪽에 배치</li>
       <li>Hub·FPCB는 작은 고정 함체에 남김 → 공기층 300→150mm</li>
-      <li>두 함체는 SMPS별로 나눈 5V 4회로로 연결(10AWG, 0.5m 이하, 09장)</li>
+      <li>두 함체는 SMPS별로 나눈 5V 4회로로 연결(10AWG, 0.5m 이하, 10장)</li>
       <li>SMPS 교체 시 FPCB를 건드리지 않음</li></ul></div>
     <div class="card"><span class="tag">3안 · 장기</span><h3>48V 배전 + 분전반 실내</h3><ul>
       <li>AC-DC를 48V로 바꿔 실내 분전반에 모음</li>
@@ -371,7 +372,67 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">06</span>개선안 비교</h2>
+  <h2><span class="no">06</span>평균 기온에서의 실제 온도</h2>
+  <p>앞 장의 온도는 외기 35°C 한여름 최악 조건입니다. 여기서는 서울 월별 평년 기온(평균 최고·최저)에 열부하를 더해 <b>평소에 실제로 몇 도가 되는지</b> 계산했습니다. 평균 최고기온에 맑은 날 일사를 더한 조건은 "흔한 더운 맑은 날"에 해당합니다.</p>
+  <figure class="fig">
+    <div class="svgbox">
+    <svg viewBox="0 0 700 290" width="700" role="img" aria-label="월별 평균 최고기온 맑은 날 정오의 SMPS 케이스 온도">
+      <g stroke="var(--line)" stroke-width="1"><line x1="60" y1="250" x2="610" y2="250"/><line x1="60" y1="176.7" x2="610" y2="176.7"/><line x1="60" y1="103.3" x2="610" y2="103.3"/><line x1="60" y1="30" x2="610" y2="30"/></g>
+      <g font-size="11" class="mono" text-anchor="end"><text x="54" y="254" class="m mono">0</text><text x="54" y="180.7" class="m mono">30</text><text x="54" y="107.3" class="m mono">60</text><text x="54" y="34" class="m mono">90°C</text></g>
+      <line x1="60" y1="78.9" x2="610" y2="78.9" stroke="var(--heat)" stroke-width="1" stroke-dasharray="5 4"/><text x="64" y="74.9" font-size="10" style="fill:var(--heat)">70°C 고장 임계</text>
+      <text x="64" y="99.4" font-size="10" class="m">60°C 목표</text>
+      <polyline points="80,97.7 155,83.1 230,62.8 305,50.3 380,44.7 455,49.6 530,59.9 605,93.6" fill="none" stroke="var(--heat)" stroke-width="2"/><circle cx="80" cy="97.7" r="3" style="fill:var(--heat)"/><circle cx="155" cy="83.1" r="3" style="fill:var(--heat)"/><circle cx="230" cy="62.8" r="3" style="fill:var(--heat)"/><circle cx="305" cy="50.3" r="3" style="fill:var(--heat)"/><circle cx="380" cy="44.7" r="3" style="fill:var(--heat)"/><circle cx="455" cy="49.6" r="3" style="fill:var(--heat)"/><circle cx="530" cy="59.9" r="3" style="fill:var(--heat)"/><circle cx="605" cy="93.6" r="3" style="fill:var(--heat)"/><polyline points="80,169.6 155,151.0 230,125.6 305,111.9 380,107.5 455,114.8 530,127.6 605,165.2" fill="none" stroke="var(--warn)" stroke-width="2"/><circle cx="80" cy="169.6" r="3" style="fill:var(--warn)"/><circle cx="155" cy="151.0" r="3" style="fill:var(--warn)"/><circle cx="230" cy="125.6" r="3" style="fill:var(--warn)"/><circle cx="305" cy="111.9" r="3" style="fill:var(--warn)"/><circle cx="380" cy="107.5" r="3" style="fill:var(--warn)"/><circle cx="455" cy="114.8" r="3" style="fill:var(--warn)"/><circle cx="530" cy="127.6" r="3" style="fill:var(--warn)"/><circle cx="605" cy="165.2" r="3" style="fill:var(--warn)"/><polyline points="80,183.3 155,162.3 230,132.4 305,118.3 380,115.3 455,124.9 530,139.5 605,178.6" fill="none" stroke="var(--ok)" stroke-width="2"/><circle cx="80" cy="183.3" r="3" style="fill:var(--ok)"/><circle cx="155" cy="162.3" r="3" style="fill:var(--ok)"/><circle cx="230" cy="132.4" r="3" style="fill:var(--ok)"/><circle cx="305" cy="118.3" r="3" style="fill:var(--ok)"/><circle cx="380" cy="115.3" r="3" style="fill:var(--ok)"/><circle cx="455" cy="124.9" r="3" style="fill:var(--ok)"/><circle cx="530" cy="139.5" r="3" style="fill:var(--ok)"/><circle cx="605" cy="178.6" r="3" style="fill:var(--ok)"/><polyline points="80,197.2 155,175.9 230,145.9 305,131.7 380,128.8 455,138.6 530,153.2 605,192.6" fill="none" stroke="var(--cool)" stroke-width="2"/><circle cx="80" cy="197.2" r="3" style="fill:var(--cool)"/><circle cx="155" cy="175.9" r="3" style="fill:var(--cool)"/><circle cx="230" cy="145.9" r="3" style="fill:var(--cool)"/><circle cx="305" cy="131.7" r="3" style="fill:var(--cool)"/><circle cx="380" cy="128.8" r="3" style="fill:var(--cool)"/><circle cx="455" cy="138.6" r="3" style="fill:var(--cool)"/><circle cx="530" cy="153.2" r="3" style="fill:var(--cool)"/><circle cx="605" cy="192.6" r="3" style="fill:var(--cool)"/><polyline points="80,244.9 155,222.9 230,191.8 305,177.7 380,175.2 455,185.5 530,200.6 605,240.2" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3"/><circle cx="80" cy="244.9" r="3" style="fill:var(--muted)"/><circle cx="155" cy="222.9" r="3" style="fill:var(--muted)"/><circle cx="230" cy="191.8" r="3" style="fill:var(--muted)"/><circle cx="305" cy="177.7" r="3" style="fill:var(--muted)"/><circle cx="380" cy="175.2" r="3" style="fill:var(--muted)"/><circle cx="455" cy="185.5" r="3" style="fill:var(--muted)"/><circle cx="530" cy="200.6" r="3" style="fill:var(--muted)"/><circle cx="605" cy="240.2" r="3" style="fill:var(--muted)"/><text x="614" y="97.6" font-size="11" style="fill:var(--heat)">현 구조</text><text x="614" y="169.2" font-size="11" style="fill:var(--warn)">1안 패드+핀</text><text x="614" y="182.6" font-size="11" style="fill:var(--ok)">2안 B</text><text x="614" y="196.6" font-size="11" style="fill:var(--cool)">2안 D</text><text x="614" y="244.2" font-size="11" style="fill:var(--muted)">평균 최고기온</text><text x="388" y="37.7" font-size="10" class="mono" style="fill:var(--heat)">84.0</text>
+      <g font-size="12" text-anchor="middle"><text x="80" y="270">1월</text><text x="155" y="270">3월</text><text x="230" y="270">5월</text><text x="305" y="270">7월</text><text x="380" y="270">8월</text><text x="455" y="270">9월</text><text x="530" y="270">10월</text><text x="605" y="270">12월</text></g>
+    </svg>
+    </div>
+    <figcaption>그림 5. 월별 평균 최고기온의 맑은 날 정오(LED 400W)에 SMPS 케이스 온도. 현 구조는 평범한 날에도 4~10월 내내 70°C를 넘습니다. 2안은 가장 더운 8월 평균일에도 55°C 이하입니다. 월별 값은 아래 표에 있습니다.</figcaption>
+  </figure>
+
+  <div class="tbl wide"><table>
+    <thead><tr><th>월</th><th class="num">평균 최고기온</th><th class="num">현 구조 유리 / PV</th><th class="num">현 구조 SMPS</th><th class="num">1안 SMPS</th><th class="num">2안 B SMPS</th><th class="num">2안 D SMPS</th><th class="num">3안 DC-DC</th></tr></thead>
+    <tbody>
+      <tr><td>1월</td><td class="num">2.1</td><td class="num">84 / 89</td><td class="num">62.3</td><td class="num">32.9</td><td class="num">27.3</td><td class="num">21.6</td><td class="num">25.4</td></tr>
+      <tr><td>3월</td><td class="num">11.1</td><td class="num">85 / 88</td><td class="num">68.3</td><td class="num">40.5</td><td class="num">35.9</td><td class="num">30.3</td><td class="num">33.7</td></tr>
+      <tr><td>5월</td><td class="num">23.8</td><td class="num">85 / 86</td><td class="num">76.6</td><td class="num">50.9</td><td class="num">48.1</td><td class="num">42.6</td><td class="num">45.2</td></tr>
+      <tr><td>7월</td><td class="num">29.6</td><td class="num">89 / 91</td><td class="num">81.7</td><td class="num">56.5</td><td class="num">53.9</td><td class="num">48.4</td><td class="num">51.0</td></tr>
+      <tr class="bad"><td><b>8월</b></td><td class="num">30.6</td><td class="num">94 / 97</td><td class="num"><b>84.0</b></td><td class="num">58.3</td><td class="num"><b>55.1</b></td><td class="num">49.6</td><td class="num">52.5</td></tr>
+      <tr><td>9월</td><td class="num">26.4</td><td class="num">96 / 100</td><td class="num">82.0</td><td class="num">55.3</td><td class="num">51.2</td><td class="num">45.6</td><td class="num">48.9</td></tr>
+      <tr><td>10월</td><td class="num">20.2</td><td class="num">96 / 100</td><td class="num">77.8</td><td class="num">50.1</td><td class="num">45.2</td><td class="num">39.6</td><td class="num">43.2</td></tr>
+      <tr><td>12월</td><td class="num">4.0</td><td class="num">85 / 90</td><td class="num">64.0</td><td class="num">34.7</td><td class="num">29.2</td><td class="num">23.5</td><td class="num">27.3</td></tr>
+      <tr><td>8월 밤 (약 25°C, 200W)</td><td class="num">24.8</td><td class="num">–</td><td class="num">55.8</td><td class="num">40.5</td><td class="num">39.0</td><td class="num">35.6</td><td class="num">35.3</td></tr>
+    </tbody></table></div>
+  <p class="ref">맑은 날 정오 기준, 단위 °C. 구름 낀 평균 하늘이면 SMPS는 0.3~3K만 낮습니다. SMPS 온도는 외기와 자체 손실이 지배하기 때문입니다. 반대로 유리와 PV는 일사 영향이 커서 <b>9~10월이 가장 뜨겁습니다</b>(현 구조 PV 약 100°C). 기온은 기상청 1991~2020 평년값 근사치이므로 정확한 값은 기상청 자료로 확인해야 합니다.</p>
+
+  <div class="cols">
+    <div class="card"><h3>간편 환산: 외기 + ΔT</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>구성 · 위치</th><th class="num">여름 낮</th><th class="num">겨울 낮</th><th class="num">밤 200W</th></tr></thead>
+        <tbody>
+          <tr><td>현 구조 SMPS</td><td class="num">+53</td><td class="num">+59</td><td class="num">+31</td></tr>
+          <tr><td>현 구조 PV</td><td class="num">+63</td><td class="num">+83</td><td class="num">+25</td></tr>
+          <tr><td>1안 SMPS</td><td class="num">+27</td><td class="num">+31</td><td class="num">+16</td></tr>
+          <tr class="hl"><td>2안 B SMPS</td><td class="num">+24</td><td class="num">+25</td><td class="num">+14</td></tr>
+          <tr class="hl"><td>2안 D SMPS</td><td class="num">+19</td><td class="num">+20</td><td class="num">+11</td></tr>
+          <tr><td>3안 DC-DC</td><td class="num">+21</td><td class="num">+23</td><td class="num">+11</td></tr>
+          <tr><td>2안 공기층 구간 PV</td><td class="num">+58</td><td class="num">+78</td><td class="num">+21</td></tr>
+        </tbody></table></div>
+      <p class="ref">원하는 외기 온도에 더하면 됩니다. 예: 외기 30°C 여름 낮 → 현 구조 SMPS 약 83°C, 2안 B 약 54°C. 여름 낮은 7월 맑은 날 일사(374W/m²), 겨울 낮은 12월(806W/m²) 기준이고, 봄·가을은 사이 값입니다. 세로로 이어 붙여 위층 뒤 공기가 더 데워지면 그만큼 더합니다.</p></div>
+    <div class="card"><h3>1년 동안 SMPS가 넘는 시간 (추정)</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>구성</th><th class="num">60°C 초과</th><th class="num">70°C 초과</th><th>60°C를 넘기는 외기</th></tr></thead>
+        <tbody>
+          <tr class="bad"><td>현 구조</td><td class="num">약 3,400~3,700 h</td><td class="num">약 2,100~2,300 h</td><td>외기 약 5°C 이상이면 낮에 넘음</td></tr>
+          <tr><td>1안 패드+핀</td><td class="num">연 수십 h</td><td class="num">0</td><td>약 33°C 이상 폭염일</td></tr>
+          <tr class="hl"><td>2안 B</td><td class="num">0 (평년일)</td><td class="num">0</td><td>약 36°C 이상 극한일</td></tr>
+          <tr class="hl"><td>2안 D</td><td class="num">0</td><td class="num">0</td><td>약 41°C 이상 (사실상 없음)</td></tr>
+          <tr><td>3안 DC-DC</td><td class="num">0</td><td class="num">0</td><td>약 39°C 이상</td></tr>
+        </tbody></table></div>
+      <p class="ref">월별 평년 최고·최저 기온을 사인곡선으로 이어 시간별로 계산했습니다. 해가 떠 있는 동안 400W, 나머지 200W로 보수적으로 가정했습니다. 평년값 하루를 쓰므로 더운 날의 변동은 반영되지 않습니다.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">07</span>개선안 비교</h2>
   <div class="tbl wide"><table>
     <thead><tr><th></th><th>1안 뒷판 수직</th><th>2안 SMPS 핀 함체 분리</th><th>3안 48V + 분전반 실내 (장기)</th></tr></thead>
     <tbody>
@@ -381,14 +442,14 @@ ol.src a{color:var(--ink)}
       <tr><td class="loc">벽 쪽 공간</td><td><b>250mm 이상 필요</b>, 외벽 돌출 약 250~350mm</td><td>핀 함체 깊이만큼(약 100mm) 필요</td><td>배선 경로와 슬래브 관통 필요</td></tr>
       <tr><td class="loc">구조</td><td>판 끝에 함체 3~5kg이 달린 캔틸레버. 패널 프레임에 장당 5~7N·m 추가 모멘트, 진동·볼트 풀림 검토</td><td>SMPS 함체를 건물 쪽 서브프레임에 독립 고정 가능</td><td>패널 쪽 부품이 가벼워짐</td></tr>
       <tr><td class="loc">교체 접근</td><td>판이 패널 뒤에 숨어 앞(곤돌라)에서 접근 불가. <b>캣워크나 실내 점검구가 있어야 유효</b></td><td>원터치 교체, FPCB 건드리지 않음</td><td>정류기는 실내 분전반에서 정비. 패널에는 DC-DC만</td></tr>
-      <tr><td class="loc">핵심 리스크</td><td>벽 간격, 교체성, 위층 누적 열</td><td>5V 회로당 20A 커넥터 여유 부족, 커넥터 풀림 시 과열(09장)</td><td>초기 개발비, 48V 배선·보호 설계, DC-DC 데이터 확보</td></tr>
+      <tr><td class="loc">핵심 리스크</td><td>벽 간격, 교체성, 위층 누적 열</td><td>5V 회로당 20A 커넥터 여유 부족, 커넥터 풀림 시 과열(10장)</td><td>초기 개발비, 48V 배선·보호 설계, DC-DC 데이터 확보</td></tr>
       <tr><td class="loc">판정</td><td>캣워크가 있고 벽 간격이 충분할 때만</td><td><b>단기 기본안</b></td><td><b>장기안</b>. 2안을 3안으로 바꿀 수 있게 설계</td></tr>
     </tbody></table></div>
   <p class="note"><b>중재 의견:</b> 열 쪽 검토와 기구 쪽 검토 모두 2안을 단기 기본안으로 봤습니다. 1안은 열 성능은 비슷하지만 벽 간격과 교체 접근 조건이 까다롭습니다. 3안은 장기 신뢰성이 가장 좋으므로, <b>2안의 SMPS 함체를 나중에 DC-DC 함체로 바꿔 끼울 수 있도록 볼트 패턴과 커넥터 위치를 지금부터 표준화</b>할 것을 요청합니다.</p>
 </section>
 
 <section>
-  <h2><span class="no">07</span>3안 장기안: 48V 배전과 분전반 실내 이전</h2>
+  <h2><span class="no">08</span>3안 장기안: 48V 배전과 분전반 실내 이전</h2>
   <p>v1에서 제안한 내용을 다시 넣었습니다. 외벽에 AC 입력 SMPS를 두지 않고 48V로 배전하면, 고장이 잦은 부품을 실내로 옮겨 장기 사용과 유지보수에 유리합니다.</p>
   <div class="cols">
     <div class="card"><h3>구성과 효과</h3><ul>
@@ -419,7 +480,7 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">08</span>SMPS 핀 함체 히트싱크 (2안)</h2>
+  <h2><span class="no">09</span>SMPS 핀 함체 히트싱크 (2안)</h2>
   <figure class="fig">
     <div class="svgbox">
     <svg viewBox="0 0 420 240" width="420" role="img" aria-label="권장 핀 단면 치수">
@@ -444,7 +505,7 @@ ol.src a{color:var(--ink)}
       <text x="40" y="230" font-size="10" class="m">위에서 본 단면. 핀은 세로 방향, 베이스 300(세로)×250mm, 20개, 압출 6063, 단위 mm</text>
     </svg>
     </div>
-    <figcaption>그림 5. 권장 핀 단면(B안). 비율은 실제와 다릅니다.</figcaption>
+    <figcaption>그림 6. 권장 핀 단면(B안). 비율은 실제와 다릅니다.</figcaption>
   </figure>
   <div class="tbl wide"><table>
     <thead><tr><th>안</th><th>베이스 (세로×가로)</th><th>핀 높이 / 두께 / 간격 / 개수</th><th>공법</th><th class="num">열저항 R<sub>sa</sub></th><th class="num">단독 케이스 (뒤 공기 41 / 38°C)</th><th class="num">무게</th></tr></thead>
@@ -471,7 +532,7 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">09</span>5V 연결 검토: XT60 ×4 + 11AWG 실리콘 케이블 (2안)</h2>
+  <h2><span class="no">10</span>5V 연결 검토: XT60 ×4 + 11AWG 실리콘 케이블 (2안)</h2>
   <p>2안에서 SMPS 함체와 Hub 함체를 잇는 5V 경로를 별도 전류 계산 에이전트가 계산했습니다. XT60은 +/− 2핀이므로 "4개"는 4회로이고, <b>SMPS 1대당 2회로씩 나눠 쓰는 구성(A)으로 확정</b>했습니다. 정상 상태에서 회로당 20A(패널 80A ÷ 4)입니다. 함체 내부 온도는 열계산 설계값 60~63°C, 보수 조건 75°C로 보았습니다.</p>
   <ul class="keys">
     <li><b>정상 상태(20A/회로)는 설계 온도에서 겨우 버티지만 여유가 없습니다.</b> XT60 디레이팅 허용값은 60°C 22.5A, 63°C 21.7A, 75°C 18.4A입니다. 20A는 보수 조건에서 9% 초과입니다. 11AWG도 75°C 번들에서 허용 16.6A(도체 90°C 기준)로 20A보다 낮습니다.</li>
@@ -525,7 +586,7 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">10</span>검토 항목 (위치 · 문제점 · 예상 현상 · 개선 검토 사항)</h2>
+  <h2><span class="no">11</span>검토 항목 (위치 · 문제점 · 예상 현상 · 개선 검토 사항)</h2>
   <p class="ref"><span class="pill new">추가</span> v1 요청서에 없던 항목 · <span class="pill chg">수정</span> 새 조건으로 바뀐 항목</p>
   <div class="tbl wide"><table>
     <thead><tr><th>#</th><th>검토 위치</th><th>문제점</th><th>예상 현상</th><th>개선 검토 사항</th></tr></thead>
@@ -539,14 +600,14 @@ ol.src a{color:var(--ink)}
       <tr><td class="num">2-3</td><td class="loc">벽 쪽 공간 (세로 연속 배치) <span class="pill new">추가</span></td><td>패널마다 뒤로 150~245W를 내보냄</td><td>막혀 있으면 위층 뒤 공기가 14~27K 상승</td><td>2~3장마다 수평 차단 + 옆으로 배기. 1안은 벽 간격 250mm 이상, 2안은 100mm 이상</td></tr>
       <tr><td class="num">2-4</td><td class="loc">LED 유리층 <span class="pill new">추가</span></td><td>공기층 구간 전면 유리층이 계산상 90°C 안팎</td><td>LED 필름, OCA 접착층, 커넥터 허용 온도 초과 가능</td><td>업체에 각 소재 허용 온도 확인. 온도 연동 휘도 제한(예: 패널 65°C부터 단계적으로)</td></tr>
       <tr><td class="num">2-5</td><td class="loc">밀폐 함체 결로</td><td>주야 온도차로 함체가 호흡함</td><td>습기 유입 → 결로, 부식</td><td>ePTFE 압력평형 벤트, 최저점 배수공, 컨포멀 코팅, IP65 이상, 커넥터 하향 배치</td></tr>
-      <tr><td class="num">3-1</td><td class="loc">SMPS·5V 연결 (XT60 ×4 + 11AWG) <span class="pill chg">수정</span></td><td>회로당 20A로 XT60 고온 허용치(60°C 22.5A, 75°C 18.4A)와 11AWG 번들 허용치에 근접. 잠금·방수 없음. 4회로 병렬 시 분담 불균형</td><td>커넥터 1개가 풀리면 남은 회로 40A → XT60 하우징 113°C 이상, 용융·발화. 1m 이상이면 모듈단 4.4V 안팎</td><td>SMPS당 2회로 부하 분리(확정, 버스 연결 금지), 10AWG, 편도 0.5m 이하. 단자대 + IP68 글랜드 또는 SB50·SP29. XT60 유지 시 함체 내부·정품·고정 클램프 + 회로별 25~30A 퓨즈나 온도 감시. 1대 고장 시 반쪽 소등 또는 휘도 감축(09장)</td></tr>
+      <tr><td class="num">3-1</td><td class="loc">SMPS·5V 연결 (XT60 ×4 + 11AWG) <span class="pill chg">수정</span></td><td>회로당 20A로 XT60 고온 허용치(60°C 22.5A, 75°C 18.4A)와 11AWG 번들 허용치에 근접. 잠금·방수 없음. 4회로 병렬 시 분담 불균형</td><td>커넥터 1개가 풀리면 남은 회로 40A → XT60 하우징 113°C 이상, 용융·발화. 1m 이상이면 모듈단 4.4V 안팎</td><td>SMPS당 2회로 부하 분리(확정, 버스 연결 금지), 10AWG, 편도 0.5m 이하. 단자대 + IP68 글랜드 또는 SB50·SP29. XT60 유지 시 함체 내부·정품·고정 클램프 + 회로별 25~30A 퓨즈나 온도 감시. 1대 고장 시 반쪽 소등 또는 휘도 감축(10장)</td></tr>
       <tr><td class="num">3-2</td><td class="loc">PV 직류와 LED 저전압</td><td>PV 수백 V 이상과 5V(3안이면 48V)가 같은 공간</td><td>절연 파괴, DC 아크, 화재</td><td>PV 전용 케이블·커넥터, 격벽, 등전위 접지. 합지 후 PV 인증 유효성 확인</td></tr>
       <tr><td class="num">3-3</td><td class="loc">외벽 AC 입력 SMPS (장기) <span class="pill new">추가</span></td><td>AC 입력, PFC, 고압 전해콘덴서가 외벽에 있음</td><td>옥외 고장원, 고소 정비, 감전 위험</td><td>3안: 48V 배전 + 분전반 실내, 패널에는 DC-DC만. 지금은 2안 함체와 DC-DC 함체 장착 호환만 확보</td></tr>
     </tbody></table></div>
 </section>
 
 <section>
-  <h2><span class="no">11</span>우리 요청사항 수정 제안</h2>
+  <h2><span class="no">12</span>우리 요청사항 수정 제안</h2>
   <div class="tbl wide"><table>
     <thead><tr><th>기존 요청</th><th>수정 제안</th><th>근거 (계산)</th></tr></thead>
     <tbody>
@@ -564,7 +625,7 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">12</span>유지보수 문의 보강</h2>
+  <h2><span class="no">13</span>유지보수 문의 보강</h2>
   <div class="tbl wide"><table>
     <thead><tr><th></th><th>① 패널 단위 교체</th><th>② N개 모듈 통째 교체</th><th>③ SMPS 함체만 원터치 교체 (2안)</th><th>④ 실내 정류기 교체 (3안)</th></tr></thead>
     <tbody>
@@ -588,7 +649,7 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">13</span>업체 질의·검증 요청</h2>
+  <h2><span class="no">14</span>업체 질의·검증 요청</h2>
   <div class="tbl mid"><table>
     <thead><tr><th>순위</th><th>항목</th><th>요청 내용</th></tr></thead>
     <tbody>
@@ -606,7 +667,7 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">14</span>업체 전달용 문안 (구어체 초안)</h2>
+  <h2><span class="no">15</span>업체 전달용 문안 (구어체 초안)</h2>
   <div class="script" id="script">
     <p><b>1. FPCB</b><br>패널이랑 Hub board 잇는 FPCB 11개(30×100mm)가 윗면 프레임을 지나면서 90도로 꺾이는데, 그 모서리가 날카로워 보여요. 바람이나 열팽창으로 조금씩 흔들리면 피복이 닳아서 단락이나 단선이 날 수 있으니까 슬롯 모서리 R0.5 이상이나 면취, 디버링하고 엣지 트림 넣어주세요. 실리콘은 초산형 쓰면 구리가 부식되니까 중성(알콕시)형으로 해주시고, 굴곡 부위는 비워주세요. 다음 도면에 실리콘 위치랑 재질, 두께, 굴곡 R, FPCB 경로 단면도까지 같이 부탁드려요. 공기층 윗부분이 막혀 있어서 결로가 생길 수 있으니 FPCB에 물이 타고 내려가지 않게 루프를 주고, 패널 쪽 커넥터는 보호해주셨으면 해요.</p>
     <p><b>2. 방열</b><br>저희가 7월 한낮 조건으로 계산해보니까 지금 구조에서는 SMPS 케이스가 87도 정도까지 올라가요. 원인이 햇빛보다 SMPS 자체 열 55W 정도가 밀폐 함체 안에 갇히는 게 더 커요. 그래서 SMPS 열을 핀으로 바깥 공기에 내보내는 구조가 필요해요.</p>
@@ -620,7 +681,7 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">15</span>가정·확인 필요 사항과 출처</h2>
+  <h2><span class="no">16</span>가정·확인 필요 사항과 출처</h2>
   <div class="cols">
     <div class="card"><h3>계산 가정 (결과에 영향 큼)</h3><ul>
       <li>SMPS 치수·효율은 형제 모델 값, 디레이팅은 HWA504V6-SS 데이터시트(−40~+70°C, 50°C부터 선형 감소) 참고</li>
