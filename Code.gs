@@ -696,7 +696,7 @@ function ensureHeaders(sheet) {
 // 2026-10: 내용 한 칸을 작업내역·불량원인으로 나누고, 구분 뒤에 대분류를 넣었다.
 // 2026-10-30: 'Site/제품명' 한 칸도 Installations 처럼 Site 와 제품명 두 칸으로 나눴다.
 const HISTORY_COLS = ['rowId', 'ID', 'Site', '제품명', '날짜', '구분', '대분류', '작업내역', '불량원인', '등록일시', '등록자'];
-const HISTORY_KINDS = ['설치', '수리'];
+const HISTORY_KINDS = ['설치', '수리', '기타'];
 const HISTORY_CATS = ['Panel', '구동부', 'System'];
 const HISTORY_MAX = 200;
 // 시트에 옛 이름만 있으면 새 이름으로 연결한다 (1회차 함수 실행 전에도 동작하게)
@@ -775,6 +775,24 @@ function handleASList(params) {
   return { items };
 }
 
+// 시트의 '구분' 열에 선택 목록 규칙이 걸려 있는데 HISTORY_KINDS 중 빠진 값이 있으면(예: '기타')
+// 앱이 그 값을 저장할 때 시트가 거절한다. 그 경우에만 규칙의 선택지를 HISTORY_KINDS 로 넓힌다.
+// 규칙이 없거나, 목록이 아닌 다른 종류(범위 참조 등)이면 손대지 않는다.
+function ensureKindRule_(sh, ci) {
+  if (ci['구분'] === undefined || sh.getMaxRows() < 2) return;
+  const dv = sh.getRange(2, ci['구분'] + 1).getDataValidation();
+  if (!dv) return;
+  const vals = (dv.getCriteriaValues() || [])[0];
+  if (!Array.isArray(vals)) return;
+  if (HISTORY_KINDS.every(k => vals.indexOf(k) >= 0)) return;
+  const merged = vals.concat(HISTORY_KINDS.filter(k => vals.indexOf(k) < 0));
+  const rule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(merged, true).setAllowInvalid(dv.getAllowInvalid()).build();
+  sh.getRange(2, ci['구분'] + 1, sh.getMaxRows() - 1, 1).setDataValidation(rule);
+  SpreadsheetApp.flush();
+  writeAuditLog('KIND_RULE', '', 'admin', '구분 선택지: ' + merged.join(', '));
+}
+
 function handleASAdd(body) {
   const id       = body.id   || '';
   const date     = body.date || '';
@@ -787,7 +805,7 @@ function handleASAdd(body) {
   if (work.length > HISTORY_MAX)  throw { message: '작업내역은 ' + HISTORY_MAX + '자 이내여야 합니다.', code: 400 };
   if (cause.length > HISTORY_MAX) throw { message: '불량 원인은 ' + HISTORY_MAX + '자 이내여야 합니다.', code: 400 };
   if (kind && HISTORY_KINDS.indexOf(kind) < 0) {
-    throw { message: '구분은 ' + HISTORY_KINDS.join(' 또는 ') + ' 만 가능합니다.', code: 400 };
+    throw { message: '구분은 ' + HISTORY_KINDS.join(', ') + ' 중 하나여야 합니다.', code: 400 };
   }
   if (category && HISTORY_CATS.indexOf(category) < 0) {
     throw { message: '대분류는 ' + HISTORY_CATS.join(', ') + ' 중 하나여야 합니다.', code: 400 };
@@ -798,6 +816,7 @@ function handleASAdd(body) {
   if ((category || cause) && (ci['대분류'] === undefined || ci['불량원인'] === undefined)) {
     throw { message: NEED_STEP1, code: 409 };
   }
+  if (kind) ensureKindRule_(sh, ci);
   const rowId = Utilities.getUuid();
 
   const row = new Array(sh.getLastColumn()).fill('');

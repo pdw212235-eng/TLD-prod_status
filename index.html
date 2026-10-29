@@ -474,6 +474,7 @@ tbody tr.is-out .mgr{opacity:.5}
   padding:1px 7px;white-space:nowrap;flex:0 0 auto;margin-top:1px}
 .as-item .kind[data-k="설치"]{background:var(--st-install-bg);color:var(--st-install)}
 .as-item .kind[data-k="수리"]{background:var(--st-rent-bg);color:var(--st-rent)}
+.as-item .kind[data-k="기타"]{background:var(--st-out-bg);color:var(--st-out)}
 
 
 /* ---- 접수된 수정 요청 (관리자 전용) ---- */
@@ -902,7 +903,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v3.5 · 2026-10-29';
+const REV = 'v3.6 · 2026-10-30';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -1605,7 +1606,7 @@ function renderDetail(item, asItems){
     html += `<div class="as-add">
       <div class="as-row">
         <div class="sel-wrap as-kind"><select id="as-kind" aria-label="구분">
-          <option value="설치">설치</option><option value="수리" selected>수리</option>
+          <option value="설치">설치</option><option value="수리" selected>수리</option><option value="기타">기타</option>
         </select></div>
         <div class="sel-wrap as-cat"><select id="as-cat" aria-label="대분류">
           <option value="">대분류 선택</option><option>Panel</option><option>구동부</option><option>System</option>
