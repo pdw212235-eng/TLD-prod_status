@@ -1,0 +1,319 @@
+<title>BIPV 구동부 방열 개선</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 단일 컬럼 기술 보고서, 넓은 표·도면은 가로 스크롤 컨테이너 */
+:root{
+  --bg:#f6f7f8; --surface:#ffffff; --fg:#1b2329; --muted:#5a6771; --line:#d9dee2;
+  --ink:#0f4c5c; --heat:#c2410c; --heat-soft:#fde8dc; --ok:#2f7d4f; --ok-soft:#e2f2e8;
+  --warn:#9a6700; --warn-soft:#fbf1d6; --cool:#3b7ea1; --cool-soft:#e3eff6;
+  --panel:#c9d6de; --metal:#9aa7b0; --sun:#d9a400;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12171b; --surface:#1a2126; --fg:#e4e9ec; --muted:#9aa6ae; --line:#2e383f;
+  --ink:#6cc0d4; --heat:#f08a5d; --heat-soft:#3a2218; --ok:#6cc58f; --ok-soft:#183024;
+  --warn:#e0b44c; --warn-soft:#352b12; --cool:#7db8d8; --cool-soft:#182b36;
+  --panel:#3c4b55; --metal:#5f6d76; --sun:#e8c14a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171b; --surface:#1a2126; --fg:#e4e9ec; --muted:#9aa6ae; --line:#2e383f;
+  --ink:#6cc0d4; --heat:#f08a5d; --heat-soft:#3a2218; --ok:#6cc58f; --ok-soft:#183024;
+  --warn:#e0b44c; --warn-soft:#352b12; --cool:#7db8d8; --cool-soft:#182b36;
+  --panel:#3c4b55; --metal:#5f6d76; --sun:#e8c14a; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.65}
+.wrap{max-width:980px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:40px}
+header{display:flex;flex-direction:column;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:20px}
+.doc-meta{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.04em;display:flex;flex-wrap:wrap;gap:6px 18px}
+h1{font-size:30px;line-height:1.25;margin:0;text-wrap:balance;font-weight:700}
+h2{font-size:21px;margin:0;text-wrap:balance;display:flex;gap:10px;align-items:baseline}
+h2 .no{font-family:var(--f-mono);color:var(--ink);font-size:15px}
+h3{font-size:16px;margin:0}
+p{margin:0;max-width:72ch}
+section{display:flex;flex-direction:column;gap:14px}
+.lede{color:var(--muted);max-width:72ch}
+.roles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.role{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+.role b{display:block;font-size:13px;color:var(--ink)}
+.role span{font-size:13px;color:var(--muted)}
+.keys{display:flex;flex-direction:column;gap:8px;padding:0;margin:0;list-style:none}
+.keys li{background:var(--surface);border-left:3px solid var(--ink);padding:10px 14px;border-radius:0 6px 6px 0}
+.keys li.hot{border-left-color:var(--heat)}
+.keys li.good{border-left-color:var(--ok)}
+.keys li.long{border-left-color:var(--cool)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:9px 11px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{background:var(--bg);font-weight:600;font-size:12.5px;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.loc{font-weight:600;min-width:120px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono);font-size:12.5px;white-space:nowrap}
+tr.hl td{background:var(--ok-soft)}
+tr.bad td{background:var(--heat-soft)}
+tr.lt td{background:var(--cool-soft)}
+.wide table{min-width:860px}
+.mid table{min-width:640px}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:10px;white-space:nowrap;font-family:var(--f-mono)}
+.p1{background:var(--heat-soft);color:var(--heat)}
+.p2{background:var(--warn-soft);color:var(--warn)}
+.p3{background:var(--cool-soft);color:var(--cool)}
+.new{background:var(--ok-soft);color:var(--ok)}
+.chg{background:var(--warn-soft);color:var(--warn)}
+.ref{color:var(--muted);font-size:12.5px}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px;margin:0}
+.fig .svgbox{overflow-x:auto}
+.fig figcaption{font-size:12.5px;color:var(--muted)}
+.fig svg{display:block;max-width:100%;height:auto}
+svg text{font-family:var(--f-body);fill:var(--fg)}
+svg .m{fill:var(--muted)} svg .mono{font-family:var(--f-mono)}
+svg .inbar{fill:var(--surface);font-weight:600}
+.note{background:var(--warn-soft);border-radius:6px;padding:12px 14px;font-size:14px}
+.note b{color:var(--warn)}
+.answer{background:var(--cool-soft);border-radius:6px;padding:12px 14px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.answer b{color:var(--cool)}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card ul{margin:0;padding-left:18px;font-size:14px}
+.card .tag{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.script{background:var(--surface);border:1px dashed var(--ink);border-radius:6px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;font-size:14.5px}
+.script p{max-width:none}
+.photo{position:relative;line-height:0}.photo img{width:100%;height:auto;display:block;border-radius:4px}.mk{position:absolute;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:var(--heat);color:#fff;font:600 13px/26px var(--f-mono);text-align:center;box-shadow:0 0 0 2px #fff}
+.copy{align-self:flex-start;font:inherit;font-size:13px;padding:6px 14px;border-radius:5px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+.copy:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+ol.src{font-size:12.5px;color:var(--muted);margin:0;padding-left:20px;word-break:break-all}
+ol.src a{color:var(--ink)}
+@media (max-width:760px){.roles{grid-template-columns:repeat(2,minmax(0,1fr))} .cols3{grid-template-columns:1fr}}
+@media (max-width:640px){.roles,.cols{grid-template-columns:1fr} h1{font-size:24px}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-29</span><span>업체 전달용 v4.0</span></div>
+  <h1>BIPV 패널 구동부 방열 개선 요청</h1>
+  <p class="lede">보내주신 기구 설계(유리 LED + PV 합지 패널, 고정 프레임, SMPS·Hub board 고정판, 알루미늄 커버)를 검토한 결과입니다. 전체 배치는 그대로 유지하고, 구동부(SMPS)의 방열이 왜 필요한지, 현재 설계에서 어디가 취약한지, 그리고 <b>SMPS 2면 써멀패드 접촉 + 커버 핀</b>으로 개선하는 방법을 정리했습니다. 온도는 서울 기후와 운전 조건으로 계산한 추정값입니다.</p>
+</header>
+
+<section>
+  <h2><span class="no">00</span>요약</h2>
+  <ul class="keys">
+    <li class="hot"><b>현재 구조에서는 여름 한낮 SMPS 케이스가 약 99°C까지 올라갑니다.</b> 평년 8월 맑은 날에도 약 97°C, 여름밤에도 약 60°C입니다. 1년 중 60°C를 넘는 시간이 약 4,800시간으로 추정됩니다.</li>
+    <li class="hot"><b>이 온도에서는 SMPS 전해콘덴서 수명이 약 1~2.6년으로 줄어듭니다.</b> 그런데 지금 배치에서는 SMPS를 교체하려면 패널을 떼어내야 해서, 4~8층 외벽에서 교체가 반복되면 유지보수 부담이 큽니다.</li>
+    <li><b>원인은 SMPS 열(약 50W)이 빠져나갈 길이 없는 것입니다.</b> SMPS가 붙은 판은 PV 뒤의 뜨거운 공기층(약 91°C)을 마주하고, 커버와는 13mm 공기로 끊겨 있습니다.</li>
+    <li class="good"><b>배치를 바꾸지 않고 개선할 수 있습니다.</b> SMPS 위아래 2면을 써멀패드로 판과 커버에 붙이고 커버 바깥에 세로 핀(높이 30mm)을 달면 약 58°C, 판 공기층 면에 저방사 호일을 더하면 약 56°C가 됩니다. 평년 조건에서 60°C를 넘는 시간이 없어지고, 콘덴서 수명은 약 16년 이상으로 늘어납니다.</li>
+    <li><b>함체는 420×260×40mm까지 줄여도 됩니다.</b> 핀 높이 30mm와 판 호일을 함께 쓰는 조건입니다.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="no">01</span>왜 구동부 방열 설계가 필요한가</h2>
+  <div class="cols">
+    <div class="card"><h3>PV와 SMPS는 다릅니다</h3><ul>
+      <li><b>PV 모듈은 스스로 열을 내지 않지만, SMPS는 열을 냅니다.</b> 효율이 약 88%라서 패널당 400W를 공급할 때 약 50W가 계속 열로 나옵니다. 밀폐 함체 안에서는 이 열이 빠져나갈 길이 필요합니다.</li>
+      <li><b>SMPS 수명은 전해콘덴서가 정합니다.</b> 온도가 10°C 오를 때마다 수명이 약 절반으로 줄어듭니다. 함체 안이 20°C 더 뜨거우면 교체 주기가 약 1/4로 짧아집니다.</li>
+      <li><b>지금 SMPS 자리는 건물에서 가장 뜨거운 곳입니다.</b> 여름 한낮 PV 뒷면은 90°C 이상이 될 수 있고, LED도 그 시간에 가장 밝게(최대 400W) 동작합니다.</li></ul></div>
+    <div class="card"><h3>고장 나면 비용이 큽니다</h3><ul>
+      <li><b>고온이 되면 SMPS는 출력을 줄이거나 꺼집니다.</b> 화면 일부가 어두워지거나 꺼지고, 고장 출동이 생깁니다.</li>
+      <li><b>4~8층 외벽에서는 교체 1건의 출동비가 부품값보다 큽니다.</b> 곤돌라 동원, 유리 취급, 낙하 위험이 따릅니다.</li>
+      <li><b>방열 설계가 곧 유지보수비 절감입니다.</b> 배치를 바꾸지 않고도 열 경로만 만들어 주면 개선할 수 있습니다.</li></ul></div>
+  </div>
+  <div class="tbl mid"><table>
+    <thead><tr><th>SMPS 케이스 온도</th><th class="num">콘덴서 수명 (105°C·2,000h급)</th><th class="num">콘덴서 수명 (105°C·5,000h급)</th></tr></thead>
+    <tbody>
+      <tr class="bad"><td>현재 구조 (연중 평균 조건)</td><td class="num">약 1.1년</td><td class="num">약 2.6년</td></tr>
+      <tr><td>2면 패드, 핀 없음</td><td class="num">약 5.5년</td><td class="num">약 14년</td></tr>
+      <tr class="hl"><td>개선안 (2면 패드 + 커버 핀)</td><td class="num">약 16.5년</td><td class="num">계산상 40년 (다른 부품이 먼저 결정)</td></tr>
+    </tbody></table></div>
+  <p class="ref">하루 18시간 운전, 서울 월별 평년 기온, 콘덴서 온도 = 케이스 + 10K, 10°C마다 2배 규칙으로 계산한 추정값입니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">02</span>현재 설계의 취약 위치</h2>
+  <p>보내주신 도면에 취약 위치를 번호로 표시했습니다. 번호는 아래 표와 같습니다.</p>
+  <figure class="fig"><div class="photo"><img src="img/vendor_detail.jpg" alt="업체 도면: SMPS와 Hub board가 고정된 판과 커버"><span class="mk" style="left:15%;top:43%">1</span><span class="mk" style="left:37%;top:80%">2</span><span class="mk" style="left:92%;top:45%">3</span><span class="mk" style="left:69%;top:83%">4</span></div><figcaption>그림 1. SMPS와 Hub board가 고정된 판(왼쪽)과 커버(오른쪽). ① SMPS가 판에만 고정 ② 커버와 SMPS 사이가 공기로 끊김 ③ FPCB가 꺾이는 립 ④ FPCB가 지나가는 실링 플랜지.</figcaption></figure>
+  <div class="cols">
+    <figure class="fig"><div class="photo"><img src="img/vendor_side.jpg" alt="업체 도면: 패널 아래에서 본 함체와 글랜드"><span class="mk" style="left:72%;top:55%">1</span><span class="mk" style="left:54.6%;top:69%">5</span></div><figcaption>그림 2. 패널 아래에서 본 함체. ① 함체 판이 PV 뒤 공기층을 바로 마주봄 ⑤ 측면 글랜드.</figcaption></figure>
+    <figure class="fig"><div class="photo"><img src="img/vendor_array.jpg" alt="업체 도면: 패널 배열과 하지 레일"><span class="mk" style="left:90%;top:45%">7</span><span class="mk" style="left:36%;top:55%">8</span><span class="mk" style="left:60%;top:40%">9</span></div><figcaption>그림 3. 패널 배열과 하지 레일. ⑦ 함체가 같은 줄로 쌓임 ⑧ 멀리언·레일이 함체 뒤를 가로지름 ⑨ 함체 교체 접근.</figcaption></figure>
+  </div>
+  <div class="tbl wide"><table>
+    <thead><tr><th>#</th><th>위치</th><th>문제점</th><th>예상 현상</th><th>개선</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="loc">SMPS·고정판 (그림 1·2)</td><td>SMPS가 판에만 볼트로 고정되어 있고, 이 판은 PV 뒤의 막힌 공기층(위쪽은 FPCB로 막히고 아래만 열림)을 마주봄</td><td>판이 약 89°C까지 데워지고 SMPS 열(약 50W)도 이 판으로만 나감 → SMPS 케이스 약 99°C</td><td>SMPS 위쪽 면을 커버로 연결하는 열 경로(Al 보스 + 써멀패드), 판 공기층 면에 저방사 호일(04장)</td></tr>
+      <tr><td class="num">2</td><td class="loc">SMPS와 커버 사이 (그림 1)</td><td>상대적으로 차가운 커버(약 68°C)와 SMPS 사이가 13mm 공기로 끊김. 함체 밀폐, 커버에 핀 없음</td><td>커버로 나가는 열이 약 4W뿐, 함체 내부 공기 약 79°C. Hub board도 같은 공간에서 고온</td><td>커버 쪽 접촉 + 커버 바깥 세로 핀, 흑색 아노다이징</td></tr>
+      <tr><td class="num">3</td><td class="loc">FPCB가 꺾이는 립 (그림 1)</td><td>FPCB 11개가 판금 립의 절단 모서리 위에서 90° 꺾임</td><td>피복이 닳아 단락·단선, 바람 진동으로 마모</td><td>립 끝을 R0.5 이상 말아 접기(헤밍), EPDM 엣지 트림, 굴곡 R은 FPCB 두께의 10배 이상</td></tr>
+      <tr><td class="num">4</td><td class="loc">실링 플랜지 (그림 1)</td><td>FPCB가 개스킷 라인을 가로질러 지나감</td><td>FPCB 두께만큼 틈이 생겨 방수(IP65)가 안 되고, 개스킷이 FPCB를 계속 누름</td><td>FPCB 전용 관통부(슬롯 + 압착 그로밋 또는 포팅)를 개스킷 라인과 분리, 개스킷은 끊김 없는 링</td></tr>
+      <tr><td class="num">5</td><td class="loc">측면 글랜드 (그림 2)</td><td>케이블이 옆에서 수평으로 들어감</td><td>케이블을 타고 물이 들어감</td><td>글랜드를 아래쪽으로 옮기거나 아래로 처진 루프, 안 쓰는 구멍은 마개</td></tr>
+      <tr><td class="num">6</td><td class="loc">함체 전체</td><td>압력평형 벤트가 없음</td><td>낮밤 온도차로 함체가 숨을 쉬듯 습기를 빨아들여 결로</td><td>아래쪽에 방수 통기 벤트(ePTFE, IP67급)</td></tr>
+      <tr><td class="num">7</td><td class="loc">세로로 쌓이는 함체 (그림 3)</td><td>패널마다 함체가 같은 줄로 정렬됨</td><td>아래 패널의 더운 공기가 위 패널로 올라가 위층일수록 온도가 쌓임. 벽 쪽이 막혀 있으면 최상단 SMPS가 개선안 기준으로도 82~93°C(벽 간격 150~200mm)</td><td>벽과 패널 사이 간격과 측면이 열려 있는지 확인이 필요합니다. 결과에 따라 적층 대책을 따로 협의드리겠습니다</td></tr>
+      <tr><td class="num">8</td><td class="loc">멀리언·레일 (그림 3)</td><td>세로 멀리언과 가로 레일이 함체 뒤를 가로지름</td><td>커버를 뒤에서 열 수 없고, 핀 사이 공기 흐름이 막힘</td><td>멀리언·레일을 함체와 겹치지 않게 배치, 핀 끝과 15~20mm 이상 띄움</td></tr>
+      <tr><td class="num">9</td><td class="loc">교체 접근 (그림 3)</td><td>함체가 패널 뒷면에 붙어 있고 하지에 가려짐</td><td>SMPS 교체 때 패널을 떼어내야 함(03장)</td><td>교체 순서와 접근 경로 확인, 캡티브 스크류와 낙하 방지 줄</td></tr>
+      <tr><td class="num">10</td><td class="loc">체결부</td><td>알루미늄 판·커버와 스테인리스 체결</td><td>이종금속 부식</td><td>절연 와셔, 아노다이징, 접지점은 피막 제거 + 톱니 와셔</td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <h2><span class="no">03</span>SMPS 교체가 어렵습니다</h2>
+  <p>패널과 함체를 한 대씩 교체하는 계획으로 알고 있습니다. 그런데 SMPS는 PV와 달리 수명이 정해진 소모품이라서, 지금 온도에서는 교체가 자주 반복될 수 있습니다.</p>
+  <div class="cols">
+    <div class="card"><h3>왜 어려운가</h3><ul>
+      <li><b>교체 주기가 짧습니다.</b> 현재 구조에서는 콘덴서 수명이 약 1~2.6년으로 추정되어, 패널 수만큼 교체가 몇 년마다 반복됩니다.</li>
+      <li><b>뒤에서 열 수 없습니다.</b> 함체가 패널 뒷면에 붙어 있고 멀리언·레일이 가리고 있어, 벽 쪽에서 커버를 열 수 없습니다. 결국 패널을 떼어내야 합니다.</li>
+      <li><b>고소 작업과 유리 취급이 따릅니다.</b> 4~8층 외벽에서 곤돌라를 동원하고, 유리 패널을 떼었다 다시 붙여야 합니다.</li>
+      <li><b>FPCB 손상 위험이 있습니다.</b> FPCB 11개가 Hub board와 연결되어 있어, 함체를 열고 닫을 때마다 꺾임부와 커넥터에 부담이 갑니다.</li></ul></div>
+    <div class="card"><h3>요청 사항</h3><ul>
+      <li><b>교체 빈도 자체를 줄이는 것이 가장 효과적입니다.</b> 04장 개선안으로 SMPS를 60°C 이하로 유지하면 콘덴서 수명이 약 16년 이상으로 늘어납니다.</li>
+      <li>SMPS 1대를 교체하는 순서, 접근 경로(곤돌라·실내·캣워크), 1건당 소요 시간을 알려주세요.</li>
+      <li>커버는 캡티브 스크류로, 떨어지지 않게 낙하 방지 줄을 달아주세요.</li>
+      <li>개선안에서는 커버를 열 때 써멀패드를 새것으로 바꿔야 합니다. 패드·개스킷 교체 키트를 예비품으로 준비해 주세요.</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">04</span>개선안: SMPS 2면 써멀패드 접촉 + 커버 핀</h2>
+  <p>함체 배치는 그대로 두고, SMPS 열이 커버를 거쳐 바깥 공기로 나가는 길을 만듭니다. 판과 커버는 알루미늄을 그대로 씁니다.</p>
+  <figure class="fig"><div class="svgbox"><svg viewBox="0 0 680 330" width="680" role="img" aria-label="현재와 개선안의 함체 단면 비교">
+  <g font-size="13" font-weight="600"><text x="10" y="22">현재 구조</text><text x="350" y="22">개선안: 2면 패드 + 커버 핀</text></g>
+  <rect x="10" y="40" width="12" height="220" style="fill:var(--cool-soft);stroke:var(--cool)"/><rect x="22" y="40" width="8" height="220" style="fill:var(--ink)"/><rect x="30" y="60" width="20" height="180" style="fill:var(--heat-soft)"/><rect x="50" y="60" width="6" height="180" style="fill:var(--metal)"/><rect x="56" y="90" width="40" height="50" rx="2" style="fill:var(--heat)"/><rect x="56" y="160" width="40" height="50" rx="2" style="fill:var(--heat)"/><path d="M56 66 H118 V234 H56" fill="none" stroke="var(--metal)" stroke-width="6"/>
+  <g font-size="10">
+    <text x="40" y="276" text-anchor="middle">공기층 91°C</text>
+    <text x="16" y="292" class="m">LED·PV</text>
+    <text x="128" y="96">SMPS가 뜨거운 판에만</text><text x="128" y="108">볼트 고정</text>
+    <text x="128" y="150">커버와 13mm 공기로</text><text x="128" y="162">끊겨 열이 못 나감</text>
+    <text x="128" y="204">밀폐, 핀 없음</text>
+    <text x="120" y="316" text-anchor="middle" style="fill:var(--heat)" font-weight="600">SMPS 케이스 약 99°C</text>
+  </g>
+  <g fill="none" stroke="var(--heat)" stroke-width="2"><path d="M34 150 H52"/><path d="M46 145 L54 150 L46 155"/></g>
+  <rect x="350" y="40" width="12" height="220" style="fill:var(--cool-soft);stroke:var(--cool)"/><rect x="362" y="40" width="8" height="220" style="fill:var(--ink)"/><rect x="370" y="60" width="20" height="180" style="fill:var(--heat-soft)"/><line x1="389" y1="60" x2="389" y2="240" stroke="var(--fg)" stroke-width="2" stroke-dasharray="3 2"/><rect x="390" y="60" width="6" height="180" style="fill:var(--metal)"/><rect x="396" y="90" width="3" height="50" style="fill:var(--warn)"/><rect x="399" y="90" width="38" height="50" rx="2" style="fill:var(--ok)"/><rect x="437" y="90" width="3" height="50" style="fill:var(--warn)"/><rect x="440" y="90" width="12" height="50" style="fill:var(--metal)"/><rect x="396" y="160" width="3" height="50" style="fill:var(--warn)"/><rect x="399" y="160" width="38" height="50" rx="2" style="fill:var(--ok)"/><rect x="437" y="160" width="3" height="50" style="fill:var(--warn)"/><rect x="440" y="160" width="12" height="50" style="fill:var(--metal)"/><path d="M396 66 H458 V234 H396" fill="none" stroke="var(--metal)" stroke-width="6"/><rect x="461" y="72" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="84" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="96" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="108" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="120" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="132" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="144" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="156" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="168" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="180" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="192" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="204" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="216" width="30" height="3" style="fill:var(--metal)"/><rect x="461" y="228" width="30" height="3" style="fill:var(--metal)"/>
+  <g font-size="10">
+    <text x="389" y="52" text-anchor="middle">저방사 호일</text><line x1="389" y1="55" x2="389" y2="64" stroke="var(--muted)"/>
+    <text x="500" y="88">써멀패드 (2면)</text>
+    <text x="500" y="154">Al 보스</text>
+    <text x="500" y="200">커버 바깥 세로 핀</text><text x="500" y="212">H30 · 두께 2 · 간격 12</text>
+    <text x="380" y="276" text-anchor="middle">공기층</text><text x="356" y="292" class="m">LED·PV</text>
+    <text x="460" y="316" text-anchor="middle" style="fill:var(--ok)" font-weight="600">SMPS 케이스 약 56~58°C</text>
+  </g>
+  <g fill="none" stroke="var(--ok)" stroke-width="2"><path d="M440 150 H488"/><path d="M482 145 L490 150 L482 155"/></g>
+  <g stroke="var(--muted)" stroke-width="1"><line x1="498" y1="85" x2="440" y2="92"/><line x1="498" y1="150" x2="447" y2="125"/><line x1="498" y1="197" x2="480" y2="190"/></g>
+</svg></div><figcaption>그림 4. 함체 단면 비교(개념도, 비율은 실제와 다름). 현재는 SMPS 열이 뜨거운 판으로만 나갑니다. 개선안은 SMPS 위아래를 써멀패드로 판과 커버에 붙이고, 커버 쪽은 Al 보스로 13mm 간격을 메워 커버 바깥 세로 핀으로 열을 내보냅니다. 판 공기층 면의 저방사 호일은 공기층 열이 판을 통해 SMPS로 들어오는 것을 줄입니다.</figcaption></figure>
+  <div class="tbl wide"><table>
+    <thead><tr><th>부위</th><th>개선 내용</th><th>이유</th></tr></thead>
+    <tbody>
+      <tr><td class="loc">커버 쪽 접촉 (주 방열 경로)</td><td>커버 안쪽에 Al 보스(또는 스페이서)를 두어 SMPS 위면과의 약 13mm 간격을 메우고, 그 사이에 써멀패드</td><td>패드 1~2mm만으로는 13mm 간격을 메울 수 없음. 열 대부분(약 70W)이 이 경로로 나감</td></tr>
+      <tr><td class="loc">판 쪽 접촉</td><td>SMPS 아래면과 판 사이에 얇은 써멀패드(0.5~1mm)</td><td>밤과 흐린 날 보조 방열, SMPS 고정·진동 억제</td></tr>
+      <tr><td class="loc">판 공기층 면</td><td><b>저방사 Al 호일</b>(또는 3~5mm 단열재)을 붙임</td><td>낮에는 판이 SMPS보다 뜨거워서, 호일 없이 판 쪽 패드만 있으면 공기층 열이 SMPS로 10~20W 들어옴. 호일로 절반 이하로 줄어듦</td></tr>
+      <tr><td class="loc">써멀패드</td><td>실리콘 갭패드, 열전도 4W/mK 이상, 두께 1~1.5mm(판 쪽 0.5~1mm), 압축 20~40%, 경도 Shore 00 30~50, 저분자 실록산 저감품, 유리섬유 보강형</td><td>부드러워야 커버가 휘지 않고, 보강형이 현장 교체 때 덜 찢어짐</td></tr>
+      <tr><td class="loc">커버 핀</td><td>커버 바깥면에 <b>세로 핀</b>, 높이 30mm, 두께 2mm, 간격 12mm(약 35개). 6063 압출 또는 다이캐스트 일체형, 흑색 아노다이징</td><td>설치 시 핀이 세로라야 자연대류가 잘 됨. 흑색 아노다이징은 복사 방열을 크게 높임(벽 쪽 그늘이라 햇빛 흡수 영향은 작음)</td></tr>
+      <tr><td class="loc">간격 관리</td><td>커버 보스와 판 스탠드오프가 금속끼리 맞닿는 하드스톱으로 패드 압축량을 고정. 체결 간격 100mm 이하, SMPS 바로 옆에 체결 보스</td><td>패드 반발력(약 0.8~2.6kN)으로 얇은 커버가 휘면 개스킷이 들뜸</td></tr>
+      <tr><td class="loc">방수</td><td>개스킷은 홈에 넣고 압축 25~35%, FPCB·글랜드 관통부는 개스킷 라인 밖에서 따로 실링, IP65 시험은 패드를 넣은 상태로</td><td>패드 반발력과 방수를 함께 확보</td></tr>
+      <tr><td class="loc">SMPS 확인</td><td>HWA805V0J-SS 케이스의 통풍 구멍 위치와, 내부 발열 부품이 어느 면에 붙어 있는지 확인. 패드는 구멍 없는 방열면에</td><td>통풍 구멍을 패드로 막으면 오히려 온도가 오를 수 있음</td></tr>
+      <tr><td class="loc">설치 간격</td><td>핀 끝과 벽·레일 사이 15~20mm 이상</td><td>핀 사이로 공기가 흘러야 핀이 동작함</td></tr>
+    </tbody></table></div>
+
+  <figure class="fig"><div class="svgbox"><svg viewBox="0 0 640 298" width="640" role="img" aria-label="구성별 SMPS 케이스 온도">
+  <g stroke="var(--line)" stroke-width="1"><line x1="250" y1="22" x2="250" y2="268"/><line x1="340" y1="22" x2="340" y2="268"/><line x1="430" y1="22" x2="430" y2="268"/><line x1="520" y1="22" x2="520" y2="268"/><line x1="610" y1="22" x2="610" y2="268"/></g>
+  <g font-size="11" class="mono" text-anchor="middle"><text x="250" y="284" class="m mono">0</text><text x="340" y="284" class="m mono">30</text><text x="430" y="284" class="m mono">60</text><text x="520" y="284" class="m mono">90</text><text x="610" y="284" class="m mono">120°C</text></g>
+  <line x1="460" y1="16" x2="460" y2="268" stroke="var(--heat)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="464" y="14" font-size="11" style="fill:var(--heat)">70°C 고장 위험</text>
+  <line x1="430" y1="16" x2="430" y2="268" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="2 3"/><text x="426" y="14" font-size="11" text-anchor="end" style="fill:var(--ok)">60°C 목표</text>
+  <text x="242" y="43" font-size="12" text-anchor="end">C0 현재 구조</text><rect x="250" y="30" width="296.1" height="18" style="fill:var(--heat)"/><line x1="526" y1="39" x2="586" y2="39" stroke="var(--fg)" stroke-width="1.5"/><text x="542.1" y="43" font-size="11" text-anchor="end" class="mono inbar">98.7</text><text x="242" y="77" font-size="12" text-anchor="end">C1 판 쪽 패드만</text><rect x="250" y="64" width="272.1" height="18" style="fill:var(--heat)"/><line x1="502" y1="73" x2="562" y2="73" stroke="var(--fg)" stroke-width="1.5"/><text x="518.1" y="77" font-size="11" text-anchor="end" class="mono inbar">90.7</text><text x="242" y="111" font-size="12" text-anchor="end">C3 2면 패드, 핀 없음</text><rect x="250" y="98" width="221.1" height="18" style="fill:var(--warn)"/><line x1="451" y1="107" x2="514" y2="107" stroke="var(--fg)" stroke-width="1.5"/><text x="467.1" y="111" font-size="11" text-anchor="end" class="mono inbar">73.7</text><text x="242" y="145" font-size="12" text-anchor="end">C4 2면 패드 + 핀 H20</text><rect x="250" y="132" width="180.6" height="18" style="fill:var(--ok)"/><line x1="421" y1="141" x2="445" y2="141" stroke="var(--fg)" stroke-width="1.5"/><text x="426.6" y="145" font-size="11" text-anchor="end" class="mono inbar">60.2</text><text x="242" y="179" font-size="12" text-anchor="end">C4 2면 패드 + 핀 H30</text><rect x="250" y="166" width="173.4" height="18" style="fill:var(--ok)"/><line x1="415" y1="175" x2="439" y2="175" stroke="var(--fg)" stroke-width="1.5"/><text x="419.4" y="179" font-size="11" text-anchor="end" class="mono inbar">57.8</text><text x="242" y="213" font-size="12" text-anchor="end">C4 H30 + 판 호일</text><rect x="250" y="200" width="167.4" height="18" style="fill:var(--ok)"/><text x="413.4" y="213" font-size="11" text-anchor="end" class="mono inbar">55.8</text><text x="242" y="247" font-size="12" text-anchor="end">소형 420×260 + H30 + 호일</text><rect x="250" y="234" width="172.5" height="18" style="fill:var(--ok)"/><text x="418.5" y="247" font-size="11" text-anchor="end" class="mono inbar">57.5</text>
+</svg></div><figcaption>그림 5. 구성별 SMPS 케이스 온도(7월 한낮 설계 조건: 외기 35°C, LED 400W, 단독 패널, 가는 선은 낙관~보수 범위). 판 쪽 패드만으로는 거의 효과가 없고, 커버 쪽 접촉과 핀이 있어야 60°C 아래로 내려갑니다.</figcaption></figure>
+
+  <div class="cols">
+    <div class="tbl"><table>
+      <thead><tr><th>커버 핀 높이</th><th class="num">함체+핀 두께</th><th class="num">7월 설계 / 8월 평균일</th></tr></thead>
+      <tbody>
+        <tr><td>15 mm</td><td class="num">60 mm</td><td class="num">약 62 / 59°C</td></tr>
+        <tr><td>20 mm</td><td class="num">65 mm</td><td class="num">60.2 / 56.8°C</td></tr>
+        <tr class="hl"><td><b>30 mm (권장)</b></td><td class="num">75 mm</td><td class="num">57.8 / 54.3°C</td></tr>
+        <tr><td>40 mm</td><td class="num">85 mm</td><td class="num">56.0 / 52.5°C</td></tr>
+      </tbody></table></div>
+    <div class="tbl"><table>
+      <thead><tr><th>판 쪽 열 흐름 (7월 낮)</th><th class="num">SMPS 케이스</th></tr></thead>
+      <tbody>
+        <tr><td>2면 패드 + 핀 H30</td><td class="num">57.8°C (판에서 18W 유입)</td></tr>
+        <tr class="hl"><td>+ 판 공기층 면 호일</td><td class="num">55.8°C (유입 11W)</td></tr>
+        <tr><td>+ 호일 + 단열 5mm</td><td class="num">54.7°C (유입 7W)</td></tr>
+      </tbody></table></div>
+  </div>
+  <p class="ref">벽 쪽 공간이 좁아 핀을 20mm로 낮춰야 한다면 판 호일을 반드시 같이 적용해 주세요. 함체 크기는 현재 도면을 기준으로 480×290×45mm로 추정했습니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">05</span>함체 크기 줄이기</h2>
+  <p>함체는 작을수록 좋지만, 작아지면 방열 면적이 줄어 핀을 높여야 합니다. 개선안(2면 패드 + 핀 + 판 호일) 기준으로 계산했습니다.</p>
+  <div class="tbl mid"><table>
+    <thead><tr><th>외형 (가로×세로×깊이)</th><th>핀 높이</th><th class="num">7월 설계 / 8월 평균일</th><th class="num">함체+핀 두께</th><th>판정</th></tr></thead>
+    <tbody>
+      <tr><td>480×290×45 (현재 추정)</td><td>30 mm</td><td class="num">55.8 / 52.1°C</td><td class="num">75 mm</td><td>충족</td></tr>
+      <tr class="hl"><td><b>420×260×40</b></td><td>30 mm</td><td class="num">57.5 / 53.8°C</td><td class="num">70 mm</td><td><b>권장 최소</b></td></tr>
+      <tr><td>380×230×35</td><td>40 mm</td><td class="num">57.1 / 53.5°C</td><td class="num">75 mm</td><td>충족 (핀 높아짐)</td></tr>
+      <tr class="bad"><td>340×200×35</td><td>40 mm</td><td class="num">약 59 / 55°C</td><td class="num">75 mm</td><td>경계, 부품 배치 빠듯</td></tr>
+    </tbody></table></div>
+  <p class="ref">함체를 줄여도 핀을 높여야 해서 벽 쪽 두께(70~75mm)는 거의 그대로이고, 면적과 무게가 줄어듭니다. 크기를 정하는 것은 FPCB 커넥터 11개가 늘어선 길이(약 390~440mm)와 SMPS 2대(250×53×26mm), Hub board, 글랜드입니다. 부품 배치상 현실적인 최소 내부 치수는 약 440×240×38mm입니다.</p>
+</section>
+
+<section>
+  <h2><span class="no">06</span>계절별 SMPS 온도</h2>
+  <p>서울 월별 평년 기온으로 낮(평균 최고기온, 맑은 날 정오, LED 400W)과 밤(평균 최저기온, LED 200W)을 계산했습니다.</p>
+  <figure class="fig"><div class="svgbox"><svg viewBox="0 0 720 290" width="720" role="img" aria-label="월별 SMPS 케이스 온도">
+  <g stroke="var(--line)" stroke-width="1"><line x1="60" y1="250" x2="600" y2="250"/><line x1="60" y1="184" x2="600" y2="184"/><line x1="60" y1="118" x2="600" y2="118"/><line x1="60" y1="52" x2="600" y2="52"/></g>
+  <g font-size="11" class="mono" text-anchor="end"><text x="54" y="254" class="m mono">0</text><text x="54" y="188" class="m mono">30</text><text x="54" y="122" class="m mono">60</text><text x="54" y="56" class="m mono">90°C</text></g>
+  <line x1="60" y1="96.0" x2="600" y2="96.0" stroke="var(--heat)" stroke-width="1" stroke-dasharray="5 4"/><text x="64" y="92.0" font-size="10" style="fill:var(--heat)">70°C</text>
+  <polyline points="80,78.4 132,69.6 184,60.8 236,54.2 288,47.6 340,43.2 392,36.6 444,38.8 496,47.6 548,60.8 600,76.2" fill="none" stroke="var(--heat)" stroke-width="2"/><circle cx="80" cy="78.4" r="3" style="fill:var(--heat)"/><circle cx="132" cy="69.6" r="3" style="fill:var(--heat)"/><circle cx="184" cy="60.8" r="3" style="fill:var(--heat)"/><circle cx="236" cy="54.2" r="3" style="fill:var(--heat)"/><circle cx="288" cy="47.6" r="3" style="fill:var(--heat)"/><circle cx="340" cy="43.2" r="3" style="fill:var(--heat)"/><circle cx="392" cy="36.6" r="3" style="fill:var(--heat)"/><circle cx="444" cy="38.8" r="3" style="fill:var(--heat)"/><circle cx="496" cy="47.6" r="3" style="fill:var(--heat)"/><circle cx="548" cy="60.8" r="3" style="fill:var(--heat)"/><circle cx="600" cy="76.2" r="3" style="fill:var(--heat)"/><polyline points="80,175.2 132,159.8 184,148.8 236,137.8 288,126.8 340,118.0 392,118.0 444,129.0 496,142.2 548,157.6 600,170.8" fill="none" stroke="var(--heat)" stroke-width="2" stroke-dasharray="5 4"/><circle cx="80" cy="175.2" r="3" style="fill:var(--heat)"/><circle cx="132" cy="159.8" r="3" style="fill:var(--heat)"/><circle cx="184" cy="148.8" r="3" style="fill:var(--heat)"/><circle cx="236" cy="137.8" r="3" style="fill:var(--heat)"/><circle cx="288" cy="126.8" r="3" style="fill:var(--heat)"/><circle cx="340" cy="118.0" r="3" style="fill:var(--heat)"/><circle cx="392" cy="118.0" r="3" style="fill:var(--heat)"/><circle cx="444" cy="129.0" r="3" style="fill:var(--heat)"/><circle cx="496" cy="142.2" r="3" style="fill:var(--heat)"/><circle cx="548" cy="157.6" r="3" style="fill:var(--heat)"/><circle cx="600" cy="170.8" r="3" style="fill:var(--heat)"/><polyline points="80,142.2 132,129.0 184,118.0 236,109.2 288,102.6 340,98.2 392,93.8 444,98.2 496,107.0 548,122.4 600,137.8" fill="none" stroke="var(--warn)" stroke-width="2"/><circle cx="80" cy="142.2" r="3" style="fill:var(--warn)"/><circle cx="132" cy="129.0" r="3" style="fill:var(--warn)"/><circle cx="184" cy="118.0" r="3" style="fill:var(--warn)"/><circle cx="236" cy="109.2" r="3" style="fill:var(--warn)"/><circle cx="288" cy="102.6" r="3" style="fill:var(--warn)"/><circle cx="340" cy="98.2" r="3" style="fill:var(--warn)"/><circle cx="392" cy="93.8" r="3" style="fill:var(--warn)"/><circle cx="444" cy="98.2" r="3" style="fill:var(--warn)"/><circle cx="496" cy="107.0" r="3" style="fill:var(--warn)"/><circle cx="548" cy="122.4" r="3" style="fill:var(--warn)"/><circle cx="600" cy="137.8" r="3" style="fill:var(--warn)"/><polyline points="80,186.2 132,170.8 184,157.6 236,146.6 288,140.0 340,135.6 392,131.2 444,137.8 496,148.8 548,164.2 600,181.8" fill="none" stroke="var(--ok)" stroke-width="2"/><circle cx="80" cy="186.2" r="3" style="fill:var(--ok)"/><circle cx="132" cy="170.8" r="3" style="fill:var(--ok)"/><circle cx="184" cy="157.6" r="3" style="fill:var(--ok)"/><circle cx="236" cy="146.6" r="3" style="fill:var(--ok)"/><circle cx="288" cy="140.0" r="3" style="fill:var(--ok)"/><circle cx="340" cy="135.6" r="3" style="fill:var(--ok)"/><circle cx="392" cy="131.2" r="3" style="fill:var(--ok)"/><circle cx="444" cy="137.8" r="3" style="fill:var(--ok)"/><circle cx="496" cy="148.8" r="3" style="fill:var(--ok)"/><circle cx="548" cy="164.2" r="3" style="fill:var(--ok)"/><circle cx="600" cy="181.8" r="3" style="fill:var(--ok)"/><text x="608" y="80.2" font-size="11" style="fill:var(--heat)">현재 낮</text><text x="608" y="141.8" font-size="11" style="fill:var(--warn)">2면 패드(핀 없음) 낮</text><text x="608" y="174.8" font-size="11" style="fill:var(--heat)">현재 밤</text><text x="608" y="187.8" font-size="11" style="fill:var(--ok)">개선안 낮</text>
+  <g font-size="12" text-anchor="middle"><text x="80" y="270">1월</text><text x="132" y="270">3월</text><text x="184" y="270">4월</text><text x="236" y="270">5월</text><text x="288" y="270">6월</text><text x="340" y="270">7월</text><text x="392" y="270">8월</text><text x="444" y="270">9월</text><text x="496" y="270">10월</text><text x="548" y="270">11월</text><text x="600" y="270">12월</text></g>
+</svg></div><figcaption>그림 6. 월별 SMPS 케이스 온도. 현재 구조는 평범한 날에도 3~11월 낮 내내 70°C를 넘고, 여름밤에도 60°C입니다. 개선안은 가장 더운 8월 낮에도 약 54°C입니다.</figcaption></figure>
+  <div class="tbl wide"><table>
+    <thead><tr><th>월</th><th class="num">현재 낮 (맑음 / 평균)</th><th class="num">현재 밤</th><th class="num">2면 패드, 핀 없음 낮</th><th class="num">개선안 낮 (맑음 / 평균)</th><th class="num">개선안 밤</th><th class="num">소형 420×260 낮</th></tr></thead>
+    <tbody>
+      <tr><td>1월</td><td class="num">78 / 73</td><td class="num">34</td><td class="num">49</td><td class="num">29 / 27</td><td class="num">6</td><td class="num">28</td></tr>
+      <tr><td>3월</td><td class="num">82 / 79</td><td class="num">41</td><td class="num">55</td><td class="num">36 / 35</td><td class="num">13</td><td class="num">36</td></tr>
+      <tr><td>4월</td><td class="num">86 / 84</td><td class="num">46</td><td class="num">60</td><td class="num">42 / 41</td><td class="num">19</td><td class="num">42</td></tr>
+      <tr><td>5월</td><td class="num">89 / 87</td><td class="num">51</td><td class="num">64</td><td class="num">47 / 46</td><td class="num">25</td><td class="num">47</td></tr>
+      <tr><td>6월</td><td class="num">92 / 90</td><td class="num">56</td><td class="num">67</td><td class="num">50 / 50</td><td class="num">30</td><td class="num">50</td></tr>
+      <tr><td>7월</td><td class="num">94 / 91</td><td class="num">60</td><td class="num">69</td><td class="num">52 / 51</td><td class="num">34</td><td class="num">52</td></tr>
+      <tr class="bad"><td><b>8월</b></td><td class="num"><b>97</b> / 94</td><td class="num">60</td><td class="num">71</td><td class="num"><b>54</b> / 53</td><td class="num">34</td><td class="num">54</td></tr>
+      <tr><td>9월</td><td class="num">96 / 92</td><td class="num">55</td><td class="num">69</td><td class="num">51 / 50</td><td class="num">29</td><td class="num">51</td></tr>
+      <tr><td>10월</td><td class="num">92 / 89</td><td class="num">49</td><td class="num">65</td><td class="num">46 / 45</td><td class="num">22</td><td class="num">45</td></tr>
+      <tr><td>11월</td><td class="num">86 / 82</td><td class="num">42</td><td class="num">58</td><td class="num">39 / 37</td><td class="num">15</td><td class="num">38</td></tr>
+      <tr><td>12월</td><td class="num">79 / 75</td><td class="num">36</td><td class="num">51</td><td class="num">31 / 29</td><td class="num">8</td><td class="num">30</td></tr>
+      <tr><td>7월 최악 (외기 35°C)</td><td class="num">98.7</td><td class="num">–</td><td class="num">73.7</td><td class="num">57.8</td><td class="num">–</td><td class="num">57.5</td></tr>
+    </tbody></table></div>
+  <div class="tbl mid"><table>
+    <thead><tr><th>1년 동안 (추정)</th><th class="num">60°C 초과</th><th class="num">70°C 초과</th></tr></thead>
+    <tbody>
+      <tr class="bad"><td>현재 구조</td><td class="num">약 4,800 시간</td><td class="num">약 3,800 시간</td></tr>
+      <tr><td>2면 패드, 핀 없음</td><td class="num">약 1,600 시간</td><td class="num">0</td></tr>
+      <tr class="hl"><td>개선안 (2면 패드 + 커버 핀)</td><td class="num">0</td><td class="num">0</td></tr>
+    </tbody></table></div>
+  <p class="ref">단위 °C. 개선안은 2면 패드 + 커버 핀 30mm(480×290×45 기준), 소형은 420×260×40 + 핀 30mm + 판 호일입니다. 평년 조건에서는 개선안이 60°C를 넘지 않고, 외기 35°C 이상인 극한일에만 넘습니다. 위 값은 맨 아래 패널(단독) 기준이며, 세로로 쌓인 위층은 벽 쪽 조건에 따라 더 높아집니다(02장 7번).</p>
+</section>
+
+<section>
+  <h2><span class="no">07</span>확인·요청 사항</h2>
+  <div class="tbl mid"><table>
+    <thead><tr><th>순위</th><th>항목</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill p1">P1</span></td><td>개선안 반영</td><td>SMPS 2면 써멀패드 접촉(커버 쪽 Al 보스 포함), 커버 바깥 세로 핀(H30·t2·p12), 판 공기층 면 저방사 호일을 반영한 도면</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>함체 크기</td><td>현재 함체 실제 치수와, 420×260×40mm 수준으로 줄일 수 있는지</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>SMPS 교체</td><td>교체 순서와 접근 경로(곤돌라·실내·캣워크), 1건당 소요 시간, 캡티브 스크류·낙하 방지 줄, 패드 교체 키트</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>벽 쪽 공간</td><td>패널과 벽 사이 간격, 측면이 열려 있는지, 멀리언·레일 위치(핀 끝과 15~20mm 이상)</td></tr>
+      <tr><td><span class="pill p2">P2</span></td><td>SMPS 데이터</td><td>HWA805V0J-SS 데이터시트: 외형 치수, 효율, 동작온도, 디레이팅 곡선, 케이스 통풍 구멍과 방열면</td></tr>
+      <tr><td><span class="pill p2">P2</span></td><td>FPCB·실링</td><td>립 끝 헤밍과 엣지 트림, FPCB 전용 관통부, 개스킷 홈, 글랜드 위치, 벤트</td></tr>
+      <tr><td><span class="pill p2">P2</span></td><td>검증</td><td>개선 시제품으로 온도 시험(외기 35~40°C 또는 여름 실증, LED 최대 휘도 2시간 이상, SMPS 케이스·커버·판·공기층 측정)</td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <h2><span class="no">08</span>계산 가정</h2>
+  <ul class="ref">
+    <li>서울 남향 수직 외벽, 패널 500×1000mm 세로 설치, 함체는 패널 뒷면 위쪽(500×300mm 구간, 아래만 열린 20mm 공기층).</li>
+    <li>SMPS: HWAWAN HWA805V0J-SS ×2, 한낮 400W(1대당 50% 부하)·밤 200W, 효율 약 88%. 외형 250×53×26mm는 같은 계열 모델 값.</li>
+    <li>함체 480×290×45mm(도면에서 추정), Al판 3mm·커버 2mm, SMPS 위면과 커버 사이 13mm.</li>
+    <li>써멀패드 열전도 4W/mK, 두께 1.5mm, 압축 30%. 핀은 6063 압출, 흑색 아노다이징(방사율 0.85).</li>
+    <li>일사는 청천 모델(서울 월별 대기 탁도), 기온은 기상청 1991~2020 평년값 근사치. 패널 뒤 공기는 외기 +3K.</li>
+    <li>온도는 정상상태 계산값이며, 실제 값은 시제품 시험으로 확인해야 합니다.</li>
+  </ul>
+</section>
+
+</div>
