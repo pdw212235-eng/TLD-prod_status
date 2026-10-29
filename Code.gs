@@ -694,12 +694,13 @@ function ensureHeaders(sheet) {
 
 // 설치 및 수리 이력. 시트 이름(AS_History)은 그대로 두고 화면 표기만 바꿨다.
 // 2026-10: 내용 한 칸을 작업내역·불량원인으로 나누고, 구분 뒤에 대분류를 넣었다.
-const HISTORY_COLS = ['rowId', 'ID', 'Site/제품명', '날짜', '구분', '대분류', '작업내역', '불량원인', '등록일시', '등록자'];
+// 2026-10-30: 'Site/제품명' 한 칸도 Installations 처럼 Site 와 제품명 두 칸으로 나눴다.
+const HISTORY_COLS = ['rowId', 'ID', 'Site', '제품명', '날짜', '구분', '대분류', '작업내역', '불량원인', '등록일시', '등록자'];
 const HISTORY_KINDS = ['설치', '수리'];
 const HISTORY_CATS = ['Panel', '구동부', 'System'];
 const HISTORY_MAX = 200;
 // 시트에 옛 이름만 있으면 새 이름으로 연결한다 (1회차 함수 실행 전에도 동작하게)
-const HISTORY_ALIASES = { '작업내역': ['내용'] };
+const HISTORY_ALIASES = { '작업내역': ['내용'], 'Site': ['Site/제품명'] };
 
 function getASSheet() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -725,14 +726,14 @@ function asColIndex(sh) {
   return map;
 }
 
-// 관리번호로 Site/제품명 찾기. 이력 등록 시 시트에 함께 적어 둔다.
-function siteOfId(id) {
+// 관리번호로 Site·제품명 찾기. 이력 등록 시 시트에 함께 적어 둔다.
+function namesOfId(id) {
   try {
     const sheet = getSheet();
     const { existing } = findRowById(sheet, buildColIndex(sheet), id);
-    return siteLabel(existing);
+    return { site: String(existing.site || ''), productName: String(existing.productName || '') };
   } catch (_) {
-    return '';
+    return { site: '', productName: '' };
   }
 }
 
@@ -758,7 +759,8 @@ function handleASList(params) {
     .map(r => ({
       rowId:     String(at(r, 'rowId')),
       id:        String(at(r, 'ID')),
-      site:      String(at(r, 'Site/제품명') || ''),
+      site:        String(at(r, 'Site') || ''),
+      productName: String(at(r, '제품명') || ''),
       date:      asDate(at(r, '날짜')),
       kind:      String(at(r, '구분') || ''),
       category:  String(at(r, '대분류') || ''),
@@ -802,7 +804,9 @@ function handleASAdd(body) {
   const put = (name, v) => { if (ci[name] !== undefined) row[ci[name]] = v; };
   put('rowId', rowId);
   put('ID', id);
-  put('Site/제품명', siteOfId(id));
+  const names = namesOfId(id);
+  if (ci['제품명'] !== undefined) { put('Site', names.site); put('제품명', names.productName); }
+  else put('Site', siteLabel(names));          // 2회차 전: 'Site/제품명' 한 칸에 "Site · 제품명"
   put('날짜', date);
   put('구분', kind);
   put('대분류', category);
@@ -987,59 +991,7 @@ function logError(err) {
  * 편집기에서 실행하세요. 빠진 열이 없으면 아무것도 하지 않으므로 여러 번 실행해도 안전합니다.
  * 앞으로 항목을 추가할 때도 COLUMNS 에만 넣고 이 함수를 실행하면 됩니다.
  */
-/**
- * 설치 및 수리 이력 시트에 'Site/제품명'(ID 뒤)과 '구분'(날짜 뒤) 열을 끼워 넣고,
- * 기존 행의 Site/제품명 을 관리번호로 찾아 채웁니다. 편집기에서 실행하세요.
- * 이미 있으면 건너뛰므로 여러 번 실행해도 안전합니다.
- */
-function migrateHistorySheet() {
-  const sh = getASSheet();
-  const added = [];
-
-  // 지정한 열 바로 뒤에 삽입한다 (기존 값은 오른쪽으로 밀리며 보존된다)
-  const ensureAfter = (name, afterName) => {
-    const ci = asColIndex(sh);
-    if (ci[name] !== undefined) return;
-    const anchor = ci[afterName];
-    if (anchor === undefined) {
-      sh.getRange(1, sh.getLastColumn() + 1).setValue(name);
-    } else {
-      sh.insertColumnAfter(anchor + 1);
-      sh.getRange(1, anchor + 2).setValue(name);
-    }
-    SpreadsheetApp.flush();
-    added.push(name);
-  };
-
-  ensureAfter('Site/제품명', 'ID');
-  ensureAfter('구분', '날짜');
-
-  // 기존 행의 Site/제품명 백필
-  let filled = 0;
-  const ci = asColIndex(sh);
-  const last = sh.getLastRow();
-  if (last >= 2 && ci['Site/제품명'] !== undefined && ci['ID'] !== undefined) {
-    const ids   = sh.getRange(2, ci['ID'] + 1, last - 1, 1).getValues();
-    const sites = sh.getRange(2, ci['Site/제품명'] + 1, last - 1, 1).getValues();
-
-    const main = getSheet();
-    const mc = buildColIndex(main);
-    const rows = main.getLastRow() < 2 ? []
-      : main.getRange(2, 1, main.getLastRow() - 1, main.getLastColumn()).getValues();
-    const siteById = {};
-    rows.forEach(r => { siteById[String(r[mc['ID']]).trim()] = String(r[mc['Site']] || ''); });
-
-    for (let i = 0; i < ids.length; i++) {
-      if (String(sites[i][0]).trim()) continue;
-      const found = siteById[String(ids[i][0]).trim()];
-      if (found) { sites[i][0] = found; filled++; }
-    }
-    if (filled) sh.getRange(2, ci['Site/제품명'] + 1, last - 1, 1).setValues(sites);
-  }
-
-  Logger.log(added.length ? '추가된 열: ' + added.join(', ') : '추가할 열 없음 (이미 적용됨)');
-  Logger.log('Site/제품명 채운 행: ' + filled);
-}
+// (migrateHistorySheet: 2026-08 이관 함수. 할 일을 마쳤고, 지금 실행하면 옛 'Site/제품명' 열을 다시 만들어서 지웠다)
 
 /**
  * 데이터 정리 (2026-10). 편집기에서 한 번 실행하세요. 여러 번 실행해도 안전합니다.
@@ -1167,6 +1119,30 @@ function splitSiteProduct_() {
  * ── AS_History: 구분 뒤에 '대분류', 내용 → '작업내역' 이름 변경, 그 뒤에 '불량원인'
  * 기존 내용은 작업내역으로 그대로 남고, 대분류·불량원인은 빈칸으로 시작한다.
  */
+// name 열을 after 열 바로 오른쪽에 끼운다 (기존 값은 오른쪽으로 밀리며 보존). 끼웠으면 true.
+// 구글 시트는 끼운 열에 왼쪽 열의 '데이터 확인' 규칙을 복사한다. 구분 열의 설치·수리 규칙이
+// 대분류 열에 붙으면 머리글부터 거절되므로, 끼운 열의 규칙을 먼저 지운다.
+// 바로 오른쪽 열의 머리글이 비어 있으면(이전 실행이 도중에 멈춘 흔적) 새로 끼우지 않고 그 열을 쓴다.
+function ensureColAfter_(sh, name, after, rule) {
+  const cur = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => String(h).trim());
+  if (cur.indexOf(name) >= 0) return false;
+  const a = cur.indexOf(after);
+  let col;
+  if (a < 0) {
+    col = cur.length + 1;
+  } else if (a + 1 < cur.length && cur[a + 1] === '') {
+    col = a + 2;
+  } else {
+    sh.insertColumnAfter(a + 1);
+    col = a + 2;
+  }
+  sh.getRange(1, col, sh.getMaxRows(), 1).clearDataValidations();
+  sh.getRange(1, col).setValue(name);
+  if (rule && sh.getMaxRows() > 1) sh.getRange(2, col, sh.getMaxRows() - 1, 1).setDataValidation(rule);
+  SpreadsheetApp.flush();
+  return true;
+}
+
 function splitHistoryColumns_() {
   const sh = getASSheet();
   const hdr = () => sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => String(h).trim());
@@ -1177,29 +1153,7 @@ function splitHistoryColumns_() {
     sh.getRange(1, h.indexOf('내용') + 1).setValue('작업내역');
     done.push("'내용' → '작업내역'");
   }
-  // name 열을 after 열 바로 오른쪽에 끼운다 (기존 값은 오른쪽으로 밀리며 보존).
-  // 구글 시트는 끼운 열에 왼쪽 열의 '데이터 확인' 규칙을 복사한다. 구분 열의 설치·수리 규칙이
-  // 대분류 열에 붙으면 머리글부터 거절되므로, 끼운 열의 규칙을 먼저 지운다.
-  // 바로 오른쪽 열의 머리글이 비어 있으면(이전 실행이 도중에 멈춘 흔적) 새로 끼우지 않고 그 열을 쓴다.
-  const ensureAfter = (name, after, rule) => {
-    const cur = hdr();
-    if (cur.indexOf(name) >= 0) return;
-    const a = cur.indexOf(after);
-    let col;
-    if (a < 0) {
-      col = cur.length + 1;
-    } else if (a + 1 < cur.length && cur[a + 1] === '') {
-      col = a + 2;
-    } else {
-      sh.insertColumnAfter(a + 1);
-      col = a + 2;
-    }
-    sh.getRange(1, col, sh.getMaxRows(), 1).clearDataValidations();
-    sh.getRange(1, col).setValue(name);
-    if (rule && sh.getMaxRows() > 1) sh.getRange(2, col, sh.getMaxRows() - 1, 1).setDataValidation(rule);
-    SpreadsheetApp.flush();
-    done.push("'" + name + "' 추가");
-  };
+  const ensureAfter = (name, after, rule) => { if (ensureColAfter_(sh, name, after, rule)) done.push("'" + name + "' 추가"); };
   // 대분류에는 구분처럼 선택 목록 규칙을 건다 (빈칸은 허용)
   const catRule = SpreadsheetApp.newDataValidation()
     .requireValueInList(HISTORY_CATS, true).setAllowInvalid(false).build();
@@ -1210,43 +1164,67 @@ function splitHistoryColumns_() {
 }
 
 /**
- * [2회차] step2SyncHistory: 설치·수리 이력의 'Site/제품명' 을 지금 시트 값에 맞춘다.
- * 형님이 시트에서 Site·제품명 정리를 마친 뒤 실행하세요. 여러 번 실행해도 안전합니다.
- * 모든 이력 행을 "Site · 제품명" 으로 다시 쓴다. 지워진 항목의 이력은 그대로 둔다.
+ * [2회차] step2SyncHistory: 설치·수리 이력의 Site·제품명을 지금 메인 시트 값에 맞춘다.
+ * 이력 시트에 'Site/제품명' 한 칸만 있으면 먼저 'Site' + '제품명' 두 칸으로 나눈다.
+ * 메인 시트 정리를 다시 하셨을 때도 이 함수만 다시 실행하면 된다. 여러 번 실행해도 안전합니다.
+ *  - 항목이 있는 이력: Site·제품명을 메인 시트 값으로 다시 쓴다
+ *  - 항목이 지워진 이력: 'Site · 제품명' 처럼 합쳐 적혀 있으면 가운뎃점 앞뒤로 나누고, 아니면 Site 에 둔다
  */
 function step2SyncHistory() {
   const main = getSheet();
   const mc = buildColIndex(main);
   const rows = main.getLastRow() < 2 ? []
     : main.getRange(2, 1, main.getLastRow() - 1, main.getLastColumn()).getValues();
-  const labelById = {};
+  const byId = {};
   rows.forEach(r => {
     const id = String(r[mc['ID']]).trim();
-    if (id) labelById[id] = siteLabel({ site: r[mc['Site']], productName: mc['제품명'] === undefined ? '' : r[mc['제품명']] });
+    if (id) byId[id] = {
+      site: String(r[mc['Site']] || '').trim(),
+      productName: mc['제품명'] === undefined ? '' : String(r[mc['제품명']] || '').trim(),
+    };
   });
 
   const sh = getASSheet();
+  const done = [];
+  let h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(x => String(x).trim());
+  if (h.indexOf('Site') < 0 && h.indexOf('Site/제품명') >= 0) {
+    sh.getRange(1, h.indexOf('Site/제품명') + 1).setValue('Site');
+    SpreadsheetApp.flush();
+    done.push("'Site/제품명' → 'Site'");
+  }
+  if (ensureColAfter_(sh, '제품명', 'Site', null)) done.push("'제품명' 추가");
+
   const ci = asColIndex(sh);
   const last = sh.getLastRow();
-  if (last < 2 || ci['ID'] === undefined || ci['Site/제품명'] === undefined) {
-    Logger.log('바꿀 이력이 없습니다.');
+  if (last < 2 || ci['ID'] === undefined || ci['Site'] === undefined || ci['제품명'] === undefined) {
+    Logger.log('이력 시트: ' + (done.join(', ') || '바꿀 것 없음') + ' / 바꿀 이력이 없습니다.');
     return;
   }
   const n = last - 1;
-  const ids = sh.getRange(2, ci['ID'] + 1, n, 1).getValues();
-  const col = sh.getRange(2, ci['Site/제품명'] + 1, n, 1);
-  const cur = col.getValues();
+  const ids  = sh.getRange(2, ci['ID'] + 1, n, 1).getValues();
+  const siteCol = sh.getRange(2, ci['Site'] + 1, n, 1), prodCol = sh.getRange(2, ci['제품명'] + 1, n, 1);
+  const site = siteCol.getValues(), prod = prodCol.getValues();
 
-  let changed = 0, missing = 0;
+  let changed = 0, orphan = 0;
   for (let i = 0; i < n; i++) {
-    const label = labelById[String(ids[i][0]).trim()];
-    if (label === undefined) { missing++; continue; }
-    if (String(cur[i][0]) !== label) { cur[i][0] = label; changed++; }
+    const want = byId[String(ids[i][0]).trim()];
+    let s2, p2;
+    if (want) {
+      s2 = want.site; p2 = want.productName;
+    } else {
+      orphan++;
+      const cur = String(site[i][0]).trim();
+      if (String(prod[i][0]).trim() || cur.indexOf(' · ') < 0) continue;
+      const k = cur.indexOf(' · ');
+      s2 = cur.slice(0, k).trim(); p2 = cur.slice(k + 3).trim();
+    }
+    if (String(site[i][0]) !== s2 || String(prod[i][0]) !== p2) { site[i][0] = s2; prod[i][0] = p2; changed++; }
   }
-  if (changed) col.setValues(cur);
+  if (changed) { siteCol.setValues(site); prodCol.setValues(prod); }
   SpreadsheetApp.flush();
-  writeAuditLog('SYNC_HISTORY', '', 'admin', '이력 Site/제품명 갱신 ' + changed + '행');
-  Logger.log('이력 Site/제품명 갱신: ' + changed + '행 (항목이 없어진 이력 ' + missing + '행은 그대로)');
+  writeAuditLog('SYNC_HISTORY', '', 'admin', '이력 Site·제품명 갱신 ' + changed + '행');
+  Logger.log('이력 시트: ' + (done.length ? done.join(', ') : '열 구성 그대로'));
+  Logger.log('이력 Site·제품명 갱신: ' + changed + '행 (항목이 지워진 이력 ' + orphan + '행)');
 }
 
 function addMissingColumns() {
