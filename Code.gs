@@ -176,7 +176,9 @@ function saveTokenStore(tokens) {
 const COLUMNS = [
   { key: 'id',           header: 'ID',              adminOnly: false },
   { key: 'manager',      header: '관리 주체',        adminOnly: false },
-  { key: 'site',         header: 'Site 및 제품명',   adminOnly: false },
+  // 2026-10 'Site 및 제품명' 을 Site 와 제품명 두 열로 나눴다. 옛 이름도 알아본다.
+  { key: 'site',         header: 'Site',             adminOnly: false, aliases: ['Site 및 제품명'] },
+  { key: 'productName',  header: '제품명',            adminOnly: false },
   { key: 'status',       header: '상태',             adminOnly: false },
   { key: 'panelModel',   header: 'Panel Model',      adminOnly: false },
   { key: 'panelArray',   header: 'Panel수량',        adminOnly: false },
@@ -261,7 +263,34 @@ function buildColIndex(sheet) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const map = {};
   headers.forEach((h, i) => { map[h.toString().trim()] = i; });
+  // 열 이름을 바꾸는 사이에도 값을 잃지 않도록, 시트에 옛 이름만 있으면 새 이름으로 연결한다.
+  // (연결이 없으면 buildRow 가 그 열을 모르는 열로 보고 빈칸으로 덮어쓴다)
+  COLUMNS.forEach(c => {
+    if (map[c.header] !== undefined || !c.aliases) return;
+    const old = c.aliases.find(a => map[a] !== undefined);
+    if (old !== undefined) map[c.header] = map[old];
+  });
   return map;
+}
+
+// 이력·기록에 쓰는 표시 이름: "Site · 제품명" (빈 쪽은 뺀다)
+function siteLabel(o) {
+  return [o.site, o.productName].map(v => String(v || '').trim()).filter(Boolean).join(' · ');
+}
+
+// 1회차 시트 정리 전이면 새 열이 없어 값이 조용히 버려진다. 그럴 바에는 저장을 막고 알린다.
+const NEED_STEP1 = '시트 정리가 아직 안 됐습니다. 편집기에서 step1SplitColumns 를 먼저 실행해 주세요.';
+function requireProductColumn(data, colIndex) {
+  if (String(data.productName || '').trim() && colIndex['제품명'] === undefined) {
+    throw { message: NEED_STEP1, code: 409 };
+  }
+}
+
+// Site 와 제품명 중 하나는 있어야 한다
+function validateSiteProduct(data) {
+  if (!String(data.site || '').trim() && !String(data.productName || '').trim()) {
+    throw { message: 'Site 와 제품명 중 하나는 입력해야 합니다.', code: 400 };
+  }
 }
 
 function rowToObj(row, colIndex, isAdmin) {
@@ -387,6 +416,7 @@ function handleCreate(body) {
   const data = body.data || {};
   validateFieldLengths(data);
   validateStatus(data);
+  validateSiteProduct(data);
   applyPanelTotal(data);
 
   // 두 사람이 같은 순간 등록해도 관리번호가 겹치지 않도록 채번~기록을 잠근다
@@ -396,6 +426,7 @@ function handleCreate(body) {
     const sheet = getSheet();
     ensureHeaders(sheet);
     const colIndex = buildColIndex(sheet);
+    requireProductColumn(data, colIndex);
 
     const newId = generateId(sheet, colIndex);
     data.id = newId;
@@ -406,7 +437,7 @@ function handleCreate(body) {
     sheet.appendRow(row);
     SpreadsheetApp.flush();
     rememberIdNumber(newId);
-    writeAuditLog('CREATE', newId, data.updatedBy, 'Site: ' + (data.site || ''));
+    writeAuditLog('CREATE', newId, data.updatedBy, siteLabel(data));
     return { id: newId, updatedAt: data.updatedAt };
   } finally {
     lock.releaseLock();
@@ -432,6 +463,8 @@ function handleUpdate(body) {
   data.updatedBy = body.updatedBy || 'admin';
   validateFieldLengths(data);
   validateStatus(data);
+  validateSiteProduct(data);
+  requireProductColumn(data, colIndex);
   applyPanelTotal(data);
 
   const row = buildRow(data, colIndex, sheet.getLastColumn());
@@ -660,8 +693,13 @@ function ensureHeaders(sheet) {
 // ============================================================
 
 // 설치 및 수리 이력. 시트 이름(AS_History)은 그대로 두고 화면 표기만 바꿨다.
-const HISTORY_COLS = ['rowId', 'ID', 'Site/제품명', '날짜', '구분', '내용', '등록일시', '등록자'];
+// 2026-10: 내용 한 칸을 작업내역·불량원인으로 나누고, 구분 뒤에 대분류를 넣었다.
+const HISTORY_COLS = ['rowId', 'ID', 'Site/제품명', '날짜', '구분', '대분류', '작업내역', '불량원인', '등록일시', '등록자'];
 const HISTORY_KINDS = ['설치', '수리'];
+const HISTORY_CATS = ['Panel', '구동부', 'System'];
+const HISTORY_MAX = 200;
+// 시트에 옛 이름만 있으면 새 이름으로 연결한다 (1회차 함수 실행 전에도 동작하게)
+const HISTORY_ALIASES = { '작업내역': ['내용'] };
 
 function getASSheet() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -679,6 +717,11 @@ function asColIndex(sh) {
   const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
   const map = {};
   headers.forEach((h, i) => { map[String(h).trim()] = i; });
+  Object.keys(HISTORY_ALIASES).forEach(name => {
+    if (map[name] !== undefined) return;
+    const old = HISTORY_ALIASES[name].find(a => map[a] !== undefined);
+    if (old !== undefined) map[name] = map[old];
+  });
   return map;
 }
 
@@ -687,7 +730,7 @@ function siteOfId(id) {
   try {
     const sheet = getSheet();
     const { existing } = findRowById(sheet, buildColIndex(sheet), id);
-    return existing.site || '';
+    return siteLabel(existing);
   } catch (_) {
     return '';
   }
@@ -718,7 +761,10 @@ function handleASList(params) {
       site:      String(at(r, 'Site/제품명') || ''),
       date:      asDate(at(r, '날짜')),
       kind:      String(at(r, '구분') || ''),
-      text:      String(at(r, '내용')),
+      category:  String(at(r, '대분류') || ''),
+      work:      String(at(r, '작업내역') || ''),
+      cause:     String(at(r, '불량원인') || ''),
+      text:      String(at(r, '작업내역') || ''),   // 옛 화면 호환 (작업내역과 같은 값)
       createdAt: String(at(r, '등록일시') || ''),
       createdBy: String(at(r, '등록자') || ''),
     }))
@@ -728,19 +774,28 @@ function handleASList(params) {
 }
 
 function handleASAdd(body) {
-  const id   = body.id   || '';
-  const date = body.date || '';
-  const text = body.text || '';
-  const kind = body.kind || '';
+  const id       = body.id   || '';
+  const date     = body.date || '';
+  const kind     = body.kind || '';
+  const category = String(body.category || '').trim();
+  const work     = String(body.work || body.text || '').trim();   // 옛 화면은 text 로 보낸다
+  const cause    = String(body.cause || '').trim();
 
-  if (!id || !date || !text) throw { message: 'id, date, text 필수', code: 400 };
-  if (text.length > 200) throw { message: '내용은 200자 이내', code: 400 };
+  if (!id || !date || !work) throw { message: '날짜와 작업내역은 꼭 입력해 주세요.', code: 400 };
+  if (work.length > HISTORY_MAX)  throw { message: '작업내역은 ' + HISTORY_MAX + '자 이내여야 합니다.', code: 400 };
+  if (cause.length > HISTORY_MAX) throw { message: '불량 원인은 ' + HISTORY_MAX + '자 이내여야 합니다.', code: 400 };
   if (kind && HISTORY_KINDS.indexOf(kind) < 0) {
     throw { message: '구분은 ' + HISTORY_KINDS.join(' 또는 ') + ' 만 가능합니다.', code: 400 };
+  }
+  if (category && HISTORY_CATS.indexOf(category) < 0) {
+    throw { message: '대분류는 ' + HISTORY_CATS.join(', ') + ' 중 하나여야 합니다.', code: 400 };
   }
 
   const sh = getASSheet();
   const ci = asColIndex(sh);
+  if ((category || cause) && (ci['대분류'] === undefined || ci['불량원인'] === undefined)) {
+    throw { message: NEED_STEP1, code: 409 };
+  }
   const rowId = Utilities.getUuid();
 
   const row = new Array(sh.getLastColumn()).fill('');
@@ -750,12 +805,15 @@ function handleASAdd(body) {
   put('Site/제품명', siteOfId(id));
   put('날짜', date);
   put('구분', kind);
-  put('내용', text);
+  put('대분류', category);
+  put('작업내역', work);
+  put('불량원인', cause);
   put('등록일시', new Date().toISOString());
   put('등록자', body.updatedBy || 'admin');
 
   sh.appendRow(row);
-  writeAuditLog('AS_ADD', id, body.updatedBy || 'admin', (kind ? '[' + kind + '] ' : '') + date + ': ' + text.slice(0, 30));
+  const tag = [kind, category].filter(Boolean).map(t => '[' + t + ']').join('');
+  writeAuditLog('AS_ADD', id, body.updatedBy || 'admin', (tag ? tag + ' ' : '') + date + ': ' + work.slice(0, 30));
   return { rowId };
 }
 
@@ -969,7 +1027,7 @@ function migrateHistorySheet() {
     const rows = main.getLastRow() < 2 ? []
       : main.getRange(2, 1, main.getLastRow() - 1, main.getLastColumn()).getValues();
     const siteById = {};
-    rows.forEach(r => { siteById[String(r[mc['ID']]).trim()] = String(r[mc['Site 및 제품명']] || ''); });
+    rows.forEach(r => { siteById[String(r[mc['ID']]).trim()] = String(r[mc['Site']] || ''); });
 
     for (let i = 0; i < ids.length; i++) {
       if (String(sites[i][0]).trim()) continue;
@@ -1033,11 +1091,170 @@ function cleanupData() {
   Logger.log('총 모듈수 채움: ' + filled + '행');
 }
 
+/**
+ * [1회차] step1SplitColumns (2026-10). 편집기에서 실행하세요. 여러 번 실행해도 안전합니다.
+ * ── Installations: Site 와 제품명 나누기
+ *  1) C열 'Site 및 제품명' 이름을 'Site' 로 바꾼다
+ *  2) 그 바로 오른쪽에 '제품명' 열을 끼워 넣는다 (기존 열은 한 칸씩 오른쪽으로)
+ *  3) 제품명으로 볼 행은 C열 값을 제품명으로 옮기고 Site 는 비운다
+ *     - 제품 일련번호 형태(예: SLD-27S-XXX-B-001)
+ *     - 사용자가 정한 7행: Prod005, 006, 007, 008, 009, 014, 040
+ *     옮긴 행 중 비고1 에 '위치: ○○' 이 있으면 그 위치를 Site 로 넣는다 (비고1 은 그대로)
+ *  제품명이 이미 채워진 행은 건드리지 않는다.
+ */
+const PRODUCT_IDS_2026_10 = ['Prod005', 'Prod006', 'Prod007', 'Prod008', 'Prod009', 'Prod014', 'Prod040'];
+const SERIAL_RE = /^[A-Z]{2,}-[\w-]+$/;
+
+function step1SplitColumns() {
+  splitSiteProduct_();
+  splitHistoryColumns_();
+}
+
+// 이름 끝의 _ 는 편집기 실행 목록에서 숨긴다 (step1SplitColumns 로만 실행)
+function splitSiteProduct_() {
+  const sheet = getSheet();
+  let headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+
+  // 1) 이름 바꾸기
+  let siteCol = headers.indexOf('Site');
+  if (siteCol < 0) {
+    siteCol = headers.indexOf('Site 및 제품명');
+    if (siteCol < 0) throw new Error("시트에 'Site 및 제품명' 또는 'Site' 열이 없습니다.");
+    sheet.getRange(1, siteCol + 1).setValue('Site');
+    Logger.log("C열 이름: 'Site 및 제품명' → 'Site'");
+  }
+
+  // 2) 제품명 열 끼워 넣기
+  if (headers.indexOf('제품명') < 0) {
+    sheet.insertColumnAfter(siteCol + 1);
+    sheet.getRange(1, siteCol + 2).setValue('제품명');
+    Logger.log("'제품명' 열을 Site 오른쪽에 추가");
+  }
+  SpreadsheetApp.flush();
+
+  // 3) 값 옮기기
+  const ci = buildColIndex(sheet);
+  const last = sheet.getLastRow();
+  if (last < 2) { Logger.log('데이터 없음'); return; }
+  const n = last - 1;
+  const get = h => sheet.getRange(2, ci[h] + 1, n, 1).getValues();
+  const ids = get('ID'), site = get('Site'), prod = get('제품명'), note1 = get('비고1');
+
+  let moved = 0, located = 0;
+  for (let i = 0; i < n; i++) {
+    const id = String(ids[i][0]).trim();
+    const s  = String(site[i][0]).trim();
+    if (!s || String(prod[i][0]).trim()) continue;
+    if (!SERIAL_RE.test(s) && PRODUCT_IDS_2026_10.indexOf(id) < 0) continue;
+
+    prod[i][0] = s;
+    const m = String(note1[i][0]).match(/위치:\s*([^/]+?)\s*(?:\/|$)/);
+    site[i][0] = m ? m[1].trim() : '';
+    if (m) located++;
+    moved++;
+  }
+
+  if (moved) {
+    sheet.getRange(2, ci['Site'] + 1, n, 1).setValues(site);
+    sheet.getRange(2, ci['제품명'] + 1, n, 1).setValues(prod);
+  }
+  SpreadsheetApp.flush();
+  writeAuditLog('SPLIT', '', 'admin', '제품명으로 옮김 ' + moved + '행, 그중 위치를 Site 로 ' + located + '행');
+  Logger.log('제품명으로 옮김: ' + moved + '행 (그중 비고1 위치를 Site 로: ' + located + '행)');
+}
+
+/**
+ * ── AS_History: 구분 뒤에 '대분류', 내용 → '작업내역' 이름 변경, 그 뒤에 '불량원인'
+ * 기존 내용은 작업내역으로 그대로 남고, 대분류·불량원인은 빈칸으로 시작한다.
+ */
+function splitHistoryColumns_() {
+  const sh = getASSheet();
+  const hdr = () => sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => String(h).trim());
+  const done = [];
+
+  let h = hdr();
+  if (h.indexOf('작업내역') < 0 && h.indexOf('내용') >= 0) {
+    sh.getRange(1, h.indexOf('내용') + 1).setValue('작업내역');
+    done.push("'내용' → '작업내역'");
+  }
+  // name 열을 after 열 바로 오른쪽에 끼운다 (기존 값은 오른쪽으로 밀리며 보존).
+  // 구글 시트는 끼운 열에 왼쪽 열의 '데이터 확인' 규칙을 복사한다. 구분 열의 설치·수리 규칙이
+  // 대분류 열에 붙으면 머리글부터 거절되므로, 끼운 열의 규칙을 먼저 지운다.
+  // 바로 오른쪽 열의 머리글이 비어 있으면(이전 실행이 도중에 멈춘 흔적) 새로 끼우지 않고 그 열을 쓴다.
+  const ensureAfter = (name, after, rule) => {
+    const cur = hdr();
+    if (cur.indexOf(name) >= 0) return;
+    const a = cur.indexOf(after);
+    let col;
+    if (a < 0) {
+      col = cur.length + 1;
+    } else if (a + 1 < cur.length && cur[a + 1] === '') {
+      col = a + 2;
+    } else {
+      sh.insertColumnAfter(a + 1);
+      col = a + 2;
+    }
+    sh.getRange(1, col, sh.getMaxRows(), 1).clearDataValidations();
+    sh.getRange(1, col).setValue(name);
+    if (rule && sh.getMaxRows() > 1) sh.getRange(2, col, sh.getMaxRows() - 1, 1).setDataValidation(rule);
+    SpreadsheetApp.flush();
+    done.push("'" + name + "' 추가");
+  };
+  // 대분류에는 구분처럼 선택 목록 규칙을 건다 (빈칸은 허용)
+  const catRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(HISTORY_CATS, true).setAllowInvalid(false).build();
+  ensureAfter('대분류', '구분', catRule);
+  ensureAfter('불량원인', '작업내역', null);
+  SpreadsheetApp.flush();
+  Logger.log('이력 시트: ' + (done.length ? done.join(', ') : '바꿀 것 없음 (이미 적용됨)'));
+}
+
+/**
+ * [2회차] step2SyncHistory: 설치·수리 이력의 'Site/제품명' 을 지금 시트 값에 맞춘다.
+ * 형님이 시트에서 Site·제품명 정리를 마친 뒤 실행하세요. 여러 번 실행해도 안전합니다.
+ * 모든 이력 행을 "Site · 제품명" 으로 다시 쓴다. 지워진 항목의 이력은 그대로 둔다.
+ */
+function step2SyncHistory() {
+  const main = getSheet();
+  const mc = buildColIndex(main);
+  const rows = main.getLastRow() < 2 ? []
+    : main.getRange(2, 1, main.getLastRow() - 1, main.getLastColumn()).getValues();
+  const labelById = {};
+  rows.forEach(r => {
+    const id = String(r[mc['ID']]).trim();
+    if (id) labelById[id] = siteLabel({ site: r[mc['Site']], productName: mc['제품명'] === undefined ? '' : r[mc['제품명']] });
+  });
+
+  const sh = getASSheet();
+  const ci = asColIndex(sh);
+  const last = sh.getLastRow();
+  if (last < 2 || ci['ID'] === undefined || ci['Site/제품명'] === undefined) {
+    Logger.log('바꿀 이력이 없습니다.');
+    return;
+  }
+  const n = last - 1;
+  const ids = sh.getRange(2, ci['ID'] + 1, n, 1).getValues();
+  const col = sh.getRange(2, ci['Site/제품명'] + 1, n, 1);
+  const cur = col.getValues();
+
+  let changed = 0, missing = 0;
+  for (let i = 0; i < n; i++) {
+    const label = labelById[String(ids[i][0]).trim()];
+    if (label === undefined) { missing++; continue; }
+    if (String(cur[i][0]) !== label) { cur[i][0] = label; changed++; }
+  }
+  if (changed) col.setValues(cur);
+  SpreadsheetApp.flush();
+  writeAuditLog('SYNC_HISTORY', '', 'admin', '이력 Site/제품명 갱신 ' + changed + '행');
+  Logger.log('이력 Site/제품명 갱신: ' + changed + '행 (항목이 없어진 이력 ' + missing + '행은 그대로)');
+}
+
 function addMissingColumns() {
   const sheet = getSheet();
   const lastCol = sheet.getLastColumn();
   const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
-  const missing = COLUMNS.map(c => c.header).filter(h => headers.indexOf(h) < 0);
+  const has = c => headers.indexOf(c.header) >= 0 || (c.aliases || []).some(a => headers.indexOf(a) >= 0);
+  const missing = COLUMNS.filter(c => !has(c)).map(c => c.header);
 
   if (missing.length === 0) {
     Logger.log('빠진 열이 없습니다. 변경 없음.');

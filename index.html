@@ -328,6 +328,8 @@ tbody tr.is-active td{background:var(--accent-soft)}
 .card:active,.card.is-active{background:var(--accent-soft)}
 .card .c1{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .card .site{font-weight:600;font-size:14.5px;line-height:1.35;color:var(--ink);word-break:break-word}
+.card .names{display:flex;flex-direction:column;gap:1px;min-width:0}
+.card .prod{font-size:13.5px;line-height:1.35;color:var(--ink-2);word-break:break-word}
 .card .c2{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:12.5px;color:var(--muted)}
 .card .c3{display:block;margin-top:4px;font-family:var(--mono);font-size:12px;color:var(--ink-2);
   font-variant-numeric:tabular-nums;word-break:break-word}
@@ -361,6 +363,11 @@ tbody tr.is-out .mgr{opacity:.5}
   padding:20px 22px 15px;border-bottom:1px solid var(--line);
 }
 .sheet-head h2{font-family:var(--serif);font-size:21px;font-weight:600;line-height:1.25;flex:1;text-wrap:balance}
+/* Site / 제품명 두 줄. 본문보다 크게 하지 않는다 */
+.sheet-head .names{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;align-items:baseline;flex:1}
+.sheet-head .names dt{font-size:11.5px;color:var(--muted);letter-spacing:.04em}
+.sheet-head .names dd{font-size:15px;font-weight:600;color:var(--ink);word-break:break-word;line-height:1.4}
+.sheet-head .names dd.blank{font-weight:400;color:var(--muted)}
 .sheet-head .eyebrow{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.04em;display:block;margin-bottom:5px}
 .sheet-body{flex:1;overflow-y:auto;padding:18px 22px 22px}
 .sheet-foot{display:flex;gap:8px;justify-content:flex-end;padding:13px 22px;border-top:1px solid var(--line);background:var(--surface-2)}
@@ -444,19 +451,30 @@ tbody tr.is-out .mgr{opacity:.5}
   border:1px solid var(--line);cursor:zoom-in;display:block;
 }
 
-.as-item{display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line-soft)}
-.as-item .d{font-family:var(--mono);font-size:12px;color:var(--muted);flex:0 0 82px;padding-top:1px}
-.as-item .t{flex:1;line-height:1.5;word-break:break-word}
-.as-item .del{color:var(--muted);font-size:15px;line-height:1;padding:2px 6px;border-radius:var(--r-sm);flex:0 0 auto}
+.as-item{padding:10px 0;border-bottom:1px solid var(--line-soft)}
+.as-item .head{display:flex;gap:7px;align-items:center;margin-bottom:5px}
+.as-item .d{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.as-item .cat{font-size:10.5px;font-weight:600;letter-spacing:.03em;border:1px solid var(--line);color:var(--ink-2);
+  background:var(--surface);border-radius:var(--r-pill);padding:0 7px;white-space:nowrap}
+.as-item .line{display:flex;gap:8px;line-height:1.5}
+.as-item .lbl{flex:0 0 30px;font-size:12px;color:var(--muted);padding-top:1px}
+.as-item .v{flex:1;min-width:0;word-break:break-word;white-space:pre-wrap}
+.as-item .v.none{color:var(--muted)}
+.as-item .del{margin-left:auto;color:var(--muted);font-size:15px;line-height:1;padding:2px 6px;border-radius:var(--r-sm);flex:0 0 auto}
 .as-item .del:hover{color:var(--danger);background:var(--danger-soft)}
-.as-add{display:flex;gap:8px;align-items:flex-start;margin-top:12px}
+.as-add{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.as-add .as-row{display:flex;gap:8px}
+.as-add .as-kind{flex:0 0 84px}
+.as-add .as-cat{flex:0 0 122px}
+.as-add .as-row input[type=date]{flex:1;min-width:0}
+.as-add .as-lbl{font-size:11.5px;color:var(--muted);letter-spacing:.04em;margin-top:3px}
+.as-add .as-lbl .req{color:var(--accent);margin-left:2px}
+.as-add .as-foot{display:flex;justify-content:flex-end}
 .as-item .kind{font-size:10.5px;font-weight:600;letter-spacing:.03em;border-radius:var(--r-pill);
   padding:1px 7px;white-space:nowrap;flex:0 0 auto;margin-top:1px}
 .as-item .kind[data-k="설치"]{background:var(--st-install-bg);color:var(--st-install)}
 .as-item .kind[data-k="수리"]{background:var(--st-rent-bg);color:var(--st-rent)}
-.as-add select{flex:0 0 84px}
-.as-add input[type=date]{flex:0 0 140px}
-.as-add input[type=text]{flex:1}
+
 
 /* ---- 접수된 수정 요청 (관리자 전용) ---- */
 #report-log{max-height:280px;overflow-y:auto;margin-top:2px}
@@ -514,11 +532,10 @@ tbody tr.is-out .mgr{opacity:.5}
   /* 손가락으로 누르기 쉬운 크기 */
   .btn-sm,.x,.btn-icon,#btn-theme{min-height:38px;min-width:38px}
   /* 이력 추가 줄: 내용 칸을 한 줄 전체로 */
-  .as-add{flex-wrap:wrap}
-  .as-add > .sel-wrap{flex:0 0 96px !important}
-  .as-add input[type=date]{flex:1 1 auto}
-  .as-add input[type=text]{flex:1 1 100%;order:3}
-  .as-add .btn{order:4;flex:1 1 100%}
+  .as-add .as-row{flex-wrap:wrap}
+  .as-add .as-kind,.as-add .as-cat{flex:1 1 0}
+  .as-add .as-row input[type=date]{flex:1 1 100%}
+  .as-add .as-foot .btn{flex:1}
   thead th{position:static}
   .grid2{grid-template-columns:1fr}
   .slots{grid-template-columns:1fr}
@@ -609,7 +626,8 @@ tbody tr.is-out .mgr{opacity:.5}
   <div class="sheet-head">
     <div style="flex:1;min-width:0">
       <span class="eyebrow" id="d-id"></span>
-      <h2 id="d-title">상세</h2>
+      <h2 id="d-title" class="sr-only">상세</h2>
+      <dl class="names" id="d-names"></dl>
     </div>
     <button class="x" data-close="detail" aria-label="닫기">&times;</button>
   </div>
@@ -640,9 +658,16 @@ tbody tr.is-out .mgr{opacity:.5}
             <option>현장설치</option><option>렌트</option><option>창고</option>
           </select></div>
         </div>
-        <div class="field full">
-          <label for="f-site">Site 및 제품명<span class="req">*</span></label>
+        <div class="field">
+          <label for="f-site">Site</label>
           <input id="f-site" type="text" placeholder="예: 판교 5F 로비">
+        </div>
+        <div class="field">
+          <label for="f-productName">제품명</label>
+          <input id="f-productName" type="text" placeholder="예: SLD-27S-XXX-B-001">
+        </div>
+        <div class="field full" style="margin-top:-6px">
+          <span class="hint">Site 와 제품명 중 하나는 꼭 입력해 주세요.</span>
         </div>
       </div>
 
@@ -877,7 +902,7 @@ tbody tr.is-out .mgr{opacity:.5}
    ============================================================ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRCp_tY3KQhZ81kRppoihI0OXBpZ2xQmu3U9LbFYzhlT26jopktNbUveuHDPWE_kiKtA/exec';
 const GOOGLE_CLIENT_ID = '273196196166-r92mjb63o4dm3tns42j6k94738aedir8.apps.googleusercontent.com';
-const REV = 'v3.3 · 2026-10-18';
+const REV = 'v3.5 · 2026-10-29';
 
 const STATUSES = ['현장설치', '렌트', '창고', '반출'];
 
@@ -908,7 +933,8 @@ const state = {
 const TABLE_COLS = [
   // 앞의 7개가 기본 표시 항목이며, 표에 나오는 순서도 이 배열 순서를 따른다
   { key:'manager',     label:'관리주체' },
-  { key:'site',        label:'Site / 제품명', strong:true, grow:true },
+  { key:'site',        label:'Site', strong:true, grow:true },
+  { key:'productName', label:'제품명' },
   { key:'panelModel',  label:'Panel Model' },
   { key:'panelArray',  label:'Panel 배열' },
   { key:'resX',        label:'해상도 X', mono:true },
@@ -923,10 +949,10 @@ const TABLE_COLS = [
   { key:'outboundDate',label:'반출일', mono:true, adminOnly:true },
   { key:'updatedAt',   label:'최종수정', mono:true },
 ];
-const DEFAULT_COLS = ['manager','site','panelModel','panelArray','resX','resY','installDate'];
+const DEFAULT_COLS = ['manager','site','productName','panelModel','panelArray','resX','resY','installDate'];
 
 const LABELS = {
-  id:'관리번호', manager:'관리주체', site:'Site / 제품명', status:'상태',
+  id:'관리번호', manager:'관리주체', site:'Site', productName:'제품명', status:'상태',
   panelModel:'Panel Model', panelArray:'Panel 배열', panelTotal:'총 모듈수',
   resX:'해상도 X', resY:'해상도 Y', brightness:'휘도(nit)',
   installDate:'설치일', inboundDate:'입고일', outboundDate:'반출일',
@@ -937,7 +963,7 @@ const LABELS = {
   updatedAt:'최종수정', updatedBy:'수정자',
 };
 const SECRETS = ['cmsPw','tvId','tvPw'];
-const FORM_KEYS = ['site','manager','status','panelModel','panelArray','resX','resY','brightness',
+const FORM_KEYS = ['site','productName','manager','status','panelModel','panelArray','resX','resY','brightness',
                    'installDate','inboundDate','player','hubBoard','smpsModel','smpsVoltage','smpsQty',
                    'cmsId','cmsPw','tvId','tvPw',
                    'note1','note2','note3','note4'];
@@ -1130,7 +1156,7 @@ function loadSession(){
   try {
     const t = sessionStorage.getItem('tld_token');
     if (t) { state.token = t; state.isAdmin = true; state.email = sessionStorage.getItem('tld_email') || ''; }
-    const c = sessionStorage.getItem('tld_cols_v2');
+    const c = sessionStorage.getItem('tld_cols_v3');
     if (c) state.cols = JSON.parse(c);
   } catch (_) {}
 }
@@ -1296,6 +1322,7 @@ function filtered(){
     const q = state.q.toLowerCase();
     out = out.filter(it =>
       String(it.site || '').toLowerCase().includes(q) ||
+      String(it.productName || '').toLowerCase().includes(q) ||
       String(it.id || '').toLowerCase().includes(q) ||
       String(it.panelModel || '').toLowerCase().includes(q) ||
       String(it.player || '').toLowerCase().includes(q)
@@ -1385,6 +1412,11 @@ function stateBlock(rows){
   return '';
 }
 
+// "Site · 제품명" (빈 쪽은 뺀다) — 삭제 확인 등 한 줄로 보일 때
+function siteLabel(it){
+  return [it.site, it.productName].map(v => String(v || '').trim()).filter(Boolean).join(' · ');
+}
+
 // 휴대폰 카드 한 장: 현장·제품명 / 관리주체·설치일 / 패널 사양 요약
 function cardHtml(it){
   const res = (it.resX && it.resY) ? `${it.resX}×${it.resY}` : '';
@@ -1393,7 +1425,11 @@ function cardHtml(it){
     .map(v => esc(String(v))).join(' · ');
   const date = fmtDate(it.installDate);
   return `<button type="button" class="card ${it.status === '반출' ? 'is-out' : ''} ${state.activeId === it.id ? 'is-active' : ''}" data-id="${esc(it.id)}">
-    <span class="c1"><span class="site">${esc(it.site || '—')}</span>
+    <span class="c1"><span class="names">
+        ${it.site ? `<span class="site">${esc(it.site)}</span>` : ''}
+        ${it.productName ? `<span class="${it.site ? 'prod' : 'site'}">${esc(it.productName)}</span>` : ''}
+        ${!it.site && !it.productName ? '<span class="site">—</span>' : ''}
+      </span>
       <span class="pill" data-s="${esc(it.status || '')}">${esc(it.status || '—')}</span></span>
     <span class="c2">${mgrChip(it.manager)}<span class="num">${date ? '설치 ' + esc(date) : '설치일 없음'}</span></span>
     ${spec ? `<span class="c3">${spec}</span>` : ''}
@@ -1421,7 +1457,7 @@ function buildColMenu(){
       TABLE_COLS.forEach(c => { state.cols[c.key] = DEFAULT_COLS.includes(c.key); });
     }
     state.cols[cb.dataset.col] = cb.checked;
-    try { sessionStorage.setItem('tld_cols_v2', JSON.stringify(state.cols)); } catch (_) {}
+    try { sessionStorage.setItem('tld_cols_v3', JSON.stringify(state.cols)); } catch (_) {}
     renderTable();
   }));
 }
@@ -1488,7 +1524,9 @@ function row(k, v, mono){
 
 function renderDetail(item, asItems){
   $('#d-id').textContent = item.id || '';
-  $('#d-title').textContent = item.site || '상세';
+  $('#d-title').textContent = siteLabel(item) || '상세';
+  const nameRow = (label, v) => `<dt>${label}</dt><dd class="${v ? '' : 'blank'}">${v ? esc(v) : '—'}</dd>`;
+  $('#d-names').innerHTML = nameRow('Site', item.site) + nameRow('제품명', item.productName);
 
   const monoKeys = new Set(['id','panelTotal','resX','resY','brightness','installDate','inboundDate','outboundDate','updatedAt','cmsId','smpsVoltage','smpsQty']);
   const g = keys => `<dl class="dl">` + keys.map(k => {
@@ -1548,22 +1586,37 @@ function renderDetail(item, asItems){
   html += loading
     ? `<div style="color:var(--muted);padding:6px 0">불러오는 중…</div>`
     : asItems.length
-    ? asItems.map(a => `<div class="as-item">
-        <span class="d">${esc(fmtDate(a.date))}</span>
-        ${a.kind ? `<span class="kind" data-k="${esc(a.kind)}">${esc(a.kind)}</span>` : ''}
-        <span class="t">${esc(a.text)}</span>
-        ${state.isAdmin ? `<button class="del" data-as-del="${esc(a.rowId)}" title="삭제" aria-label="이력 삭제">&times;</button>` : ''}
-      </div>`).join('')
+    ? asItems.map(a => {
+        const work = a.work || a.text || '';
+        return `<div class="as-item">
+        <div class="head">
+          <span class="d">${esc(fmtDate(a.date))}</span>
+          ${a.kind ? `<span class="kind" data-k="${esc(a.kind)}">${esc(a.kind)}</span>` : ''}
+          ${a.category ? `<span class="cat">${esc(a.category)}</span>` : ''}
+          ${state.isAdmin ? `<button class="del" data-as-del="${esc(a.rowId)}" title="삭제" aria-label="이력 삭제">&times;</button>` : ''}
+        </div>
+        <div class="line"><span class="lbl">작업</span><span class="v">${esc(work) || '—'}</span></div>
+        <div class="line"><span class="lbl">원인</span><span class="v ${a.cause ? '' : 'none'}">${a.cause ? esc(a.cause) : '없음'}</span></div>
+      </div>`;
+      }).join('')
     : `<div style="color:var(--muted);padding:6px 0">등록된 이력이 없습니다.</div>`;
   html += `</div>`;
   if (state.isAdmin && !loading) {
     html += `<div class="as-add">
-      <div class="sel-wrap" style="flex:0 0 84px"><select id="as-kind" aria-label="구분">
-        <option value="설치">설치</option><option value="수리" selected>수리</option>
-      </select></div>
-      <input type="date" id="as-date" value="${todayLocal()}" aria-label="날짜">
-      <input type="text" id="as-text" maxlength="200" placeholder="내용 (200자 이내)" aria-label="내용">
-      <button class="btn btn-ghost btn-sm" id="as-add-btn">추가</button>
+      <div class="as-row">
+        <div class="sel-wrap as-kind"><select id="as-kind" aria-label="구분">
+          <option value="설치">설치</option><option value="수리" selected>수리</option>
+        </select></div>
+        <div class="sel-wrap as-cat"><select id="as-cat" aria-label="대분류">
+          <option value="">대분류 선택</option><option>Panel</option><option>구동부</option><option>System</option>
+        </select></div>
+        <input type="date" id="as-date" value="${todayLocal()}" aria-label="날짜">
+      </div>
+      <label class="as-lbl" for="as-work">작업내역<span class="req">*</span></label>
+      <textarea id="as-work" rows="2" maxlength="200" placeholder="한 일 (200자 이내)"></textarea>
+      <label class="as-lbl" for="as-cause">불량 원인</label>
+      <textarea id="as-cause" rows="2" maxlength="200" placeholder="원인 (선택, 200자 이내)"></textarea>
+      <div class="as-foot"><button class="btn btn-ghost btn-sm" id="as-add-btn">추가</button></div>
     </div>`;
   }
   html += `</div>`;
@@ -1603,17 +1656,20 @@ function renderDetail(item, asItems){
    설치 및 수리 이력
    ============================================================ */
 async function addAS(id){
-  const date = $('#as-date').value;
-  const text = $('#as-text').value.trim();
-  const kind = $('#as-kind') ? $('#as-kind').value : '';
-  if (!date || !text) { toast('날짜와 내용을 모두 입력하세요', 'error'); return; }
+  const date     = $('#as-date').value;
+  const kind     = $('#as-kind').value;
+  const category = $('#as-cat').value;
+  const work     = $('#as-work').value.trim();
+  const cause    = $('#as-cause').value.trim();
+  if (!date || !work) { toast('날짜와 작업내역은 꼭 입력해 주세요', 'error'); $('#as-work').focus(); return; }
   const btn = $('#as-add-btn');
   if (btn.disabled) return;
   btn.disabled = true;
   busy(true);
   try {
-    await apiPost({ action: 'as-add', token: state.token, id, date, text, kind,
-                    updatedBy: state.email || 'admin' });
+    // text 는 옛 서버 호환용 (작업내역과 같은 값)
+    await apiPost({ action: 'as-add', token: state.token, id, date, kind, category, work, cause,
+                    text: work, updatedBy: state.email || 'admin' });
     toast('이력을 추가했습니다');
     await openDetail(id);
   } catch (e) {
@@ -1748,8 +1804,13 @@ async function save(){
   const data = {};
   FORM_KEYS.forEach(k => { const el = $('#f-' + k); data[k] = el ? el.value : ''; });
 
-  if (!data.manager || !data.site || !data.status) {
-    toast('관리주체, Site, 상태는 필수 항목입니다', 'error');
+  if (!data.manager || !data.status) {
+    toast('관리주체와 상태는 필수 항목입니다', 'error');
+    return;
+  }
+  if (!data.site.trim() && !data.productName.trim()) {
+    toast('Site 와 제품명 중 하나는 입력해 주세요', 'error');
+    $('#f-site').focus();
     return;
   }
 
@@ -1953,7 +2014,8 @@ function askDelete(){
   if (!id) return;
   const item = state.items.find(i => String(i.id) === String(id));
   $('#del-id').textContent = id;
-  $('#del-site').textContent = (item && item.site) || $('#f-site').value || '(이름 없음)';
+  $('#del-site').textContent = (item && siteLabel(item))
+    || siteLabel({ site: $('#f-site').value, productName: $('#f-productName').value }) || '(이름 없음)';
   openOverlay('delete');
   setTimeout(() => $('#btn-delete-cancel').focus(), 120);   // 기본 선택은 '취소'
 }
