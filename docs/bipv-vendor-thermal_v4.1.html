@@ -1,8 +1,3 @@
-<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BIPV 구동부 방열 개선</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -92,13 +87,11 @@ ol.src a{color:var(--ink)}
 @media (max-width:760px){.roles{grid-template-columns:repeat(2,minmax(0,1fr))} .cols3{grid-template-columns:1fr}}
 @media (max-width:640px){.roles,.cols{grid-template-columns:1fr} h1{font-size:24px}}
 </style>
-</head>
-<body>
 
 <div class="wrap">
 
 <header>
-  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-29</span><span>업체 전달용 v4.0</span></div>
+  <div class="doc-meta"><span>BIPV PROJECT · 기구 설계 검토 회신</span><span>2026-10-29</span><span>업체 전달용 v4.1</span></div>
   <h1>BIPV 패널 구동부 방열 개선 요청</h1>
   <p class="lede">보내주신 기구 설계(유리 LED + PV 합지 패널, 고정 프레임, SMPS·Hub board 고정판, 알루미늄 커버)를 검토한 결과입니다. 전체 배치는 그대로 유지하고, 구동부(SMPS)의 방열이 왜 필요한지, 현재 설계에서 어디가 취약한지, 그리고 <b>SMPS 2면 써멀패드 접촉 + 커버 핀</b>으로 개선하는 방법을 정리했습니다. 온도는 서울 기후와 운전 조건으로 계산한 추정값입니다.</p>
 </header>
@@ -115,13 +108,13 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">01</span>왜 구동부 방열 설계가 필요한가</h2>
+  <h2><span class="no">01</span>구동부 방열 설계의 필요성</h2>
   <div class="cols">
-    <div class="card"><h3>PV와 SMPS는 다릅니다</h3><ul>
+    <div class="card"><h3>PV 모듈과 SMPS의 차이</h3><ul>
       <li><b>PV 모듈은 스스로 열을 내지 않지만, SMPS는 열을 냅니다.</b> 효율이 약 88%라서 패널당 400W를 공급할 때 약 50W가 계속 열로 나옵니다. 밀폐 함체 안에서는 이 열이 빠져나갈 길이 필요합니다.</li>
       <li><b>SMPS 수명은 전해콘덴서가 정합니다.</b> 온도가 10°C 오를 때마다 수명이 약 절반으로 줄어듭니다. 함체 안이 20°C 더 뜨거우면 교체 주기가 약 1/4로 짧아집니다.</li>
       <li><b>지금 SMPS 자리는 건물에서 가장 뜨거운 곳입니다.</b> 여름 한낮 PV 뒷면은 90°C 이상이 될 수 있고, LED도 그 시간에 가장 밝게(최대 400W) 동작합니다.</li></ul></div>
-    <div class="card"><h3>고장 나면 비용이 큽니다</h3><ul>
+    <div class="card"><h3>고장 시 유지보수 비용</h3><ul>
       <li><b>고온이 되면 SMPS는 출력을 줄이거나 꺼집니다.</b> 화면 일부가 어두워지거나 꺼지고, 고장 출동이 생깁니다.</li>
       <li><b>4~8층 외벽에서는 교체 1건의 출동비가 부품값보다 큽니다.</b> 곤돌라 동원, 유리 취급, 낙하 위험이 따릅니다.</li>
       <li><b>방열 설계가 곧 유지보수비 절감입니다.</b> 배치를 바꾸지 않고도 열 경로만 만들어 주면 개선할 수 있습니다.</li></ul></div>
@@ -138,7 +131,7 @@ ol.src a{color:var(--ink)}
 
 <section>
   <h2><span class="no">02</span>현재 설계의 취약 위치</h2>
-  <p>보내주신 도면에 취약 위치를 번호로 표시했습니다. 번호는 아래 표와 같습니다.</p>
+  <p>보내주신 도면에 취약 위치를 번호로 표시하였으며, 각 번호의 상세 내용은 아래 표와 같습니다.</p>
   <figure class="fig"><div class="photo"><img src="img/vendor_detail.jpg" alt="업체 도면: SMPS와 Hub board가 고정된 판과 커버"><span class="mk" style="left:15%;top:43%">1</span><span class="mk" style="left:37%;top:80%">2</span><span class="mk" style="left:92%;top:45%">3</span><span class="mk" style="left:69%;top:83%">4</span></div><figcaption>그림 1. SMPS와 Hub board가 고정된 판(왼쪽)과 커버(오른쪽). ① SMPS가 판에만 고정 ② 커버와 SMPS 사이가 공기로 끊김 ③ FPCB가 꺾이는 립 ④ FPCB가 지나가는 실링 플랜지.</figcaption></figure>
   <div class="cols">
     <figure class="fig"><div class="photo"><img src="img/vendor_side.jpg" alt="업체 도면: 패널 아래에서 본 함체와 글랜드"><span class="mk" style="left:72%;top:55%">1</span><span class="mk" style="left:54.6%;top:69%">5</span></div><figcaption>그림 2. 패널 아래에서 본 함체. ① 함체 판이 PV 뒤 공기층을 바로 마주봄 ⑤ 측면 글랜드.</figcaption></figure>
@@ -152,8 +145,8 @@ ol.src a{color:var(--ink)}
       <tr><td class="num">3</td><td class="loc">FPCB가 꺾이는 립 (그림 1)</td><td>FPCB 11개가 판금 립의 절단 모서리 위에서 90° 꺾임</td><td>피복이 닳아 단락·단선, 바람 진동으로 마모</td><td>립 끝을 R0.5 이상 말아 접기(헤밍), EPDM 엣지 트림, 굴곡 R은 FPCB 두께의 10배 이상</td></tr>
       <tr><td class="num">4</td><td class="loc">실링 플랜지 (그림 1)</td><td>FPCB가 개스킷 라인을 가로질러 지나감</td><td>FPCB 두께만큼 틈이 생겨 방수(IP65)가 안 되고, 개스킷이 FPCB를 계속 누름</td><td>FPCB 전용 관통부(슬롯 + 압착 그로밋 또는 포팅)를 개스킷 라인과 분리, 개스킷은 끊김 없는 링</td></tr>
       <tr><td class="num">5</td><td class="loc">측면 글랜드 (그림 2)</td><td>케이블이 옆에서 수평으로 들어감</td><td>케이블을 타고 물이 들어감</td><td>글랜드를 아래쪽으로 옮기거나 아래로 처진 루프, 안 쓰는 구멍은 마개</td></tr>
-      <tr><td class="num">6</td><td class="loc">함체 전체</td><td>압력평형 벤트가 없음</td><td>낮밤 온도차로 함체가 숨을 쉬듯 습기를 빨아들여 결로</td><td>아래쪽에 방수 통기 벤트(ePTFE, IP67급)</td></tr>
-      <tr><td class="num">7</td><td class="loc">세로로 쌓이는 함체 (그림 3)</td><td>패널마다 함체가 같은 줄로 정렬됨</td><td>아래 패널의 더운 공기가 위 패널로 올라가 위층일수록 온도가 쌓임. 벽 쪽이 막혀 있으면 최상단 SMPS가 개선안 기준으로도 82~93°C(벽 간격 150~200mm)</td><td>벽과 패널 사이 간격과 측면이 열려 있는지 확인이 필요합니다. 결과에 따라 적층 대책을 따로 협의드리겠습니다</td></tr>
+      <tr><td class="num">6</td><td class="loc">함체 전체</td><td>압력평형 벤트가 없음</td><td>주야간 온도차에 따른 호흡 현상으로 습기가 유입되어 결로 발생</td><td>아래쪽에 방수 통기 벤트(ePTFE, IP67급)</td></tr>
+      <tr><td class="num">7</td><td class="loc">세로로 쌓이는 함체 (그림 3)</td><td>패널마다 함체가 같은 줄로 정렬됨</td><td>아래 패널의 더운 공기가 위 패널로 올라가 위층일수록 온도가 쌓임. 벽 쪽이 막혀 있으면 최상단 SMPS가 개선안 기준으로도 82~93°C(벽 간격 150~200mm)</td><td>벽과 패널 사이 간격과 측면이 열려 있는지 확인이 필요합니다. 확인 결과에 따라 적층 대책은 별도로 협의드리겠습니다</td></tr>
       <tr><td class="num">8</td><td class="loc">멀리언·레일 (그림 3)</td><td>세로 멀리언과 가로 레일이 함체 뒤를 가로지름</td><td>커버를 뒤에서 열 수 없고, 핀 사이 공기 흐름이 막힘</td><td>멀리언·레일을 함체와 겹치지 않게 배치, 핀 끝과 15~20mm 이상 띄움</td></tr>
       <tr><td class="num">9</td><td class="loc">교체 접근 (그림 3)</td><td>함체가 패널 뒷면에 붙어 있고 하지에 가려짐</td><td>SMPS 교체 때 패널을 떼어내야 함(03장)</td><td>교체 순서와 접근 경로 확인, 캡티브 스크류와 낙하 방지 줄</td></tr>
       <tr><td class="num">10</td><td class="loc">체결부</td><td>알루미늄 판·커버와 스테인리스 체결</td><td>이종금속 부식</td><td>절연 와셔, 아노다이징, 접지점은 피막 제거 + 톱니 와셔</td></tr>
@@ -161,19 +154,19 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">03</span>SMPS 교체가 어렵습니다</h2>
-  <p>패널과 함체를 한 대씩 교체하는 계획으로 알고 있습니다. 그런데 SMPS는 PV와 달리 수명이 정해진 소모품이라서, 지금 온도에서는 교체가 자주 반복될 수 있습니다.</p>
+  <h2><span class="no">03</span>SMPS 교체 관련 검토</h2>
+  <p>패널과 함체를 개별 교체하는 방식으로 계획하신 것으로 알고 있습니다. 그런데 SMPS는 PV와 달리 수명이 정해진 소모품이라서, 지금 온도에서는 교체가 자주 반복될 수 있습니다.</p>
   <div class="cols">
-    <div class="card"><h3>왜 어려운가</h3><ul>
+    <div class="card"><h3>교체가 어려운 사유</h3><ul>
       <li><b>교체 주기가 짧습니다.</b> 현재 구조에서는 콘덴서 수명이 약 1~2.6년으로 추정되어, 패널 수만큼 교체가 몇 년마다 반복됩니다.</li>
       <li><b>뒤에서 열 수 없습니다.</b> 함체가 패널 뒷면에 붙어 있고 멀리언·레일이 가리고 있어, 벽 쪽에서 커버를 열 수 없습니다. 결국 패널을 떼어내야 합니다.</li>
       <li><b>고소 작업과 유리 취급이 따릅니다.</b> 4~8층 외벽에서 곤돌라를 동원하고, 유리 패널을 떼었다 다시 붙여야 합니다.</li>
       <li><b>FPCB 손상 위험이 있습니다.</b> FPCB 11개가 Hub board와 연결되어 있어, 함체를 열고 닫을 때마다 꺾임부와 커넥터에 부담이 갑니다.</li></ul></div>
     <div class="card"><h3>요청 사항</h3><ul>
       <li><b>교체 빈도 자체를 줄이는 것이 가장 효과적입니다.</b> 04장 개선안으로 SMPS를 60°C 이하로 유지하면 콘덴서 수명이 약 16년 이상으로 늘어납니다.</li>
-      <li>SMPS 1대를 교체하는 순서, 접근 경로(곤돌라·실내·캣워크), 1건당 소요 시간을 알려주세요.</li>
-      <li>커버는 캡티브 스크류로, 떨어지지 않게 낙하 방지 줄을 달아주세요.</li>
-      <li>개선안에서는 커버를 열 때 써멀패드를 새것으로 바꿔야 합니다. 패드·개스킷 교체 키트를 예비품으로 준비해 주세요.</li></ul></div>
+      <li>SMPS 1대를 교체하는 순서, 접근 경로(곤돌라·실내·캣워크), 1건당 소요 시간을 회신해 주시기 바랍니다.</li>
+      <li>커버는 캡티브 스크류로, 낙하 방지 줄을 적용해 주시기 바랍니다.</li>
+      <li>개선안에서는 커버를 열 때 써멀패드를 새것으로 바꿔야 합니다. 패드·개스킷 교체 키트를 예비품으로 준비해 주시기 바랍니다.</li></ul></div>
   </div>
 </section>
 
@@ -210,12 +203,12 @@ ol.src a{color:var(--ink)}
       <tr><td class="loc">커버 쪽 접촉 (주 방열 경로)</td><td>커버 안쪽에 Al 보스(또는 스페이서)를 두어 SMPS 위면과의 약 13mm 간격을 메우고, 그 사이에 써멀패드</td><td>패드 1~2mm만으로는 13mm 간격을 메울 수 없음. 열 대부분(약 70W)이 이 경로로 나감</td></tr>
       <tr><td class="loc">판 쪽 접촉</td><td>SMPS 아래면과 판 사이에 얇은 써멀패드(0.5~1mm)</td><td>밤과 흐린 날 보조 방열, SMPS 고정·진동 억제</td></tr>
       <tr><td class="loc">판 공기층 면</td><td><b>저방사 Al 호일</b>(또는 3~5mm 단열재)을 붙임</td><td>낮에는 판이 SMPS보다 뜨거워서, 호일 없이 판 쪽 패드만 있으면 공기층 열이 SMPS로 10~20W 들어옴. 호일로 절반 이하로 줄어듦</td></tr>
-      <tr><td class="loc">써멀패드</td><td>실리콘 갭패드, 열전도 4W/mK 이상, 두께 1~1.5mm(판 쪽 0.5~1mm), 압축 20~40%, 경도 Shore 00 30~50, 저분자 실록산 저감품, 유리섬유 보강형</td><td>부드러워야 커버가 휘지 않고, 보강형이 현장 교체 때 덜 찢어짐</td></tr>
-      <tr><td class="loc">커버 핀</td><td>커버 바깥면에 <b>세로 핀</b>, 높이 30mm, 두께 2mm, 간격 12mm(약 35개). 6063 압출 또는 다이캐스트 일체형, 흑색 아노다이징</td><td>설치 시 핀이 세로라야 자연대류가 잘 됨. 흑색 아노다이징은 복사 방열을 크게 높임(벽 쪽 그늘이라 햇빛 흡수 영향은 작음)</td></tr>
+      <tr><td class="loc">써멀패드</td><td>실리콘 갭패드, 열전도 4W/mK 이상, 두께 1~1.5mm(판 쪽 0.5~1mm), 압축 20~40%, 경도 Shore 00 30~50, 저분자 실록산 저감품, 유리섬유 보강형</td><td>연질이어야 커버 변형이 적고, 보강형이 현장 교체 시 손상이 적음</td></tr>
+      <tr><td class="loc">커버 핀</td><td>커버 바깥면에 <b>세로 핀</b>, 높이 30mm, 두께 2mm, 간격 12mm(약 35개). 6063 압출 또는 다이캐스트 일체형, 흑색 아노다이징</td><td>설치 상태에서 핀이 세로 방향이어야 자연대류가 원활함. 흑색 아노다이징은 복사 방열을 크게 높임(벽 쪽 그늘이라 햇빛 흡수 영향은 작음)</td></tr>
       <tr><td class="loc">간격 관리</td><td>커버 보스와 판 스탠드오프가 금속끼리 맞닿는 하드스톱으로 패드 압축량을 고정. 체결 간격 100mm 이하, SMPS 바로 옆에 체결 보스</td><td>패드 반발력(약 0.8~2.6kN)으로 얇은 커버가 휘면 개스킷이 들뜸</td></tr>
       <tr><td class="loc">방수</td><td>개스킷은 홈에 넣고 압축 25~35%, FPCB·글랜드 관통부는 개스킷 라인 밖에서 따로 실링, IP65 시험은 패드를 넣은 상태로</td><td>패드 반발력과 방수를 함께 확보</td></tr>
       <tr><td class="loc">SMPS 확인</td><td>HWA805V0J-SS 케이스의 통풍 구멍 위치와, 내부 발열 부품이 어느 면에 붙어 있는지 확인. 패드는 구멍 없는 방열면에</td><td>통풍 구멍을 패드로 막으면 오히려 온도가 오를 수 있음</td></tr>
-      <tr><td class="loc">설치 간격</td><td>핀 끝과 벽·레일 사이 15~20mm 이상</td><td>핀 사이로 공기가 흘러야 핀이 동작함</td></tr>
+      <tr><td class="loc">설치 간격</td><td>핀 끝과 벽·레일 사이 15~20mm 이상</td><td>핀 사이로 공기가 흘러야 방열 효과가 있음</td></tr>
     </tbody></table></div>
 
   <figure class="fig"><div class="svgbox"><svg viewBox="0 0 640 298" width="640" role="img" aria-label="구성별 SMPS 케이스 온도">
@@ -243,11 +236,11 @@ ol.src a{color:var(--ink)}
         <tr><td>+ 호일 + 단열 5mm</td><td class="num">54.7°C (유입 7W)</td></tr>
       </tbody></table></div>
   </div>
-  <p class="ref">벽 쪽 공간이 좁아 핀을 20mm로 낮춰야 한다면 판 호일을 반드시 같이 적용해 주세요. 함체 크기는 현재 도면을 기준으로 480×290×45mm로 추정했습니다.</p>
+  <p class="ref">벽 쪽 공간이 좁아 핀을 20mm로 낮춰야 한다면 판 호일을 반드시 함께 적용해 주시기 바랍니다. 함체 크기는 현재 도면을 기준으로 480×290×45mm로 추정했습니다.</p>
 </section>
 
 <section>
-  <h2><span class="no">05</span>함체 크기 줄이기</h2>
+  <h2><span class="no">05</span>함체 소형화 검토</h2>
   <p>함체는 작을수록 좋지만, 작아지면 방열 면적이 줄어 핀을 높여야 합니다. 개선안(2면 패드 + 핀 + 판 호일) 기준으로 계산했습니다.</p>
   <div class="tbl mid"><table>
     <thead><tr><th>외형 (가로×세로×깊이)</th><th>핀 높이</th><th class="num">7월 설계 / 8월 평균일</th><th class="num">함체+핀 두께</th><th>판정</th></tr></thead>
@@ -261,7 +254,7 @@ ol.src a{color:var(--ink)}
 </section>
 
 <section>
-  <h2><span class="no">06</span>계절별 SMPS 온도</h2>
+  <h2><span class="no">06</span>계절별 SMPS 온도 예측</h2>
   <p>서울 월별 평년 기온으로 낮(평균 최고기온, 맑은 날 정오, LED 400W)과 밤(평균 최저기온, LED 200W)을 계산했습니다.</p>
   <figure class="fig"><div class="svgbox"><svg viewBox="0 0 720 290" width="720" role="img" aria-label="월별 SMPS 케이스 온도">
   <g stroke="var(--line)" stroke-width="1"><line x1="60" y1="250" x2="600" y2="250"/><line x1="60" y1="184" x2="600" y2="184"/><line x1="60" y1="118" x2="600" y2="118"/><line x1="60" y1="52" x2="600" y2="52"/></g>
@@ -324,5 +317,3 @@ ol.src a{color:var(--ink)}
 </section>
 
 </div>
-</body>
-</html>
